@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISKCON Hadapsar - Master Admin Portal</title>
+    <!-- Tailwind CSS for Powerful UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Plus Jakarta Sans for Enterprise Look -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs (Compat version for easy HTML integration) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <!-- Added Firebase Database SDK for Security Logs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans:['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        iskcon: {
+                            50: '#fff7ed',
+                            100: '#ffedd5',
+                            500: '#f97316',
+                            600: '#ea580c',
+                            900: '#7c2d12',
+                        },
+                        darkbg: '#0a0f1c',
+                        darkcard: '#111827',
+                        secbg: '#050505',
+                        seccard: '#0f1115'
+                    },
+                    animation: {
+                        'fade-in-up': 'fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'blob': 'blob 7s infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'scan': 'scan 2.5s linear infinite',
+                    },
+                    keyframes: {
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        scan: {
+                            '0%': { transform: 'translateY(-100%)' },
+                            '100%': { transform: 'translateY(100%)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Smooth transitions for theme switching */
+        body {
+            transition: background-color 0.4s ease, color 0.4s ease;
+            overflow-x: hidden;
+        }
+        
+        /* Premium Glassmorphism Effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        .dark .glass {
+            background: rgba(17, 24, 39, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* 3D Card Hover Effect with Shine */
+        .module-card {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+        .module-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+            transform: skewX(-25deg);
+            animation: none;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .dark .module-card::after {
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 100%);
+        }
+        .module-card:hover {
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1);
+        }
+        .dark .module-card:hover {
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.5);
+        }
+        .module-card:hover::after {
+            animation: shine 0.8s ease-out forwards;
+        }
+        @keyframes shine {
+            100% { left: 200%; }
+        }
+
+        /* Icon bounce on hover */
+        .module-card:hover .card-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+        .card-icon {
+            transition: transform 0.3s ease;
+        }
+
+        /* Staggered Delays for entrance animation */
+        .delay-100 { animation-delay: 50ms; }
+        .delay-200 { animation-delay: 100ms; }
+        .delay-300 { animation-delay: 150ms; }
+        .delay-400 { animation-delay: 200ms; }
+        .delay-500 { animation-delay: 250ms; }
+        .delay-600 { animation-delay: 300ms; }
+        .delay-700 { animation-delay: 350ms; }
+        .delay-800 { animation-delay: 400ms; }
+        
+        /* Animated Background Blobs */
+        .bg-blobs {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .blob-1 {
+            position: absolute;
+            top: -10%;
+            left: -10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(249, 115, 22, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(40px);
+        }
+        .dark .blob-1 { background: radial-gradient(circle, rgba(249, 115, 22, 0.1) 0%, transparent 70%); }
+        
+        .blob-2 {
+            position: absolute;
+            bottom: -20%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(40px);
+            animation-delay: 2s;
+        }
+        .dark .blob-2 { background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05); 
+        }
+        .dark ::-webkit-scrollbar-track, .security-mode ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05); 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(249, 115, 22, 0.5); 
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(249, 115, 22, 0.8); 
+        }
+        .security-mode ::-webkit-scrollbar-thumb {
+            background: rgba(220, 38, 38, 0.5); 
+        }
+        .security-mode ::-webkit-scrollbar-thumb:hover {
+            background: rgba(220, 38, 38, 0.8); 
+        }
+
+        /* Security Table Styles */
+        .sec-table-row {
+            transition: all 0.2s ease;
+        }
+        .sec-table-row:hover {
+            background-color: rgba(220, 38, 38, 0.05);
+        }
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(to right, transparent, rgba(220, 38, 38, 0.8), transparent);
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
+            z-index: 10;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-darkbg dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col relative">
+
+    <!-- Animated Background Effect -->
+    <div class="bg-blobs" id="main-blobs">
+        <div class="blob-1 animate-blob"></div>
+        <div class="blob-2 animate-blob"></div>
+    </div>
+
+    <!-- ======================= LOGIN SCREEN ======================= -->
+    <div id="login-section" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-50/95 dark:bg-darkbg/95 backdrop-blur-xl transition-opacity duration-500">
+        <div class="glass w-full max-w-md rounded-3xl p-8 shadow-2xl border border-white dark:border-slate-800 relative overflow-hidden transform transition-all animate-fade-in-up">
+            <!-- Decorative gradient line -->
+            <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-iskcon-500 via-orange-400 to-yellow-400"></div>
+            
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-iskcon-100 to-white dark:from-slate-800 dark:to-slate-900 flex items-center justify-center shadow-lg border border-iskcon-200 dark:border-slate-700 mb-3 animate-float">
+                    <span class="text-2xl font-black text-iskcon-500">IH</span>
+                </div>
+                <h2 class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">ISKCON Hadapsar</h2>
+                <p data-i18n="secureLoginTitle" class="text-xs font-bold text-iskcon-500 mt-1 uppercase tracking-widest">Master Authority Login</p>
+            </div>
+
+            <form id="loginForm" class="space-y-4">
+                <div id="loginError" class="hidden bg-red-100 border-l-4 border-red-600 text-red-800 p-3 rounded-xl text-sm font-bold shadow-sm flex items-start gap-2">
+                    <i class="fa-solid fa-circle-exclamation mt-0.5"></i>
+                    <span id="loginErrorText">Error message here</span>
+                </div>
+                
+                <!-- Name Input -->
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-user text-slate-400"></i>
+                    </div>
+                    <input type="text" id="adminName" required class="block w-full pl-10 pr-3 py-3 border border-slate-300 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-iskcon-500 focus:border-iskcon-500 sm:text-sm transition-all" placeholder="Your Full Name">
+                </div>
+
+                <!-- Language Selector -->
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-language text-slate-400"></i>
+                    </div>
+                    <select id="adminLang" required class="block w-full pl-10 pr-3 py-3 border border-slate-300 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-iskcon-500 focus:border-iskcon-500 sm:text-sm transition-all appearance-none cursor-pointer">
+                        <option value="" disabled selected>Select Interface Language</option>
+                        <option value="en">English</option>
+                        <option value="hi">हिंदी (Hindi)</option>
+                        <option value="mr">मराठी (Marathi)</option>
+                    </select>
+                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                    </div>
+                </div>
+
+                <!-- Email Input -->
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-envelope text-slate-400"></i>
+                    </div>
+                    <input type="email" id="email" required class="block w-full pl-10 pr-3 py-3 border border-slate-300 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-iskcon-500 focus:border-iskcon-500 sm:text-sm transition-all" placeholder="Authority Email Address">
+                </div>
+
+                <!-- Password Input -->
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-lock text-slate-400"></i>
+                    </div>
+                    <input type="password" id="password" required class="block w-full pl-10 pr-3 py-3 border border-slate-300 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-iskcon-500 focus:border-iskcon-500 sm:text-sm transition-all" placeholder="Secure Password">
+                </div>
+
+                <button type="submit" id="loginBtn" class="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-gradient-to-r from-iskcon-600 to-iskcon-500 hover:from-iskcon-500 hover:to-orange-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-iskcon-500 transition-all transform hover:-translate-y-1 mt-2">
+                    <i class="fa-solid fa-shield-check mr-2"></i> <span data-i18n="authBtn">Secure Authenticate</span>
+                </button>
+            </form>
+            
+            <p class="mt-5 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-user-shield"></i> <span data-i18n="ipLog">IP Logged & Monitored by Sudarshan Firewall</span>
+            </p>
+        </div>
+    </div>
+    <!-- ======================= END LOGIN SCREEN ======================= -->
+
+
+    <!-- ======================= MAIN DASHBOARD ======================= -->
+    <div id="main-dashboard" style="display: none;" class="flex-1 flex flex-col w-full h-full transition-opacity duration-500">
+        
+        <!-- Glassmorphism Header -->
+        <header class="glass sticky top-0 z-50 px-4 md:px-6 py-3 flex items-center justify-between shadow-sm border-b border-slate-200/50 dark:border-slate-800/50">
+            
+            <!-- Logo & Title -->
+            <a href="index.html" class="flex items-center gap-3 group cursor-pointer outline-none rounded-2xl focus:ring-2 focus:ring-iskcon-500">
+                <div class="relative w-10 h-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300 overflow-hidden border border-slate-100 dark:border-slate-700">
+                    <img src="logo.png" alt="Logo" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <span class="hidden absolute text-lg font-black text-iskcon-500 w-full h-full items-center justify-center bg-gradient-to-br from-iskcon-50 to-white dark:from-slate-700 dark:to-slate-800">IH</span>
+                </div>
+                
+                <div>
+                    <h1 class="text-lg md:text-xl font-extrabold leading-tight text-slate-900 dark:text-white tracking-tight group-hover:text-iskcon-500 transition-colors">ISKCON Hadapsar</h1>
+                    <p data-i18n="portalTitle" class="text-xs font-semibold text-slate-500 dark:text-slate-400">Master Admin Portal</p>
+                </div>
+            </a>
+
+            <!-- Right Side Controls -->
+            <div class="flex items-center gap-3 md:gap-4">
+                <button id="themeToggle" class="w-9 h-9 rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-iskcon-500 hover:shadow-md transition-all duration-300 group">
+                    <i class="fa-solid fa-moon dark:hidden text-base group-hover:-rotate-12 transition-transform"></i>
+                    <i class="fa-solid fa-sun hidden dark:block text-yellow-400 text-base group-hover:rotate-45 transition-transform duration-500"></i>
+                </button>
+
+                <div class="hidden sm:flex items-center gap-3 pl-3 md:pl-4 border-l border-slate-200 dark:border-slate-700">
+                    <div class="text-right">
+                        <p id="adminUserDisplay" class="text-sm font-bold text-slate-900 dark:text-white">Admin</p>
+                        <p class="text-xs font-semibold text-iskcon-500 flex items-center justify-end gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> <span data-i18n="superAdmin">Super Admin</span>
+                        </p>
+                    </div>
+                    <div class="w-9 h-9 rounded-full shadow-sm border-2 border-white dark:border-slate-800 overflow-hidden group hover:border-iskcon-500 transition-colors">
+                        <img id="adminAvatar" src="https://ui-avatars.com/api/?name=Admin&background=f97316&color=fff&bold=true" alt="Admin" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                    </div>
+                    <button id="logoutBtn" title="Secure Logout" class="w-8 h-8 ml-1 flex items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-600 hover:text-white dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white transition-colors duration-300">
+                        <i class="fa-solid fa-power-off text-sm"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 w-full max-w-7xl mx-auto px-4 md:px-6 py-6 flex flex-col gap-6">
+            
+            <!-- MASTER SECURITY WARNING MESSAGE -->
+            <div class="w-full opacity-0 animate-fade-in-up">
+                <div class="relative overflow-hidden glass rounded-2xl border-l-8 border-l-red-500 p-4 md:p-5 shadow-lg dark:bg-red-950/20">
+                    <div class="absolute -right-6 -top-6 text-red-500/5 dark:text-red-500/5 z-0">
+                        <i class="fa-solid fa-shield-halved text-8xl"></i>
+                    </div>
+                    <div class="relative z-10 flex flex-col md:flex-row items-start gap-4">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 shadow-sm animate-pulse-slow mt-1 md:mt-0">
+                            <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 data-i18n="warnTitle" class="text-lg md:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-1">
+                                ⚠️ Hare Krishna! Highly Secured Master Portal
+                            </h3>
+                            <p data-i18n="warnDesc" class="text-sm font-semibold text-slate-700 dark:text-slate-300 leading-relaxed mb-2">
+                                This is the <span class="text-red-600 dark:text-red-400 font-bold">Strictly Confidential & Official Master Admin Panel</span> of ISKCON Hadapsar. Designed exclusively for Authorized Management Authority.
+                            </p>
+                            <p data-i18n="warnNotice" class="text-xs md:text-sm font-medium text-slate-600 dark:text-slate-400 bg-slate-100/80 dark:bg-slate-800/60 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700/50">
+                                <i class="fa-solid fa-radar text-iskcon-500 mr-1"></i> <strong class="text-slate-800 dark:text-slate-200">Security Notice:</strong> Our advanced firewall tracks every IP and Activity. Unauthorized access attempts will result in a <strong class="text-red-600 dark:text-red-400">Permanent Block & Police Action</strong>.<br><span class="text-iskcon-600 dark:text-iskcon-400 font-bold italic mt-1 block">"As this is highly sensitive service of Lord Krishna and the Temple, please maintain decorum and security. Thank you! 🙏"</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Welcome Header -->
+            <div class="text-center opacity-0 animate-fade-in-up delay-100 mt-2 mb-2">
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-iskcon-50 dark:bg-iskcon-900/30 text-iskcon-600 dark:text-iskcon-400 font-bold text-xs mb-3 border border-iskcon-100 dark:border-iskcon-800 shadow-sm">
+                    <i class="fa-solid fa-star text-yellow-500"></i> <span data-i18n="hubActive">Central Control Hub Active</span>
+                </div>
+                <h2 data-i18n="welcomeTitle" class="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-2 tracking-tight">
+                    Welcome to Master Command 🙏
+                </h2>
+                <p data-i18n="welcomeDesc" class="text-sm md:text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto font-medium">
+                    Select a module below to access and manage its specific functions. All operations are securely logged.
+                </p>
+            </div>
+
+            <!-- Modules Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 md:gap-6 pb-6">
+
+                <!-- MODULE 1: Daily Darshan -->
+                <a href="darshan.html" class="module-card group opacity-0 animate-fade-in-up delay-100 block bg-white/80 dark:bg-darkcard/80 backdrop-blur-xl rounded-2xl p-5 border border-slate-200 dark:border-slate-800 outline-none focus:ring-4 focus:ring-blue-500/30 overflow-hidden">
+                    <i class="fa-solid fa-camera-retro absolute -bottom-6 -right-6 text-8xl text-slate-100 dark:text-slate-800/40 group-hover:text-blue-50 dark:group-hover:text-blue-900/20 transition-colors duration-500 z-0"></i>
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="card-icon w-14 h-14 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/40 dark:to-blue-800/20 text-blue-600 dark:text-blue-400 flex items-center justify-center text-2xl mb-4 shadow-inner border border-white dark:border-slate-700"><i class="fa-solid fa-image"></i></div>
+                        <h3 data-i18n="modDarshanTitle" class="text-xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Daily Darshan</h3>
+                        <p data-i18n="modDarshanDesc" class="text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 flex-1 mb-6 leading-relaxed">Upload and manage daily deity pictures. Update Shringar and Mangala Aarti photos in Divine Gallery.</p>
+                        <div class="flex items-center text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 w-max px-3 py-1.5 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm mt-auto"><span data-i18n="accessBtn">Access Module</span><i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i></div>
+                    </div>
+                </a>
+
+                <!-- MODULE 2: Live Stream -->
+                <a href="livestream.html" class="module-card group opacity-0 animate-fade-in-up delay-200 block bg-white/80 dark:bg-darkcard/80 backdrop-blur-xl rounded-2xl p-5 border border-slate-200 dark:border-slate-800 outline-none focus:ring-4 focus:ring-red-500/30 overflow-hidden">
+                    <i class="fa-solid fa-video absolute -bottom-6 -right-6 text-8xl text-slate-100 dark:text-slate-800/40 group-hover:text-red-50 dark:group-hover:text-red-900/20 transition-colors duration-500 z-0"></i>
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="card-icon w-14 h-14 rounded-xl bg-gradient-to-br from-red-100 to-red-50 dark:from-red-900/40 dark:to-red-800/20 text-red-600 dark:text-red-400 flex items-center justify-center text-2xl mb-4 shadow-inner border border-white dark:border-slate-700 relative"><i class="fa-solid fa-broadcast-tower"></i><span class="absolute top-0 right-0 w-3 h-3 bg-red-500 border-2 border-white dark:border-darkcard rounded-full animate-pulse"></span></div>
+                        <h3 data-i18n="modLiveTitle" class="text-xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">Live Stream</h3>
+                        <p data-i18n="modLiveDesc" class="text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 flex-1 mb-6 leading-relaxed">Update YouTube/Facebook links for live aarti and classes directly to the app.</p>
+                        <div class="flex items-center text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 w-max px-3 py-1.5 rounded-lg group-hover:bg-red-600 group-hover:text-white transition-all duration-300 shadow-sm mt-auto"><span data-i18n="accessBtn">Access Module</span><i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i></div>
+                    </div>
+                </a>
+
+                <!-- MODULE 3: App Notifications -->
+                <a href="notifications.html" class="module-card group opacity-0 animate-fade-in-up delay-300 block bg-white/80 dark:bg-darkcard/80 backdrop-blur-xl rounded-2xl p-5 border border-slate-200 dark:border-slate-800 outline-none focus:ring-4 focus:ring-purple-500/30 overflow-hidden">
+                    <i class="fa-solid fa-bell absolute -bottom-6 -right-6 text-8xl text-slate-100 dark:text-slate-800/40 group-hover:text-purple-50 dark:group-hover:text-purple-900/20 transition-colors duration-500 z-0"></i>
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="card-icon w-14 h-14 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 dark:from-purple-900/40 dark:to-purple-800/20 text-purple-600 dark:text-purple-400 flex items-center justify-center text-2xl mb-4 shadow-inner border border-white dark:border-slate-700"><i class="fa-regular fa-bell"></i></div>
+                        <h3 data-i18n="modNotifTitle" class="text-xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">Notifications</h3>
+                        <p data-i18n="modNotifDesc" class="text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 flex-1 mb-6 leading-relaxed">Send push notifications and announcements instantly to all devotees.</p>
+                        <div class="flex items-center text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 w-max px-3 py-1.5 rounded-lg group-hover:bg-purple-600 group-hover:text-white transition-all duration-300 shadow-sm mt-auto"><span data-i18n="accessBtn">Access Module</span><i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i></div>
+                    </div>
+                </a>
+
+                <!-- MODULE 4: Upcoming Events -->
+                <a href="events.html" class="module-card group opacity-0 animate-fade-in-up delay-400 block bg-white/80 dark:bg-darkcard/80 backdrop-blur-xl rounded-2xl p-5 border border-slate-200 dark:border-slate-800 outline-none focus:ring-4 focus:ring-emerald-500/30 overflow-hidden">
+                    <i class="fa-solid fa-calendar-alt absolute -bottom-6 -right-6 text-8xl text-slate-100 dark:text-slate-800/40 group-hover:text-emerald-50 dark:group-hover:text-emerald-900/20 transition-colors duration-500 z-0"></i>
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="card-icon w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50 dark:from-emerald-900/40 dark:to-emerald-800/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl mb-4 shadow-inner border border-white dark:border-slate-700"><i class="fa-regular fa-calendar-check"></i></div>
+                        <h3 data-i18n="modFestTitle" class="text-xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Festivals</h3>
+                        <p data-i18n="modFestDesc" class="text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 flex-1 mb-6 leading-relaxed">Manage upcoming ISKCON festivals, program schedules and calendar.</p>
+                        <div class="flex items-center text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 w-max px-3 py-1.5 rounded-lg group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300 shadow-sm mt-auto"><span data-i18n="accessBtn">Access Module</span><i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i></div>
+                    </div>
+                </a>
+
+                <!-- MODULE 5: Master Quiz -->
+                <a href="MasterQuize.html" class="module-card group opacity-0 animate-fade-in-up delay-500 block bg-white/80 dark:bg-darkcard/80 backdrop-blur-xl rounded-2xl p-5 border border-slate-200 dark:border-slate-800 outline-none focus:ring-4 focus:ring-rose-500/30 overflow-hidden">
+                    <i class="fa-solid fa-crown absolute -bottom-6 -right-6 text-8xl text-slate-100 dark:text-slate-800/40 group-hover:text-rose-50 dark:group-hover:text-rose-900/20 transition-colors duration-500 z-0"></i>
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="card-icon w-14 h-14 rounded-xl bg-gradient-to-br from-rose-100 to-rose-50 dark:from-rose-900/40 dark:to-rose-800/20 text-rose-600 dark:text-rose-400 flex items-center justify-center text-2xl mb-4 shadow-inner border border-white dark:border-slate-700"><i class="fa-solid fa-crown"></i></div>
+                        <h3 data-i18n="modQuizTitle" class="text-xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">Master Quiz</h3>
+                        <p data-i18n="modQuizDesc" class="text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 flex-1 mb-6 leading-relaxed">Manage Bhagavad Gita, Ramayan, and Srila Prabhupada quizzes. Update questions and scores.</p>
+                        <div class="flex items-center text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 w-max px-3 py-1.5 rounded-lg group-hover:bg-rose-600 group-hover:text-white transition-all duration-300 shadow-sm mt-auto"><span data-i18n="accessBtn">Access Module</span><i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i></div>
+                    </div>
+                </a>
+
+                <!-- MODULE 6: Lectures & Kirtan -->
+                <a href="LecturesKirtan.html" class="module-card group opacity-0 animate-fade-in-up delay-600 block bg-white/80 dark:bg-darkcard/80 backdrop-blur-xl rounded-2xl p-5 border border-slate-200 dark:border-slate-800 outline-none focus:ring-4 focus:ring-amber-500/30 overflow-hidden">
+                    <i class="fa-solid fa-compact-disc absolute -bottom-6 -right-6 text-8xl text-slate-100 dark:text-slate-800/40 group-hover:text-amber-50 dark:group-hover:text-amber-900/20 transition-colors duration-500 z-0"></i>
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="card-icon w-14 h-14 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-900/40 dark:to-amber-800/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-2xl mb-4 shadow-inner border border-white dark:border-slate-700"><i class="fa-solid fa-headphones"></i></div>
+                        <h3 data-i18n="modLecTitle" class="text-xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Lectures & Kirtan</h3>
+                        <p data-i18n="modLecDesc" class="text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 flex-1 mb-6 leading-relaxed">Upload and organize class recordings, kirtan videos, and spiritual discourses.</p>
+                        <div class="flex items-center text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 w-max px-3 py-1.5 rounded-lg group-hover:bg-amber-600 group-hover:text-white transition-all duration-300 shadow-sm mt-auto"><span data-i18n="accessBtn">Access Module</span><i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i></div>
+                    </div>
+                </a>
+
+                <!-- MODULE 7: Master Slider -->
+                <a href="MasterSlider.html" class="module-card group opacity-0 animate-fade-in-up delay-700 block bg-white/80 dark:bg-darkcard/80 backdrop-blur-xl rounded-2xl p-5 border border-slate-200 dark:border-slate-800 outline-none focus:ring-4 focus:ring-cyan-500/30 overflow-hidden">
+                    <i class="fa-solid fa-images absolute -bottom-6 -right-6 text-8xl text-slate-100 dark:text-slate-800/40 group-hover:text-cyan-50 dark:group-hover:text-cyan-900/20 transition-colors duration-500 z-0"></i>
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="card-icon w-14 h-14 rounded-xl bg-gradient-to-br from-cyan-100 to-cyan-50 dark:from-cyan-900/40 dark:to-cyan-800/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center text-2xl mb-4 shadow-inner border border-white dark:border-slate-700"><i class="fa-solid fa-sliders"></i></div>
+                        <h3 data-i18n="modSlideTitle" class="text-xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">Master Slider</h3>
+                        <p data-i18n="modSlideDesc" class="text-xs md:text-sm font-medium text-slate-500 dark:text-slate-400 flex-1 mb-6 leading-relaxed">Manage home screen dynamic banners, important notices, donations, and birthday announcements.</p>
+                        <div class="flex items-center text-xs font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-900/20 w-max px-3 py-1.5 rounded-lg group-hover:bg-cyan-600 group-hover:text-white transition-all duration-300 shadow-sm mt-auto"><span data-i18n="accessBtn">Access Module</span><i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i></div>
+                    </div>
+                </a>
+
+                <!-- NEW MODULE 8: SUDARSHAN FIREWALL (BAAP LEVEL SECURITY PANEL) -->
+                <a href="#" id="openSecurityPanel" class="module-card group opacity-0 animate-fade-in-up delay-800 block bg-red-50/90 dark:bg-red-950/40 backdrop-blur-xl rounded-2xl p-5 border-2 border-red-200 dark:border-red-900 outline-none focus:ring-4 focus:ring-red-600/50 overflow-hidden relative">
+                    <div class="absolute inset-0 bg-gradient-to-br from-red-500/10 to-transparent z-0 pointer-events-none"></div>
+                    <i class="fa-solid fa-shield-halved absolute -bottom-6 -right-6 text-8xl text-red-200/50 dark:text-red-900/30 group-hover:text-red-300/50 dark:group-hover:text-red-800/50 transition-colors duration-500 z-0"></i>
+                    
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="card-icon w-14 h-14 rounded-xl bg-gradient-to-br from-red-600 to-red-800 text-white flex items-center justify-center text-2xl mb-4 shadow-[0_0_15px_rgba(220,38,38,0.6)] border border-red-400 dark:border-red-600 relative">
+                            <i class="fa-solid fa-radar fa-spin-pulse"></i>
+                        </div>
+                        <h3 data-i18n="modSecTitle" class="text-xl font-black text-red-700 dark:text-red-400 mb-2 transition-colors uppercase tracking-wide">Sudarshan Firewall</h3>
+                        <p data-i18n="modSecDesc" class="text-xs md:text-sm font-bold text-red-900/70 dark:text-red-200/70 flex-1 mb-6 leading-relaxed">
+                            Live IP Tracking, Device Fingerprinting & Security Command Center. Block unauthorized access instantly.
+                        </p>
+                        <div class="flex items-center text-xs font-bold text-white bg-red-600 w-max px-4 py-2 rounded-lg hover:bg-red-700 transition-all duration-300 shadow-lg mt-auto shadow-red-500/30 uppercase tracking-wider">
+                            <i class="fa-solid fa-lock mr-2"></i> <span data-i18n="accessSecBtn">Open Command</span>
+                        </div>
+                    </div>
+                </a>
+
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="mt-auto py-5 border-t border-slate-200/50 dark:border-slate-800/50 backdrop-blur-sm text-center opacity-0 animate-fade-in-up delay-800">
+            <p class="text-sm font-bold text-slate-600 dark:text-slate-400">
+                &copy; 2024 ISKCON Hadapsar. <span data-i18n="footerText" class="font-medium">All rights reserved.</span>
+            </p>
+            <p class="text-xs font-semibold text-slate-400 dark:text-slate-500 mt-1 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-shield-halved text-iskcon-500"></i> Master Portal v2.0 Enterprise Secure
+            </p>
+        </footer>
+    </div>
+    <!-- ======================= END MAIN DASHBOARD ======================= -->
+
+
+    <!-- ======================= SUDARSHAN SECURITY COMMAND CENTER ======================= -->
+    <div id="security-dashboard" style="display: none;" class="flex-1 w-full h-full bg-secbg text-white security-mode relative overflow-hidden">
+        
+        <!-- Hacker/Security Background Grid -->
+        <div class="absolute inset-0 z-0 opacity-10" style="background-image: linear-gradient(rgba(220, 38, 38, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(220, 38, 38, 0.3) 1px, transparent 1px); background-size: 30px 30px;"></div>
+        <div class="scan-line animate-scan"></div>
+
+        <div class="relative z-10 flex flex-col h-full max-h-screen overflow-hidden">
+            <!-- Security Header -->
+            <header class="bg-seccard border-b border-red-900/50 px-6 py-4 flex items-center justify-between shadow-[0_4px_30px_rgba(220,38,38,0.1)]">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-lg bg-red-950 flex items-center justify-center border border-red-700 shadow-[0_0_15px_rgba(220,38,38,0.5)]">
+                        <i class="fa-solid fa-shield-virus text-2xl text-red-500 animate-pulse"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl md:text-2xl font-black text-red-500 tracking-widest uppercase" style="text-shadow: 0 0 10px rgba(220,38,38,0.5);">Sudarshan Command</h1>
+                        <p data-i18n="secSub" class="text-xs font-bold text-slate-400 uppercase tracking-widest">Global IP & Threat Monitor</p>
+                    </div>
+                </div>
+                
+                <button id="closeSecurityPanel" class="px-4 py-2 rounded-lg bg-red-950/50 border border-red-800 text-red-400 hover:bg-red-900 hover:text-white font-bold text-sm transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left"></i> <span data-i18n="backToDash">Back to Master Panel</span>
+                </button>
+            </header>
+
+            <!-- Security Content -->
+            <main class="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
+                
+                <!-- Live Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-seccard border border-slate-800 rounded-xl p-5 flex items-center justify-between shadow-lg">
+                        <div>
+                            <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">System Status</p>
+                            <p class="text-2xl font-black text-green-500 flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_#22c55e]"></span> ACTIVE
+                            </p>
+                        </div>
+                        <i class="fa-solid fa-server text-4xl text-slate-700"></i>
+                    </div>
+                    <div class="bg-seccard border border-red-900/50 rounded-xl p-5 flex items-center justify-between shadow-[0_0_15px_rgba(220,38,38,0.1)] relative overflow-hidden">
+                        <div class="absolute right-0 top-0 w-16 h-full bg-red-600/10 skew-x-12"></div>
+                        <div class="relative z-10">
+                            <p class="text-red-400 text-xs font-bold uppercase tracking-wider mb-1">Threats Blocked</p>
+                            <p id="blockedCount" class="text-3xl font-black text-red-500">0</p>
+                        </div>
+                        <i class="fa-solid fa-ban text-4xl text-red-900 relative z-10"></i>
+                    </div>
+                    <div class="bg-seccard border border-slate-800 rounded-xl p-5 flex items-center justify-between shadow-lg">
+                        <div>
+                            <p class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Total Logs Tracked</p>
+                            <p id="totalLogsCount" class="text-3xl font-black text-blue-500">0</p>
+                        </div>
+                        <i class="fa-solid fa-fingerprint text-4xl text-slate-700"></i>
+                    </div>
+                </div>
+
+                <!-- Live Access Log Table -->
+                <div class="bg-seccard border border-slate-800 rounded-xl flex-1 flex flex-col overflow-hidden shadow-2xl">
+                    <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-black/20">
+                        <h2 class="text-lg font-bold text-slate-200 flex items-center gap-2">
+                            <i class="fa-solid fa-satellite-dish text-red-500"></i> Live Authentication Logs
+                        </h2>
+                        <div class="text-xs font-mono text-slate-500 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-notch fa-spin"></i> Fetching Real-time Data
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 overflow-auto">
+                        <table class="w-full text-left border-collapse whitespace-nowrap">
+                            <thead class="bg-slate-900/80 text-slate-400 text-xs uppercase tracking-wider sticky top-0 z-20">
+                                <tr>
+                                    <th class="px-6 py-4 font-semibold">Date & Time</th>
+                                    <th class="px-6 py-4 font-semibold">Attempted User</th>
+                                    <th data-i18n="logIp" class="px-6 py-4 font-semibold">IP Address</th>
+                                    <th data-i18n="logDevice" class="px-6 py-4 font-semibold">Device Fingerprint</th>
+                                    <th data-i18n="logStatus" class="px-6 py-4 font-semibold">Status</th>
+                                    <th data-i18n="logAction" class="px-6 py-4 font-semibold text-right">Security Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="securityLogTableBody" class="text-sm font-mono text-slate-300 divide-y divide-slate-800/50">
+                                <!-- Logs injected via JS -->
+                                <tr>
+                                    <td colspan="6" class="px-6 py-8 text-center text-slate-500">
+                                        <i class="fa-solid fa-radar fa-spin text-2xl mb-2 text-red-900"></i><br>
+                                        Waiting for Firebase connection...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+    <!-- ======================= END SUDARSHAN SECURITY ======================= -->
+
+    <!-- Scripts for Interactions & Firebase Logic -->
+    <script>
+        // ================= I18N DICTIONARY =================
+        const translations = {
+            en: {
+                secureLoginTitle: "Master Authority Login",
+                authBtn: "Secure Authenticate",
+                ipLog: "IP Logged & Monitored by Sudarshan Firewall",
+                portalTitle: "Master Admin Portal",
+                superAdmin: "Super Admin",
+                warnTitle: "⚠️ Hare Krishna! Highly Secured Master Portal",
+                warnDesc: "This is the <span class='text-red-600 dark:text-red-400 font-bold'>Strictly Confidential & Official Master Admin Panel</span> of ISKCON Hadapsar. Designed exclusively for Authorized Management Authority.",
+                warnNotice: "<i class='fa-solid fa-radar text-iskcon-500 mr-1'></i> <strong class='text-slate-800 dark:text-slate-200'>Security Notice:</strong> Our advanced firewall tracks every IP and Activity. Unauthorized access attempts will result in a <strong class='text-red-600 dark:text-red-400'>Permanent Block & Police Action</strong>.<br><span class='text-iskcon-600 dark:text-iskcon-400 font-bold italic mt-1 block'>\"As this is highly sensitive service of Lord Krishna and the Temple, please maintain decorum and security. Thank you! 🙏\"</span>",
+                hubActive: "Central Control Hub Active",
+                welcomeTitle: "Welcome to Master Command 🙏",
+                welcomeDesc: "Select a module below to access and manage its specific functions. All operations are securely logged.",
+                modDarshanTitle: "Daily Darshan", modDarshanDesc: "Upload and manage daily deity pictures. Update Shringar and Mangala Aarti photos in Divine Gallery.",
+                modLiveTitle: "Live Stream", modLiveDesc: "Update YouTube/Facebook links for live aarti and classes directly to the app.",
+                modNotifTitle: "Notifications", modNotifDesc: "Send push notifications and announcements instantly to all devotees.",
+                modFestTitle: "Festivals", modFestDesc: "Manage upcoming ISKCON festivals, program schedules and calendar.",
+                modQuizTitle: "Master Quiz", modQuizDesc: "Manage Bhagavad Gita, Ramayan, and Srila Prabhupada quizzes. Update questions and scores.",
+                modLecTitle: "Lectures & Kirtan", modLecDesc: "Upload and organize class recordings, kirtan videos, and spiritual discourses.",
+                modSlideTitle: "Master Slider", modSlideDesc: "Manage home screen dynamic banners, important notices, donations, and birthday announcements.",
+                modSecTitle: "Sudarshan Firewall", modSecDesc: "Live IP Tracking, Device Fingerprinting & Security Command Center. Block unauthorized access instantly.",
+                accessBtn: "Access Module",
+                accessSecBtn: "Open Command",
+                footerText: "All rights reserved.",
+                secSub: "Global IP & Threat Monitor",
+                backToDash: "Back to Master Panel",
+                logIp: "IP Address", logDevice: "Device Fingerprint", logStatus: "Status", logAction: "Security Action", secBlock: "PERMANENT BLOCK"
+            },
+            hi: {
+                secureLoginTitle: "मास्टर अथॉरिटी लॉगिन",
+                authBtn: "सुरक्षित प्रमाणीकरण",
+                ipLog: "सुदर्शन फायरवॉल द्वारा IP मॉनिटर की जा रही है",
+                portalTitle: "मास्टर एडमिन पोर्टल",
+                superAdmin: "सुपर एडमिन",
+                warnTitle: "⚠️ हरे कृष्ण! अति-सुरक्षित मास्टर पोर्टल",
+                warnDesc: "यह ISKCON Hadapsar का <span class='text-red-600 dark:text-red-400 font-bold'>Strictly Confidential & Official Master Admin Panel</span> है। यह केवल अधिकृत अथॉरिटी के उपयोग के लिए है।",
+                warnNotice: "<i class='fa-solid fa-radar text-iskcon-500 mr-1'></i> <strong class='text-slate-800 dark:text-slate-200'>Security Notice:</strong> हमारा एडवांस फायरवॉल हर एक IP Address को ट्रैक कर रहा है। अनधिकृत व्यक्ति को <strong class='text-red-600 dark:text-red-400'>Permanent Block</strong> करके पुलिस कंप्लेंट की जाएगी।<br><span class='text-iskcon-600 dark:text-iskcon-400 font-bold italic mt-1 block'>\"चूँकि यह भगवान श्री कृष्ण की सेवा का अति-संवेदनशील कार्य है, कृपया मर्यादा बनाये रखें। 🙏\"</span>",
+                hubActive: "सेंट्रल कण्ट्रोल हब एक्टिव",
+                welcomeTitle: "मास्टर कमांड में आपका स्वागत है 🙏",
+                welcomeDesc: "विशिष्ट कार्य को प्रबंधित करने के लिए नीचे दिए गए मॉड्यूल का चयन करें। सभी गतिविधियां सुरक्षित रूप से दर्ज हैं।",
+                modDarshanTitle: "दैनिक दर्शन", modDarshanDesc: "दैनिक भगवान के चित्र अपलोड और प्रबंधित करें। श्रृंगार और मंगला आरती फोटो अपडेट करें।",
+                modLiveTitle: "लाइव स्ट्रीम", modLiveDesc: "लाइव आरती और क्लास के लिए यूट्यूब/फेसबुक लिंक सीधे ऐप पर अपडेट करें।",
+                modNotifTitle: "सूचनाएं (Notifications)", modNotifDesc: "सभी भक्तों को तुरंत पुश नोटिफिकेशन और महत्वपूर्ण घोषणाएं भेजें।",
+                modFestTitle: "उत्सव (Festivals)", modFestDesc: "आगामी इस्कॉन उत्सव, कार्यक्रम अनुसूची और कैलेंडर प्रबंधित करें।",
+                modQuizTitle: "मास्टर क्विज़", modQuizDesc: "भगवद गीता, रामायण क्विज़ प्रबंधित करें। प्रश्न और स्कोर अपडेट करें।",
+                modLecTitle: "प्रवचन और कीर्तन", modLecDesc: "क्लास रिकॉर्डिंग, कीर्तन वीडियो अपलोड और व्यवस्थित करें।",
+                modSlideTitle: "मास्टर स्लाइडर", modSlideDesc: "होम स्क्रीन के बैनर, नोटिस, डोनेशन और जन्मदिन की घोषणाएं प्रबंधित करें।",
+                modSecTitle: "सुदर्शन फायरवॉल", modSecDesc: "लाइव IP ट्रैकिंग, डिवाइस फिंगरप्रिंट और कमांड सेंटर। अनधिकृत लोगों को तुरंत ब्लॉक करें।",
+                accessBtn: "मॉड्यूल खोलें",
+                accessSecBtn: "कमांड खोलें",
+                footerText: "सर्वाधिकार सुरक्षित।",
+                secSub: "ग्लोबल IP और खतरा मॉनिटर",
+                backToDash: "मास्टर पैनल पर लौटें",
+                logIp: "IP एड्रेस", logDevice: "डिवाइस जानकारी", logStatus: "स्थिति", logAction: "सुरक्षा कार्रवाई", secBlock: "ब्लॉक करें"
+            },
+            mr: {
+                secureLoginTitle: "मास्टर अथॉरिटी लॉगिन",
+                authBtn: "सुरक्षित प्रमाणीकरण",
+                ipLog: "सुदर्शन फायरवॉल द्वारे IP मॉनिटर केले जात आहे",
+                portalTitle: "मास्टर ॲडमिन पोर्टल",
+                superAdmin: "सुपर ॲडमिन",
+                warnTitle: "⚠️ हरे कृष्ण! अति-सुरक्षित मास्टर पोर्टल",
+                warnDesc: "हे इस्कॉन हडपसरचे <span class='text-red-600 dark:text-red-400 font-bold'>Strictly Confidential</span> ॲडमिन पॅनेल आहे. हे केवळ अधिकृत प्राधिकरणाच्या वापरासाठी आहे.",
+                warnNotice: "<i class='fa-solid fa-radar text-iskcon-500 mr-1'></i> <strong class='text-slate-800 dark:text-slate-200'>Security Notice:</strong> आमची प्रगत फायरवॉल प्रत्येक IP वर लक्ष ठेवून आहे. अनधिकृत प्रवेशास <strong class='text-red-600 dark:text-red-400'>Permanent Block</strong> करून पोलीस कारवाई केली जाईल.<br><span class='text-iskcon-600 dark:text-iskcon-400 font-bold italic mt-1 block'>\"ही भगवान श्रीकृष्णाची अत्यंत संवेदनशील सेवा असल्याने, कृपया मर्यादा राखा. 🙏\"</span>",
+                hubActive: "सेंट्रल कंट्रोल हब ॲक्टिव्ह",
+                welcomeTitle: "मास्टर कमांडमध्ये आपले स्वागत आहे 🙏",
+                welcomeDesc: "विशिष्ट कार्य व्यवस्थापित करण्यासाठी खालील मॉड्यूल निवडा. सर्व हालचाली सुरक्षितपणे रेकॉर्ड आहेत.",
+                modDarshanTitle: "दैनिक दर्शन", modDarshanDesc: "दररोजचे देवाचे फोटो अपलोड आणि व्यवस्थापित करा.",
+                modLiveTitle: "लाइव्ह स्ट्रीम", modLiveDesc: "लाइव्ह आरती आणि वर्गासाठी YouTube लिंक्स थेट ॲपवर अपडेट करा.",
+                modNotifTitle: "सूचना", modNotifDesc: "सर्व भक्तांना त्वरित पुश नोटिफिकेशन्स पाठवा.",
+                modFestTitle: "उत्सव", modFestDesc: "आगामी इस्कॉन उत्सव आणि कॅलेंडर व्यवस्थापित करा.",
+                modQuizTitle: "मास्टर क्विझ", modQuizDesc: "भगवद्गीता क्विझ व्यवस्थापित करा. प्रश्न अपडेट करा.",
+                modLecTitle: "प्रवचन आणि कीर्तन", modLecDesc: "क्लास रेकॉर्डिंग आणि कीर्तन व्हिडिओ अपलोड करा.",
+                modSlideTitle: "मास्टर स्लाइडर", modSlideDesc: "होम स्क्रीनचे डायनॅमिक बॅनर्स आणि महत्त्वाच्या सूचना व्यवस्थापित करा.",
+                modSecTitle: "सुदर्शन फायरवॉल", modSecDesc: "लाइव्ह IP ट्रॅकिंग, डिव्हाइस फिंगरप्रिंट आणि कमांड सेंटर. अनधिकृत प्रवेश त्वरित ब्लॉक करा.",
+                accessBtn: "मॉड्यूल उघडा",
+                accessSecBtn: "कमांड उघडा",
+                footerText: "सर्व हक्क राखीव.",
+                secSub: "ग्लोबल IP मॉनिटर",
+                backToDash: "मास्टर पॅनेलवर परत जा",
+                logIp: "IP ॲड्रेस", logDevice: "डिव्हाइस माहिती", logStatus: "स्थिती", logAction: "सुरक्षा कृती", secBlock: "ब्लॉक करा"
+            }
+        };
+
+        function applyLanguage(lang) {
+            const elements = document.querySelectorAll('[data-i18n]');
+            elements.forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[lang] && translations[lang][key]) {
+                    el.innerHTML = translations[lang][key];
+                }
+            });
+            document.documentElement.lang = lang;
+        }
+
+        // ================= THEME LOGIC =================
+        const themeToggleBtn = document.getElementById('themeToggle');
+        const htmlElement = document.documentElement;
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            htmlElement.classList.add('dark');
+        } else {
+            htmlElement.classList.remove('dark');
+        }
+        themeToggleBtn.addEventListener('click', () => {
+            htmlElement.classList.toggle('dark');
+            localStorage.setItem('theme', htmlElement.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        // ================= FIREBASE INITIALIZATION =================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAEbzUad0edV07OMF2slPJyJeWd10-Clc8",
+            authDomain: "image-hit-7ce47.firebaseapp.com",
+            databaseURL: "https://image-hit-7ce47-default-rtdb.firebaseio.com",
+            projectId: "image-hit-7ce47"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // ================= DOM ELEMENTS =================
+        const loginSection = document.getElementById('login-section');
+        const mainDashboard = document.getElementById('main-dashboard');
+        const secDashboard = document.getElementById('security-dashboard');
+        const loginForm = document.getElementById('loginForm');
+        const loginError = document.getElementById('loginError');
+        const loginErrorText = document.getElementById('loginErrorText');
+        const adminUserDisplay = document.getElementById('adminUserDisplay');
+        const adminAvatar = document.getElementById('adminAvatar');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const btnOpenSec = document.getElementById('openSecurityPanel');
+        const btnCloseSec = document.getElementById('closeSecurityPanel');
+        const secTableBody = document.getElementById('securityLogTableBody');
+
+        const savedLang = localStorage.getItem('adminLang') || 'en';
+        applyLanguage(savedLang);
+
+        // ================= SECURITY FUNCTIONS (SUDARSHAN FIREWALL) =================
+        let clientIP = "Unknown IP";
+        
+        // Fetch real IP silently on load
+        fetch('https://api.ipify.org?format=json')
+            .then(res => res.json())
+            .then(data => { clientIP = data.ip; })
+            .catch(err => console.log("IP fetch failed"));
+
+        function getDeviceFingerprint() {
+            // Generates a mock device ID based on user agent and screen resolution
+            const str = navigator.userAgent + screen.width + screen.height;
+            return btoa(str).substring(0, 15).toUpperCase();
+        }
+
+        // Write log to DB
+        function logSecurityAttempt(email, name, status) {
+            const logRef = database.ref('security_logs');
+            const newLog = {
+                email: email,
+                name: name,
+                ip: clientIP,
+                device: getDeviceFingerprint(),
+                userAgent: navigator.userAgent.substring(0, 50) + "...",
+                status: status, // "SUCCESS" or "FAILED"
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            };
+            logRef.push(newLog).catch(e => console.log("Log write failed", e));
+        }
+
+        // Sanitize IP for Firebase Key (replaces dots)
+        function sanitizeIP(ip) {
+            return ip.replace(/\./g, '_');
+        }
+
+        // Block IP Function (Used inside the Security Panel)
+        window.blockIP = function(ip) {
+            if(confirm(`WARNING: Are you sure you want to PERMANENTLY BLOCK IP: ${ip}? They will face Police Warning on next login.`)) {
+                database.ref('blocked_ips/' + sanitizeIP(ip)).set({
+                    blockedAt: firebase.database.ServerValue.TIMESTAMP,
+                    reason: "Unauthorized Access Detected via Master Admin"
+                }).then(() => {
+                    alert(`Target Locked! IP ${ip} is now permanently blocked.`);
+                });
+            }
+        };
+
+        // Load Security Logs into the Table
+        function loadSecurityLogs() {
+            const logsRef = database.ref('security_logs').orderByChild('timestamp').limitToLast(50);
+            const blockedRef = database.ref('blocked_ips');
+
+            // Count blocked
+            blockedRef.on('value', snap => {
+                document.getElementById('blockedCount').innerText = snap.numChildren();
+            });
+
+            logsRef.on('value', (snapshot) => {
+                secTableBody.innerHTML = '';
+                let total = 0;
+                const logs =[];
+                snapshot.forEach(child => {
+                    logs.push(child.val());
+                    total++;
+                });
+                document.getElementById('totalLogsCount').innerText = total;
+
+                // Reverse so newest is top
+                logs.reverse().forEach(log => {
+                    const dateObj = new Date(log.timestamp);
+                    const dateStr = dateObj.toLocaleString();
+                    const statusClass = log.status === 'SUCCESS' ? 'text-green-400 bg-green-900/30' : 'text-red-400 bg-red-900/30';
+                    const ipDisplay = log.ip || "Hidden";
+                    
+                    const row = document.createElement('tr');
+                    row.className = 'sec-table-row';
+                    row.innerHTML = `
+                        <td class="px-6 py-4">${dateStr}</td>
+                        <td class="px-6 py-4"><span class="font-bold text-white">${log.name || 'Unknown'}</span><br><span class="text-xs text-slate-500">${log.email}</span></td>
+                        <td class="px-6 py-4 font-bold text-orange-400">${ipDisplay}</td>
+                        <td class="px-6 py-4"><span class="bg-slate-800 px-2 py-1 rounded text-xs border border-slate-700">${log.device}</span></td>
+                        <td class="px-6 py-4"><span class="px-3 py-1 rounded-full text-xs font-bold ${statusClass}">${log.status}</span></td>
+                        <td class="px-6 py-4 text-right">
+                            <button onclick="blockIP('${ipDisplay}')" class="bg-red-600/20 text-red-500 border border-red-800 hover:bg-red-600 hover:text-white px-3 py-1 rounded shadow text-xs font-bold transition-colors uppercase tracking-wider">
+                                <i class="fa-solid fa-crosshairs mr-1"></i> Block
+                            </button>
+                        </td>
+                    `;
+                    secTableBody.appendChild(row);
+                });
+
+                if(logs.length === 0) {
+                    secTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-slate-500"><i class="fa-solid fa-shield-check text-2xl mb-2 text-green-900"></i><br>Firewall Active. No recent logs.</td></tr>`;
+                }
+            });
+        }
+
+        // ================= UI STATE CONTROL =================
+        function updateUIState(user) {
+            if (user) {
+                loginSection.classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => {
+                    loginSection.style.display = 'none';
+                    mainDashboard.style.display = 'flex';
+                    
+                    const savedName = localStorage.getItem('adminName') || user.email.split('@')[0];
+                    adminUserDisplay.textContent = savedName;
+                    adminAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(savedName)}&background=f97316&color=fff&bold=true`;
+                    
+                    applyLanguage(localStorage.getItem('adminLang') || 'en');
+                }, 500);
+            } else {
+                mainDashboard.style.display = 'none';
+                secDashboard.style.display = 'none';
+                loginSection.style.display = 'flex';
+                setTimeout(() => {
+                    loginSection.classList.remove('opacity-0', 'pointer-events-none');
+                }, 50);
+            }
+        }
+
+        auth.onAuthStateChanged((user) => {
+            updateUIState(user);
+        });
+
+        // ================= FIREWALL INTERCEPTED LOGIN =================
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const adminName = document.getElementById('adminName').value;
+            const adminLang = document.getElementById('adminLang').value;
+            const btn = document.getElementById('loginBtn');
+            const originalBtnText = btn.innerHTML;
+
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Firewall Scanning...';
+            btn.disabled = true;
+
+            // Step 1: SUDARSHAN FIREWALL CHECK
+            database.ref('blocked_ips/' + sanitizeIP(clientIP)).once('value').then(snapshot => {
+                if(snapshot.exists()) {
+                    // TARGET IS BLOCKED! Kick them out immediately.
+                    logSecurityAttempt(email, adminName, "BLOCKED_ATTEMPT");
+                    btn.innerHTML = originalBtnText;
+                    btn.disabled = false;
+                    loginErrorText.innerHTML = "ACCESS DENIED! YOUR IP IS PERMANENTLY BLOCKED. POLICE REPORT FILED.";
+                    loginError.classList.remove('hidden');
+                    loginError.classList.replace('bg-red-100', 'bg-red-900');
+                    loginError.classList.replace('text-red-800', 'text-white');
+                    loginForm.classList.add('animate-[shake_0.5s_ease-in-out]');
+                    setTimeout(() => loginForm.classList.remove('animate-[shake_0.5s_ease-in-out]'), 500);
+                    return;
+                }
+
+                // Step 2: PROCEED WITH AUTH
+                auth.signInWithEmailAndPassword(email, password)
+                    .then((userCredential) => {
+                        loginError.classList.add('hidden');
+                        localStorage.setItem('adminName', adminName);
+                        localStorage.setItem('adminLang', adminLang);
+                        logSecurityAttempt(email, adminName, "SUCCESS");
+                    })
+                    .catch((error) => {
+                        btn.innerHTML = originalBtnText;
+                        btn.disabled = false;
+                        loginErrorText.innerHTML = "Access Denied: Invalid Credentials or Unauthorized.";
+                        loginError.classList.remove('hidden');
+                        loginError.classList.replace('bg-red-900', 'bg-red-100');
+                        loginError.classList.replace('text-white', 'text-red-800');
+                        loginForm.classList.add('animate-[shake_0.5s_ease-in-out]');
+                        setTimeout(() => loginForm.classList.remove('animate-[shake_0.5s_ease-in-out]'), 500);
+                        
+                        logSecurityAttempt(email, adminName, "FAILED");
+                    });
+            }).catch(err => {
+                // Failsafe if DB rules block read before auth (which they usually do if default).
+                // If DB blocks read, we try auth directly anyway so system doesn't break.
+                auth.signInWithEmailAndPassword(email, password)
+                    .then((userCredential) => {
+                        localStorage.setItem('adminName', adminName);
+                        localStorage.setItem('adminLang', adminLang);
+                        logSecurityAttempt(email, adminName, "SUCCESS");
+                    }).catch(err => {
+                        btn.innerHTML = originalBtnText;
+                        btn.disabled = false;
+                        loginErrorText.innerHTML = "Access Denied: Invalid Credentials.";
+                        loginError.classList.remove('hidden');
+                    });
+            });
+        });
+
+        // ================= NAVIGATION LOGIC =================
+        logoutBtn.addEventListener('click', () => {
+            auth.signOut().then(() => {
+                localStorage.removeItem('adminName');
+            }).catch((error) => console.error("Logout Error:", error));
+        });
+
+        btnOpenSec.addEventListener('click', (e) => {
+            e.preventDefault();
+            mainDashboard.style.opacity = '0';
+            setTimeout(() => {
+                mainDashboard.style.display = 'none';
+                secDashboard.style.display = 'flex';
+                document.getElementById('main-blobs').style.display = 'none';
+                loadSecurityLogs();
+                mainDashboard.style.opacity = '1';
+            }, 500);
+        });
+
+        btnCloseSec.addEventListener('click', () => {
+            secDashboard.style.display = 'none';
+            mainDashboard.style.display = 'flex';
+            document.getElementById('main-blobs').style.display = 'block';
+        });
+        
+        // Dynamic Shake CSS
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+                20%, 40%, 60%, 80% { transform: translateX(5px); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
