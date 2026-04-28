@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudarshan Firewall - Security Command</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans:['"Plus Jakarta Sans"', 'sans-serif'], mono:['"JetBrains Mono"', 'monospace'] },
+                    colors: { secbg: '#050505', seccard: '#0f1115' },
+                    animation: { 'scan': 'scan 2.5s linear infinite', 'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite' },
+                    keyframes: { scan: { '0%': { transform: 'translateY(-100%)' }, '100%': { transform: 'translateY(100%)' } } }
+                }
+            }
+        }
+    </script>
+    <style>
+        html, body { min-height: 100vh; background-color: #050505; color: white; overflow-x: hidden; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); }
+        ::-webkit-scrollbar-thumb { background: rgba(220, 38, 38, 0.5); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(220, 38, 38, 0.8); }
+        .sec-table-row:hover { background-color: rgba(220, 38, 38, 0.05); transition: all 0.2s; }
+        .scan-line { position: fixed; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(to right, transparent, rgba(220, 38, 38, 0.8), transparent); box-shadow: 0 0 10px rgba(220, 38, 38, 0.5); z-index: 10; pointer-events: none; opacity: 0.5; }
+        .hacker-bg { position: fixed; inset: 0; z-index: 0; opacity: 0.1; background-image: linear-gradient(rgba(220, 38, 38, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(220, 38, 38, 0.3) 1px, transparent 1px); background-size: 30px 30px; }
+    </style>
+</head>
+<body class="antialiased flex flex-col relative">
+
+    <div class="hacker-bg"></div>
+    <div class="scan-line animate-scan"></div>
+
+    <!-- STRICT GOOGLE AUTH -->
+    <div id="login-section" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-xl p-4">
+        <div class="w-full max-w-md rounded-2xl p-6 md:p-8 shadow-[0_0_50px_rgba(220,38,38,0.2)] border border-red-900/50 relative overflow-hidden bg-[#0a0a0a]">
+            <div class="text-center mb-6 md:mb-8">
+                <i class="fa-solid fa-shield-virus text-5xl md:text-6xl text-red-600 mb-4 drop-shadow-[0_0_15px_rgba(220,38,38,0.8)] animate-pulse-fast"></i>
+                <h2 class="text-xl md:text-2xl font-black text-red-500 tracking-widest uppercase">Restricted Area</h2>
+                <p class="text-[10px] md:text-xs font-bold text-slate-400 mt-2 uppercase tracking-widest border border-red-900/30 bg-red-900/10 py-1 px-2 rounded inline-block">Sudarshan Security Firewall</p>
+            </div>
+            <div class="space-y-4 md:space-y-6">
+                <div id="loginError" class="hidden bg-red-900/40 border-l-4 border-red-600 text-red-200 p-3 rounded text-xs font-mono break-words"></div>
+                <div class="text-center text-[10px] md:text-xs font-mono text-slate-500 mb-4 bg-black/50 p-3 md:p-4 rounded-lg border border-slate-800">
+                    <p class="text-red-400 font-bold mb-2">SYSTEM IDENTITY VERIFICATION REQUIRED</p>
+                    <p>Login requires verification of your device's active Authorized Google session.</p>
+                </div>
+                <button id="googleAuthBtn" class="w-full flex justify-center items-center py-3 md:py-4 px-4 border border-red-700 rounded-xl shadow-[0_0_15px_rgba(220,38,38,0.3)] text-xs md:text-sm font-black text-white bg-red-900/50 hover:bg-red-700 transition-all uppercase tracking-widest">
+                    <i class="fa-brands fa-google mr-2 md:mr-3"></i> Verify System Identity
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECURITY DASHBOARD -->
+    <div id="security-dashboard" style="display: none;" class="flex-1 w-full h-full relative z-10 flex flex-col h-screen overflow-hidden">
+        <header class="bg-seccard border-b border-red-900/50 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between shrink-0 shadow-lg z-20">
+            <div class="flex items-center gap-3 md:gap-4">
+                <div class="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-red-950 flex items-center justify-center border border-red-700 shadow-[0_0_15px_rgba(220,38,38,0.5)]"><i class="fa-solid fa-shield-virus text-xl md:text-2xl text-red-500 animate-pulse"></i></div>
+                <div>
+                    <h1 class="text-lg md:text-2xl font-black text-red-500 tracking-widest uppercase truncate max-w-[150px] sm:max-w-none" style="text-shadow: 0 0 10px rgba(220,38,38,0.5);">Sudarshan</h1>
+                    <p class="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest font-mono truncate max-w-[150px] sm:max-w-none"><span id="adminEmailDisplay" class="text-blue-400"></span></p>
+                </div>
+            </div>
+            <button id="logoutBtn" class="px-3 py-1.5 md:px-4 md:py-2 rounded-lg bg-red-950/50 border border-red-800 text-red-400 hover:bg-red-900 hover:text-white font-bold text-[10px] md:text-sm transition-all uppercase tracking-wider flex items-center gap-1.5 shadow-sm"><i class="fa-solid fa-power-off"></i> <span class="hidden sm:inline">Disconnect</span></button>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-4 md:gap-6 z-10">
+            <!-- LIVE ONLINE GPS TRACKER (NEW 3rd SECTION) -->
+            <div class="bg-seccard border border-emerald-900/50 rounded-xl p-4 md:p-5 shadow-[0_0_20px_rgba(16,185,129,0.15)] shrink-0">
+                <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+                    <h2 class="text-sm md:text-base font-bold text-emerald-400 flex items-center gap-2 uppercase tracking-wider">
+                        <i class="fa-solid fa-map-location-dot animate-pulse"></i> Live Online Admins (GPS Fleet)
+                    </h2>
+                    <span class="bg-emerald-900/50 text-emerald-400 px-2 py-1 rounded text-[10px] font-mono border border-emerald-800">REAL-TIME</span>
+                </div>
+                <div class="overflow-auto">
+                    <table class="w-full text-left border-collapse whitespace-nowrap">
+                        <thead class="text-slate-500 text-[9px] md:text-[10px] font-mono uppercase tracking-widest">
+                            <tr>
+                                <th class="px-3 py-2">Active Admin</th>
+                                <th class="px-3 py-2">Last Ping</th>
+                                <th class="px-3 py-2">Speed</th>
+                                <th class="px-3 py-2 text-right">Live Map</th>
+                            </tr>
+                        </thead>
+                        <tbody id="liveAdminsTableBody" class="text-[10px] md:text-xs font-mono text-slate-300 divide-y divide-slate-800/50">
+                            <!-- Live Admins Data Goes Here -->
+                            <tr><td colspan="4" class="px-3 py-4 text-center text-slate-600"><i class="fa-solid fa-satellite fa-spin mr-2"></i> Scanning for active admins...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- DUAL TABLES GRID -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 h-[500px]">
+                
+                <!-- TABLE 1: AUTH & THREAT LOGS -->
+                <div class="bg-seccard border border-slate-800 rounded-xl flex flex-col overflow-hidden shadow-2xl">
+                    <div class="p-3 md:p-4 border-b border-slate-800 flex items-center justify-between bg-black/20 shrink-0">
+                        <h2 class="text-sm md:text-base font-bold text-slate-200 flex items-center gap-2 uppercase tracking-wider"><i class="fa-solid fa-satellite-dish text-red-500"></i> Auth & Threat Logs</h2>
+                        <div class="text-[10px] font-mono text-slate-500 flex items-center gap-1.5"><i class="fa-solid fa-circle-notch fa-spin text-red-500"></i> LIVE</div>
+                    </div>
+                    <div class="flex-1 overflow-auto bg-black/30">
+                        <table class="w-full text-left border-collapse whitespace-nowrap">
+                            <thead class="bg-slate-900/80 text-slate-400 text-[9px] md:text-[10px] font-mono uppercase tracking-widest sticky top-0 z-20 shadow-md">
+                                <tr>
+                                    <th class="px-4 py-3 border-b border-slate-700">Time / Identity</th>
+                                    <th class="px-4 py-3 border-b border-slate-700">Device & Location</th>
+                                    <th class="px-4 py-3 border-b border-slate-700 text-right">Kill Switch</th>
+                                </tr>
+                            </thead>
+                            <tbody id="securityLogTableBody" class="text-[10px] md:text-xs font-mono text-slate-300 divide-y divide-slate-800/50">
+                                <tr><td colspan="3" class="px-4 py-8 text-center text-slate-500"><i class="fa-solid fa-radar fa-spin text-2xl mb-2 text-red-900"></i><br>Scanning Matrix...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TABLE 2: LIVE ADMIN OPERATIONS RADAR -->
+                <div class="bg-seccard border border-slate-800 rounded-xl flex flex-col overflow-hidden shadow-2xl border-t-4 border-t-blue-600 relative">
+                    <div class="absolute top-0 inset-x-0 h-8 bg-blue-500/10 blur-xl pointer-events-none"></div>
+                    <div class="p-3 md:p-4 border-b border-slate-800 flex items-center justify-between bg-black/20 shrink-0 relative z-10">
+                        <h2 class="text-sm md:text-base font-bold text-blue-400 flex items-center gap-2 uppercase tracking-wider"><i class="fa-solid fa-eye fa-fade"></i> Operations Radar</h2>
+                        <span class="flex h-2.5 w-2.5 relative"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span></span>
+                    </div>
+                    <div class="flex-1 overflow-auto bg-black/40 relative z-10">
+                        <div id="adminActivityStream" class="p-4 space-y-3 font-mono text-[10px] md:text-xs flex flex-col">
+                            <div class="text-center text-slate-600 py-10 mt-10"><i class="fa-solid fa-satellite fa-spin text-3xl mb-3 text-slate-700"></i><br>Awaiting Admin Activity...</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const AUTHORIZED_SECURITY_EMAILS =[
+            "demo123grt@gmail.com",          
+            "your.master.admin@gmail.com",   
+            "iskconhadapsarit@gmail.com"     
+        ];
+
+        const firebaseConfig = { 
+            apiKey: "AIzaSyAEbzUad0edV07OMF2slPJyJeWd10-Clc8", 
+            authDomain: "image-hit-7ce47.firebaseapp.com", 
+            databaseURL: "https://image-hit-7ce47-default-rtdb.firebaseio.com", 
+            projectId: "image-hit-7ce47" 
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        const loginSection = document.getElementById('login-section');
+        const secDashboard = document.getElementById('security-dashboard');
+        const loginError = document.getElementById('loginError');
+
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                if (AUTHORIZED_SECURITY_EMAILS.includes(user.email)) {
+                    document.getElementById('adminEmailDisplay').innerText = user.email;
+                    loginSection.style.display = 'none'; 
+                    secDashboard.style.display = 'flex';
+                    loadSecurityLogs();
+                    loadAdminRadar(); 
+                    loadLiveFleetTracker(); // LOAD THE LIVE GPS TABLE
+                } else {
+                    auth.signOut().then(() => {
+                        loginError.innerHTML = `<i class="fa-solid fa-circle-exclamation text-red-500"></i> IDENTITY REJECTED:<br>'${user.email}' is NOT authorized.`;
+                        loginError.classList.remove('hidden');
+                    });
+                }
+            } else {
+                secDashboard.style.display = 'none'; 
+                loginSection.style.display = 'flex';
+            }
+        });
+
+        document.getElementById('googleAuthBtn').addEventListener('click', () => {
+            loginError.classList.add('hidden');
+            const provider = new firebase.auth.GoogleAuthProvider();
+            provider.setCustomParameters({ prompt: 'select_account' }); 
+            auth.signInWithPopup(provider).catch(e => {
+                loginError.innerHTML = `<i class="fa-solid fa-circle-exclamation text-red-500"></i> Auth Failed:<br>` + e.message; 
+                loginError.classList.remove('hidden');
+            });
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut());
+        function sanitizeIP(ip) { return ip ? ip.replace(/\./g, '_').replace(/:/g, '_') : 'unknown'; }
+
+        window.blockIP = function(ip) {
+            if(confirm(`🚨 FINAL WARNING 🚨\n\nAre you sure you want to PERMANENTLY BLOCK IP: ${ip}?`)) {
+                database.ref('blocked_ips/' + sanitizeIP(ip)).set({
+                    blockedAt: firebase.database.ServerValue.TIMESTAMP,
+                    blockedBy: auth.currentUser.email,
+                    reason: "Terminated via Sudarshan Command"
+                }).then(() => alert(`TARGET KILLED: IP ${ip} blocked.`));
+            }
+        };
+
+        // 1. LIVE FLEET TRACKER
+        function loadLiveFleetTracker() {
+            const fleetTable = document.getElementById('liveAdminsTableBody');
+            database.ref('live_online_admins').on('value', (snapshot) => {
+                fleetTable.innerHTML = '';
+                let hasAdmins = false;
+                snapshot.forEach(child => {
+                    hasAdmins = true;
+                    const ad = child.val();
+                    const dateStr = new Date(ad.updatedAt).toLocaleTimeString();
+                    const speed = Math.round(ad.speed * 3.6) || 0; // Convert m/s to km/h
+                    const speedAlert = speed > 0 ? `<span class="text-red-400 font-bold ml-1">${speed} km/h (Moving)</span>` : `<span class="text-green-400">Stationary</span>`;
+
+                    const row = document.createElement('tr');
+                    row.className = 'border-b border-slate-800/50 hover:bg-emerald-900/10 transition-colors';
+                    row.innerHTML = `
+                        <td class="px-3 py-2"><span class="text-white font-bold">${ad.name}</span><br><span class="text-[9px] text-slate-500">${ad.email}</span></td>
+                        <td class="px-3 py-2 text-blue-400">${dateStr}</td>
+                        <td class="px-3 py-2">${speedAlert}</td>
+                        <td class="px-3 py-2 text-right">
+                            <a href="https://www.google.com/maps?q=${ad.lat},${ad.lon}" target="_blank" class="bg-emerald-950/80 text-emerald-400 border border-emerald-800 hover:bg-emerald-600 hover:text-white px-3 py-1 rounded shadow text-[10px] font-bold transition-all uppercase flex justify-center items-center gap-1.5 w-max ml-auto">
+                                <i class="fa-solid fa-satellite-dish animate-pulse"></i> Live Map
+                            </a>
+                        </td>
+                    `;
+                    fleetTable.appendChild(row);
+                });
+                
+                if(!hasAdmins) {
+                    fleetTable.innerHTML = `<tr><td colspan="4" class="px-3 py-4 text-center text-slate-600"><i class="fa-solid fa-bed text-xl mb-1"></i><br>All admins are currently offline.</td></tr>`;
+                }
+            });
+        }
+
+        // 2. SECURITY LOGS
+        function loadSecurityLogs() {
+            const secTableBody = document.getElementById('securityLogTableBody');
+            database.ref('security_logs').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
+                secTableBody.innerHTML = '';
+                const logs =[]; snapshot.forEach(child => logs.push(child.val()));
+
+                logs.reverse().forEach(log => {
+                    const dateStr = new Date(log.timestamp).toLocaleString();
+                    const isSuccess = log.status === 'SUCCESS';
+                    const isBlocked = log.status === 'BLOCKED_ATTEMPT';
+                    const statusClass = isSuccess ? 'text-green-400 bg-green-900/30 border-green-800' : (isBlocked ? 'text-red-500 bg-red-900/80 font-black blink border-red-700' : 'text-orange-400 bg-orange-900/30 border-orange-800');
+                    const statusIcon = isSuccess ? '<i class="fa-solid fa-check-circle"></i>' : (isBlocked ? '<i class="fa-solid fa-ban"></i>' : '<i class="fa-solid fa-triangle-exclamation"></i>');
+                    
+                    const ipDisplay = log.ip || "Hidden";
+                    const locString = (log.city || "") + (log.region ? `, ${log.region}` : "");
+                    const isExact = log.locType === "EXACT_GPS";
+                    const locIcon = isExact ? '<i class="fa-solid fa-crosshairs text-green-400 animate-pulse" title="100% Exact GPS"></i>' : '<i class="fa-solid fa-globe text-slate-600" title="Approximate IP Network"></i>';
+                    const devString = `${log.os} (${log.model})`;
+                    
+                    const row = document.createElement('tr');
+                    row.className = 'sec-table-row border-b border-slate-800/50 hover:bg-white/5 transition-colors';
+                    row.innerHTML = `
+                        <td class="px-4 py-3 align-top">
+                            <span class="text-slate-300 font-bold block">${dateStr.split(',')[0]}</span>
+                            <span class="text-slate-500 block mb-1">${dateStr.split(',')[1]}</span>
+                            <span class="text-white font-bold text-[10px] block">${log.name || 'Unknown'}</span>
+                            <span class="mt-1 px-1.5 py-0.5 rounded border text-[8px] font-bold inline-flex items-center gap-1 w-max ${statusClass}">${statusIcon} ${log.status}</span>
+                        </td>
+                        <td class="px-4 py-3 align-top">
+                            <div class="mb-1 flex flex-wrap gap-1 items-center max-w-[200px] md:max-w-xs">
+                                <span class="font-bold text-red-400 font-mono tracking-wider break-all">${ipDisplay}</span>
+                                ${(log.lat && log.lat != "0") ? `<a href="https://www.google.com/maps?q=${log.lat},${log.lon}" target="_blank" class="${isExact ? 'text-green-400 hover:text-green-300 font-bold' : 'text-blue-400 hover:text-blue-300'} ml-1 inline-block">${locIcon} Map</a>` : ""}
+                            </div>
+                            <span class="text-[9px] text-slate-400 block mb-1.5 leading-snug whitespace-normal max-w-[200px] md:max-w-xs">${locIcon} ${locString} | ${log.isp || 'Unknown'}</span>
+                            <span class="text-yellow-500 text-[9px] bg-black/60 px-1.5 py-0.5 rounded border border-slate-700 shadow-inner block w-max"><i class="fa-solid fa-mobile-screen text-slate-500"></i> ${devString}</span>
+                        </td>
+                        <td class="px-4 py-3 align-middle text-right">
+                            <button onclick="blockIP('${ipDisplay}')" class="bg-red-950/80 text-red-500 border border-red-800 hover:bg-red-600 hover:text-white px-3 py-1.5 rounded shadow text-[9px] font-black transition-all uppercase ml-auto flex items-center gap-1.5"><i class="fa-solid fa-skull"></i> Block</button>
+                        </td>
+                    `;
+                    secTableBody.appendChild(row);
+                });
+            });
+        }
+
+        // 3. ADMIN RADAR
+        function loadAdminRadar() {
+            const radarStream = document.getElementById('adminActivityStream');
+            database.ref('admin_activity_logs').orderByChild('timestamp').limitToLast(50).on('value', (snapshot) => {
+                radarStream.innerHTML = '';
+                const activities =[]; snapshot.forEach(child => activities.push(child.val()));
+                if(activities.length === 0) { radarStream.innerHTML = `<div class="text-center text-slate-600 py-10 mt-10"><i class="fa-solid fa-satellite fa-spin text-3xl mb-3 text-slate-700"></i><br>Awaiting Admin Activity...</div>`; return; }
+
+                activities.reverse().forEach(act => {
+                    const timeObj = new Date(act.timestamp);
+                    let actionColor = "text-yellow-400"; let bgGlow = "bg-blue-900/10"; let borderGlow = "border-blue-500/50"; let icon = '<i class="fa-solid fa-bolt"></i>';
+                    if (act.action === "System Login") { actionColor = "text-green-400"; bgGlow = "bg-green-900/10"; borderGlow = "border-green-500/50"; icon = '<i class="fa-solid fa-right-to-bracket"></i>'; }
+
+                    const el = document.createElement('div');
+                    el.className = `border-l-2 ${borderGlow} pl-3 py-2 mb-3 ${bgGlow} rounded-r-lg shadow-sm hover:bg-white/5 transition-colors relative overflow-hidden group`;
+                    el.innerHTML = `
+                        <div class="flex justify-between items-start mb-1">
+                            <p class="text-blue-400 font-bold flex items-center gap-1.5"><i class="fa-solid fa-user-secret text-slate-500"></i> ${act.name} <span class="text-slate-500 text-[9px] font-normal truncate max-w-[100px] inline-block align-bottom">(${act.email})</span></p>
+                            <span class="text-slate-500 text-[9px] whitespace-nowrap"><i class="fa-regular fa-clock"></i> ${timeObj.toLocaleTimeString()}</span>
+                        </div>
+                        <p class="text-slate-300 text-[10px] md:text-xs leading-snug"><span class="${actionColor} font-bold mr-1">${icon}[${act.action}]</span> <span class="text-slate-200">Module: <span class="font-bold text-white">${act.module}</span></span></p>
+                    `;
+                    radarStream.appendChild(el);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
