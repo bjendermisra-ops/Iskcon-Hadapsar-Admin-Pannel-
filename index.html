@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISKCON Hadapsar - Master Admin Portal</title>
+    <!-- Tailwind CSS for Powerful UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Plus Jakarta Sans for Enterprise Look -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs (Compat version for easy HTML integration) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        iskcon: {
+                            50: '#fff7ed',
+                            100: '#ffedd5',
+                            500: '#f97316',
+                            600: '#ea580c',
+                            900: '#7c2d12',
+                        },
+                        darkbg: '#0a0f1c',
+                        darkcard: '#111827'
+                    },
+                    animation: {
+                        'fade-in-up': 'fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'blob': 'blob 7s infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translateY(30px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Smooth transitions for theme switching */
+        body {
+            transition: background-color 0.4s ease, color 0.4s ease;
+            overflow-x: hidden;
+        }
+        
+        /* Premium Glassmorphism Effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+        .dark .glass {
+            background: rgba(17, 24, 39, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* 3D Card Hover Effect with Shine */
+        .module-card {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+        .module-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+            transform: skewX(-25deg);
+            animation: none;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .dark .module-card::after {
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 100%);
+        }
+        .module-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.1);
+        }
+        .dark .module-card:hover {
+            box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.5);
+        }
+        .module-card:hover::after {
+            animation: shine 0.8s ease-out forwards;
+        }
+        @keyframes shine {
+            100% { left: 200%; }
+        }
+
+        /* Icon bounce on hover */
+        .module-card:hover .card-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+        .card-icon {
+            transition: transform 0.3s ease;
+        }
+
+        /* Staggered Delays for entrance animation */
+        .delay-100 { animation-delay: 100ms; }
+        .delay-200 { animation-delay: 200ms; }
+        .delay-300 { animation-delay: 300ms; }
+        .delay-400 { animation-delay: 400ms; }
+        .delay-500 { animation-delay: 500ms; }
+        .delay-600 { animation-delay: 600ms; }
+        .delay-700 { animation-delay: 700ms; }
+        
+        /* Animated Background Blobs */
+        .bg-blobs {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .blob-1 {
+            position: absolute;
+            top: -10%;
+            left: -10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(249, 115, 22, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(40px);
+        }
+        .dark .blob-1 { background: radial-gradient(circle, rgba(249, 115, 22, 0.1) 0%, transparent 70%); }
+        
+        .blob-2 {
+            position: absolute;
+            bottom: -20%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(40px);
+            animation-delay: 2s;
+        }
+        .dark .blob-2 { background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05); 
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05); 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(249, 115, 22, 0.5); 
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(249, 115, 22, 0.8); 
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-darkbg dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col relative">
+
+    <!-- Animated Background Effect -->
+    <div class="bg-blobs">
+        <div class="blob-1 animate-blob"></div>
+        <div class="blob-2 animate-blob"></div>
+    </div>
+
+    <!-- ======================= LOGIN SCREEN ======================= -->
+    <div id="login-section" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-50/90 dark:bg-darkbg/90 backdrop-blur-xl transition-opacity duration-500">
+        <div class="glass w-full max-w-md rounded-3xl p-8 shadow-2xl border border-white dark:border-slate-800 relative overflow-hidden transform transition-all animate-fade-in-up">
+            <!-- Decorative gradient line -->
+            <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-iskcon-500 via-orange-400 to-yellow-400"></div>
+            
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 mx-auto rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-xl border-2 border-iskcon-100 dark:border-slate-700 mb-4 animate-float">
+                    <i class="fa-solid fa-om text-4xl text-iskcon-500"></i>
+                </div>
+                <h2 class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">ISKCON Hadapsar</h2>
+                <p class="text-sm font-semibold text-iskcon-500 mt-1 uppercase tracking-widest">Master Authority Login</p>
+            </div>
+
+            <form id="loginForm" class="space-y-5">
+                <div id="loginError" class="hidden bg-red-100 border-l-4 border-red-500 text-red-700 p-3 rounded text-sm font-medium"></div>
+                
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-envelope text-slate-400"></i>
+                    </div>
+                    <input type="email" id="email" required class="block w-full pl-10 pr-3 py-3 border border-slate-300 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-iskcon-500 focus:border-iskcon-500 sm:text-sm transition-all" placeholder="Authority Email Address">
+                </div>
+
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-lock text-slate-400"></i>
+                    </div>
+                    <input type="password" id="password" required class="block w-full pl-10 pr-3 py-3 border border-slate-300 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-iskcon-500 focus:border-iskcon-500 sm:text-sm transition-all" placeholder="Secure Password">
+                </div>
+
+                <button type="submit" id="loginBtn" class="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-gradient-to-r from-iskcon-600 to-iskcon-500 hover:from-iskcon-500 hover:to-orange-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-iskcon-500 transition-all transform hover:-translate-y-1">
+                    <i class="fa-solid fa-shield-check mr-2"></i> Secure Authenticate
+                </button>
+            </form>
+            
+            <p class="mt-6 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-user-shield"></i> IP Logged & Monitored
+            </p>
+        </div>
+    </div>
+    <!-- ======================= END LOGIN SCREEN ======================= -->
+
+
+    <!-- ======================= MAIN DASHBOARD (Hidden until Logged In) ======================= -->
+    <div id="main-dashboard" style="display: none;" class="flex-1 flex flex-col w-full h-full">
+        
+        <!-- Glassmorphism Header -->
+        <header class="glass sticky top-0 z-50 px-6 py-4 flex items-center justify-between shadow-sm">
+            
+            <!-- Logo & Title (Linked to index.html) -->
+            <a href="index.html" class="flex items-center gap-4 group cursor-pointer outline-none rounded-2xl focus:ring-2 focus:ring-iskcon-500">
+                <!-- App Logo Image -->
+                <div class="relative w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300 overflow-hidden border border-slate-100 dark:border-slate-700">
+                    <img src="logo.png" alt="ISKCON Logo" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <i class="fa-solid fa-om text-2xl text-iskcon-500 hidden absolute"></i>
+                </div>
+                
+                <div>
+                    <h1 class="text-xl font-extrabold leading-tight text-slate-900 dark:text-white tracking-tight group-hover:text-iskcon-500 transition-colors">ISKCON Hadapsar</h1>
+                    <p class="text-sm font-semibold text-slate-500 dark:text-slate-400">Master Admin Portal</p>
+                </div>
+            </a>
+
+            <!-- Right Side Controls (Theme & Profile) -->
+            <div class="flex items-center gap-4">
+                <!-- Theme Toggle Button -->
+                <button id="themeToggle" class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-iskcon-500 hover:shadow-md transition-all duration-300 group">
+                    <i class="fa-solid fa-moon dark:hidden text-lg group-hover:-rotate-12 transition-transform"></i>
+                    <i class="fa-solid fa-sun hidden dark:block text-yellow-400 text-lg group-hover:rotate-45 transition-transform duration-500"></i>
+                </button>
+
+                <!-- Admin Profile & Logout -->
+                <div class="hidden sm:flex items-center gap-4 pl-4 border-l border-slate-200 dark:border-slate-700">
+                    <div class="text-right">
+                        <p id="adminUserEmail" class="text-sm font-bold text-slate-900 dark:text-white">Admin Prabhu</p>
+                        <p class="text-xs font-semibold text-iskcon-500 flex items-center justify-end gap-1">
+                            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Super Admin
+                        </p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full shadow-sm border-2 border-white dark:border-slate-800 overflow-hidden group hover:border-iskcon-500 transition-colors">
+                        <img src="https://ui-avatars.com/api/?name=Admin+Prabhu&background=f97316&color=fff&bold=true" alt="Admin" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                    </div>
+                    <!-- Logout Button -->
+                    <button id="logoutBtn" title="Secure Logout" class="w-9 h-9 flex items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-600 hover:text-white dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white transition-colors duration-300">
+                        <i class="fa-solid fa-power-off"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 w-full max-w-7xl mx-auto px-6 py-8 flex flex-col justify-start">
+            
+            <!-- MASTER SECURITY WARNING MESSAGE (Khatarnak but Pyara) -->
+            <div class="mb-10 w-full opacity-0 animate-fade-in-up">
+                <div class="relative overflow-hidden glass rounded-2xl border-l-8 border-l-red-500 p-6 shadow-xl dark:bg-red-950/20">
+                    <div class="absolute -right-10 -top-10 text-red-500/10 dark:text-red-500/5 z-0">
+                        <i class="fa-solid fa-shield-halved text-9xl"></i>
+                    </div>
+                    <div class="relative z-10 flex items-start gap-4">
+                        <div class="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 shadow-sm animate-pulse-slow">
+                            <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-1">
+                                ⚠️ Hare Krishna! Highly Secured Master Portal
+                            </h3>
+                            <p class="text-sm md:text-base font-semibold text-slate-700 dark:text-slate-300 leading-relaxed">
+                                यह ISKCON Hadapsar का <span class="text-red-600 dark:text-red-400 font-bold">Strictly Confidential & Official Master Admin Panel</span> है। यह पोर्टल केवल अधिकृत (Authorized) मैनेजमेंट अथॉरिटी के उपयोग के लिए बनाया गया है।
+                            </p>
+                            <p class="text-sm font-medium text-slate-600 dark:text-slate-400 mt-2 bg-slate-100 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                                <i class="fa-solid fa-radar text-iskcon-500 mr-1"></i> <strong class="text-slate-800 dark:text-slate-200">Security Notice:</strong> हमारा एडवांस फायरवॉल और ट्रैकिंग सिस्टम हर एक IP Address और Activity को लाइव मॉनिटर कर रहा है। यदि कोई भी अनधिकृत व्यक्ति (Unauthorized Person) इस सिस्टम से छेड़-छाड़ करने, डाटा बदलने या एक्सेस करने की कोशिश करता है, तो हमारा सिक्योरिटी प्रोटोकॉल उस यूज़र को तुरंत <strong class="text-red-600 dark:text-red-400">Permanently Block</strong> करके उसकी लोकेशन ट्रेस कर लेगा। 
+                                <br><br>
+                                <span class="text-iskcon-600 dark:text-iskcon-400 font-bold italic">"चूँकि यह भगवान श्री कृष्ण और मंदिर की सेवा का अति-संवेदनशील कार्य है, कृपया मर्यादा और सुरक्षा बनाये रखें। धन्यवाद! 🙏"</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Welcome Header with Float Animation -->
+            <div class="mb-12 text-center opacity-0 animate-fade-in-up animate-float delay-100">
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-iskcon-50 dark:bg-iskcon-900/30 text-iskcon-600 dark:text-iskcon-400 font-bold text-sm mb-4 border border-iskcon-100 dark:border-iskcon-800 shadow-sm">
+                    <i class="fa-solid fa-star text-xs text-yellow-500"></i> <span>Central Control Hub Active</span>
+                </div>
+                <h2 class="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white mb-4 tracking-tight">
+                    Welcome to Master Command 🙏
+                </h2>
+                <p class="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto font-medium">
+                    Select a module below to access and manage its specific functions. All operations are securely logged.
+                </p>
+            </div>
+
+            <!-- Modules Grid (Real .html links - 7 Items total) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+
+                <!-- MODULE 1: Daily Darshan (Existing) -->
+                <a href="darshan.html" class="module-card group opacity-0 animate-fade-in-up delay-100 block bg-white/80 dark:bg-darkcard/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-800 outline-none focus:ring-4 focus:ring-blue-500/30 overflow-hidden">
+                    <i class="fa-solid fa-camera-retro absolute -bottom-8 -right-8 text-9xl text-slate-100 dark:text-slate-800/40 group-hover:text-blue-50 dark:group-hover:text-blue-900/20 transition-colors duration-500 z-0"></i>
+                    
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="card-icon w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/40 dark:to-blue-800/20 text-blue-600 dark:text-blue-400 flex items-center justify-center text-3xl mb-6 shadow-inner border border-white dark:border-slate-700">
+                            <i class="fa-solid fa-image"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Daily Darshan</h3>
+                        <p class="text-sm font-medium text-slate-500 dark:text-slate-400 flex-1 mb-8 leading-relaxed">
+                            Upload and manage daily deity pictures. Update Shringar and Mangala Aarti photos in Divine Gallery.
+                        </p>
+                        <div class="flex items-center text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 w-max px-4 py-2 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-all duration-300 shadow-sm">
+                            <span>Access Module</span>
+                            <i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- MODULE 2: Live Stream (Existing) -->
+                <a href="livestream.html" class="module-card group opacity-0 animate-fade-in-up delay-200 block bg-white/80 dark:bg-darkcard/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-800 outline-none focus:ring-4 focus:ring-red-500/30 overflow-hidden">
+                    <i class="fa-solid fa-video absolute -bottom-8 -right-8 text-9xl text-slate-100 dark:text-slate-800/40 group-hover:text-red-50 dark:group-hover:text-red-900/20 transition-colors duration-500 z-0"></i>
+                    
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="card-icon w-16 h-16 rounded-2xl bg-gradient-to-br from-red-100 to-red-50 dark:from-red-900/40 dark:to-red-800/20 text-red-600 dark:text-red-400 flex items-center justify-center text-3xl mb-6 shadow-inner border border-white dark:border-slate-700 relative">
+                            <i class="fa-solid fa-broadcast-tower"></i>
+                            <span class="absolute top-0 right-0 w-4 h-4 bg-red-500 border-2 border-white dark:border-darkcard rounded-full animate-pulse"></span>
+                        </div>
+                        <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">Live Stream</h3>
+                        <p class="text-sm font-medium text-slate-500 dark:text-slate-400 flex-1 mb-8 leading-relaxed">
+                            Update YouTube/Facebook links for live aarti and classes directly to the app.
+                        </p>
+                        <div class="flex items-center text-sm font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 w-max px-4 py-2 rounded-xl group-hover:bg-red-600 group-hover:text-white transition-all duration-300 shadow-sm">
+                            <span>Access Module</span>
+                            <i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- MODULE 3: App Notifications (Existing) -->
+                <a href="notifications.html" class="module-card group opacity-0 animate-fade-in-up delay-300 block bg-white/80 dark:bg-darkcard/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-800 outline-none focus:ring-4 focus:ring-purple-500/30 overflow-hidden">
+                    <i class="fa-solid fa-bell absolute -bottom-8 -right-8 text-9xl text-slate-100 dark:text-slate-800/40 group-hover:text-purple-50 dark:group-hover:text-purple-900/20 transition-colors duration-500 z-0"></i>
+                    
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="card-icon w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-100 to-purple-50 dark:from-purple-900/40 dark:to-purple-800/20 text-purple-600 dark:text-purple-400 flex items-center justify-center text-3xl mb-6 shadow-inner border border-white dark:border-slate-700">
+                            <i class="fa-regular fa-bell"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">Notifications</h3>
+                        <p class="text-sm font-medium text-slate-500 dark:text-slate-400 flex-1 mb-8 leading-relaxed">
+                            Send push notifications and announcements instantly to all devotees.
+                        </p>
+                        <div class="flex items-center text-sm font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 w-max px-4 py-2 rounded-xl group-hover:bg-purple-600 group-hover:text-white transition-all duration-300 shadow-sm">
+                            <span>Access Module</span>
+                            <i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- MODULE 4: Upcoming Events (Existing) -->
+                <a href="events.html" class="module-card group opacity-0 animate-fade-in-up delay-400 block bg-white/80 dark:bg-darkcard/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-800 outline-none focus:ring-4 focus:ring-emerald-500/30 overflow-hidden">
+                    <i class="fa-solid fa-calendar-alt absolute -bottom-8 -right-8 text-9xl text-slate-100 dark:text-slate-800/40 group-hover:text-emerald-50 dark:group-hover:text-emerald-900/20 transition-colors duration-500 z-0"></i>
+                    
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="card-icon w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-50 dark:from-emerald-900/40 dark:to-emerald-800/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-3xl mb-6 shadow-inner border border-white dark:border-slate-700">
+                            <i class="fa-regular fa-calendar-check"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Festivals</h3>
+                        <p class="text-sm font-medium text-slate-500 dark:text-slate-400 flex-1 mb-8 leading-relaxed">
+                            Manage upcoming ISKCON festivals, program schedules and calendar.
+                        </p>
+                        <div class="flex items-center text-sm font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 w-max px-4 py-2 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300 shadow-sm">
+                            <span>Access Module</span>
+                            <i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- NEW MODULE 5: Master Quiz -->
+                <a href="MasterQuize.html" class="module-card group opacity-0 animate-fade-in-up delay-500 block bg-white/80 dark:bg-darkcard/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-800 outline-none focus:ring-4 focus:ring-rose-500/30 overflow-hidden">
+                    <i class="fa-solid fa-crown absolute -bottom-8 -right-8 text-9xl text-slate-100 dark:text-slate-800/40 group-hover:text-rose-50 dark:group-hover:text-rose-900/20 transition-colors duration-500 z-0"></i>
+                    
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="card-icon w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-100 to-rose-50 dark:from-rose-900/40 dark:to-rose-800/20 text-rose-600 dark:text-rose-400 flex items-center justify-center text-3xl mb-6 shadow-inner border border-white dark:border-slate-700">
+                            <i class="fa-solid fa-crown"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">Master Quiz</h3>
+                        <p class="text-sm font-medium text-slate-500 dark:text-slate-400 flex-1 mb-8 leading-relaxed">
+                            Manage Bhagavad Gita, Ramayan, and Srila Prabhupada quizzes. Update questions and scores.
+                        </p>
+                        <div class="flex items-center text-sm font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 w-max px-4 py-2 rounded-xl group-hover:bg-rose-600 group-hover:text-white transition-all duration-300 shadow-sm">
+                            <span>Access Module</span>
+                            <i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- NEW MODULE 6: Lectures & Kirtan -->
+                <a href="LecturesKirtan.html" class="module-card group opacity-0 animate-fade-in-up delay-600 block bg-white/80 dark:bg-darkcard/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-800 outline-none focus:ring-4 focus:ring-amber-500/30 overflow-hidden">
+                    <i class="fa-solid fa-compact-disc absolute -bottom-8 -right-8 text-9xl text-slate-100 dark:text-slate-800/40 group-hover:text-amber-50 dark:group-hover:text-amber-900/20 transition-colors duration-500 z-0"></i>
+                    
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="card-icon w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-900/40 dark:to-amber-800/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-3xl mb-6 shadow-inner border border-white dark:border-slate-700">
+                            <i class="fa-solid fa-headphones"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Lectures & Kirtan</h3>
+                        <p class="text-sm font-medium text-slate-500 dark:text-slate-400 flex-1 mb-8 leading-relaxed">
+                            Upload and organize class recordings, kirtan videos, and spiritual discourses.
+                        </p>
+                        <div class="flex items-center text-sm font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 w-max px-4 py-2 rounded-xl group-hover:bg-amber-600 group-hover:text-white transition-all duration-300 shadow-sm">
+                            <span>Access Module</span>
+                            <i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- NEW MODULE 7: Master Slider -->
+                <a href="MasterSlider.html" class="module-card group opacity-0 animate-fade-in-up delay-700 block bg-white/80 dark:bg-darkcard/80 backdrop-blur-xl rounded-3xl p-6 border border-slate-200 dark:border-slate-800 outline-none focus:ring-4 focus:ring-cyan-500/30 overflow-hidden">
+                    <i class="fa-solid fa-images absolute -bottom-8 -right-8 text-9xl text-slate-100 dark:text-slate-800/40 group-hover:text-cyan-50 dark:group-hover:text-cyan-900/20 transition-colors duration-500 z-0"></i>
+                    
+                    <div class="relative z-10 flex flex-col h-full">
+                        <div class="card-icon w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-100 to-cyan-50 dark:from-cyan-900/40 dark:to-cyan-800/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center text-3xl mb-6 shadow-inner border border-white dark:border-slate-700">
+                            <i class="fa-solid fa-sliders"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-2 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">Master Slider</h3>
+                        <p class="text-sm font-medium text-slate-500 dark:text-slate-400 flex-1 mb-8 leading-relaxed">
+                            Manage home screen dynamic banners, important notices, donations, and birthday announcements.
+                        </p>
+                        <div class="flex items-center text-sm font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-900/20 w-max px-4 py-2 rounded-xl group-hover:bg-cyan-600 group-hover:text-white transition-all duration-300 shadow-sm">
+                            <span>Access Module</span>
+                            <i class="fa-solid fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
+                        </div>
+                    </div>
+                </a>
+
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="mt-auto py-8 border-t border-slate-200/50 dark:border-slate-800/50 backdrop-blur-sm text-center opacity-0 animate-fade-in-up delay-700">
+            <p class="text-sm font-bold text-slate-600 dark:text-slate-400">
+                &copy; 2024 ISKCON Hadapsar. <span class="font-medium">All rights reserved.</span>
+            </p>
+            <p class="text-xs font-semibold text-slate-400 dark:text-slate-500 mt-2 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-shield-halved text-iskcon-500"></i> Master Portal v2.0 Enterprise Secure
+            </p>
+        </footer>
+    </div>
+    <!-- ======================= END MAIN DASHBOARD ======================= -->
+
+    <!-- Scripts for Interactions & Firebase Logic -->
+    <script>
+        // ================= THEME TOGGLE LOGIC =================
+        const themeToggleBtn = document.getElementById('themeToggle');
+        const htmlElement = document.documentElement;
+        
+        // Auto-check system preference or local storage
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            htmlElement.classList.add('dark');
+        } else {
+            htmlElement.classList.remove('dark');
+        }
+
+        // Toggle button click event with smooth transition
+        themeToggleBtn.addEventListener('click', () => {
+            htmlElement.classList.toggle('dark');
+            if (htmlElement.classList.contains('dark')) {
+                localStorage.setItem('theme', 'dark');
+            } else {
+                localStorage.setItem('theme', 'light');
+            }
+        });
+
+        // ================= FIREBASE AUTHENTICATION LOGIC =================
+        // REPLACE THE EMPTY STRINGS BELOW WITH YOUR ACTUAL FIREBASE CONFIG
+        const firebaseConfig = {
+            apiKey: "",
+            authDomain: "",
+            projectId: "",
+            storageBucket: "",
+            messagingSenderId: "",
+            appId: ""
+        };
+
+        // Initialize Firebase ONLY if config is provided (To prevent console errors if empty)
+        let auth;
+        if(firebaseConfig.apiKey !== "") {
+            firebase.initializeApp(firebaseConfig);
+            auth = firebase.auth();
+        }
+
+        const loginSection = document.getElementById('login-section');
+        const mainDashboard = document.getElementById('main-dashboard');
+        const loginForm = document.getElementById('loginForm');
+        const loginError = document.getElementById('loginError');
+        const adminUserEmail = document.getElementById('adminUserEmail');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        // Function to handle UI State based on auth
+        function updateUIState(user) {
+            if (user) {
+                // User is signed in.
+                loginSection.classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => {
+                    loginSection.style.display = 'none';
+                    mainDashboard.style.display = 'flex';
+                    // Extract name from email or show email
+                    const name = user.email.split('@')[0];
+                    adminUserEmail.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+                }, 500);
+            } else {
+                // No user is signed in.
+                mainDashboard.style.display = 'none';
+                loginSection.style.display = 'flex';
+                // Small delay to allow display flex to apply before transitioning opacity
+                setTimeout(() => {
+                    loginSection.classList.remove('opacity-0', 'pointer-events-none');
+                }, 50);
+            }
+        }
+
+        // Listen for authentication state changes
+        if(auth) {
+            auth.onAuthStateChanged((user) => {
+                updateUIState(user);
+            });
+        } else {
+            // FALLBACK FOR DEMO: If Firebase config is empty, bypass login for UI testing
+            // REMOVE THIS ELSE BLOCK WHEN YOU ADD REAL FIREBASE CONFIG!
+            console.warn("⚠️ Firebase Config is empty. Bypassing Login for UI Demonstration.");
+            loginSection.style.display = 'none';
+            mainDashboard.style.display = 'flex';
+        }
+
+        // Handle Login Submission
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('loginBtn');
+            const originalBtnText = btn.innerHTML;
+
+            if(!auth) {
+                loginError.textContent = "System Error: Firebase Config Missing.";
+                loginError.classList.remove('hidden');
+                return;
+            }
+
+            // Show loading state
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Verifying...';
+            btn.disabled = true;
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    // Success (onAuthStateChanged will handle UI swap)
+                    loginError.classList.add('hidden');
+                })
+                .catch((error) => {
+                    // Reset Button
+                    btn.innerHTML = originalBtnText;
+                    btn.disabled = false;
+                    
+                    // Show Error
+                    const errorMessage = error.message;
+                    loginError.textContent = "Access Denied: Invalid Credentials or Unauthorized.";
+                    loginError.classList.remove('hidden');
+                    
+                    // Shake animation for error
+                    loginForm.classList.add('animate-[shake_0.5s_ease-in-out]');
+                    setTimeout(() => loginForm.classList.remove('animate-[shake_0.5s_ease-in-out]'), 500);
+                });
+        });
+
+        // Handle Logout
+        logoutBtn.addEventListener('click', () => {
+            if(auth) {
+                auth.signOut().then(() => {
+                    // Sign-out successful (onAuthStateChanged will handle UI swap)
+                }).catch((error) => {
+                    console.error("Logout Error:", error);
+                });
+            }
+        });
+        
+        // Add Shake Animation to Tailwind Config dynamically via CSS for Login Error
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+                20%, 40%, 60%, 80% { transform: translateX(5px); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
