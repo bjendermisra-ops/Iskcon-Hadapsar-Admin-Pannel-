@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISKCON Hadapsar - Master Admin Portal</title>
+    <!-- Tailwind CSS for Powerful UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Plus Jakarta Sans for Enterprise Look -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans:['"Plus Jakarta Sans"', 'sans-serif'] },
+                    colors: { iskcon: { 50: '#fff7ed', 100: '#ffedd5', 500: '#f97316', 600: '#ea580c', 900: '#7c2d12' }, darkbg: '#0a0f1c', darkcard: '#111827' },
+                    animation: { 'fade-in-up': 'fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards', 'blob': 'blob 7s infinite', 'float': 'float 6s ease-in-out infinite', 'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' },
+                    keyframes: {
+                        fadeInUp: { '0%': { opacity: '0', transform: 'translateY(20px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+                        blob: { '0%, 100%': { transform: 'translate(0px, 0px) scale(1)' }, '33%': { transform: 'translate(30px, -50px) scale(1.1)' }, '66%': { transform: 'translate(-20px, 20px) scale(0.9)' } },
+                        float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-10px)' } }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        html, body { min-height: 100vh; width: 100%; transition: background-color 0.4s ease, color 0.4s ease; overflow-x: hidden; }
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.4); }
+        .dark .glass { background: rgba(17, 24, 39, 0.7); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .module-card { transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative; cursor: pointer; }
+        .module-card::after { content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%); transform: skewX(-25deg); z-index: 1; pointer-events: none; }
+        .dark .module-card::after { background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 100%); }
+        .module-card:hover { transform: translateY(-6px) scale(1.02); box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.1); }
+        .dark .module-card:hover { box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.5); }
+        .module-card:hover::after { animation: shine 0.8s ease-out forwards; }
+        @keyframes shine { 100% { left: 200%; } }
+        .module-card:hover .card-icon { transform: scale(1.1) rotate(5deg); }
+        .card-icon { transition: transform 0.3s ease; }
+        .delay-100 { animation-delay: 50ms; } .delay-200 { animation-delay: 100ms; } .delay-300 { animation-delay: 150ms; } .delay-400 { animation-delay: 200ms; } .delay-500 { animation-delay: 250ms; } .delay-600 { animation-delay: 300ms; } .delay-700 { animation-delay: 350ms; }
+        .bg-blobs { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; overflow: hidden; pointer-events: none; }
+        .blob-1 { position: absolute; top: -10%; left: -10%; width: 500px; height: 500px; background: radial-gradient(circle, rgba(249, 115, 22, 0.15) 0%, transparent 70%); border-radius: 50%; filter: blur(40px); }
+        .dark .blob-1 { background: radial-gradient(circle, rgba(249, 115, 22, 0.1) 0%, transparent 70%); }
+        .blob-2 { position: absolute; bottom: -20%; right: -10%; width: 600px; height: 600px; background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%); border-radius: 50%; filter: blur(40px); animation-delay: 2s; }
+        .dark .blob-2 { background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%); }
+        ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); } .dark ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); } ::-webkit-scrollbar-thumb { background: rgba(249, 115, 22, 0.5); border-radius: 10px; } ::-webkit-scrollbar-thumb:hover { background: rgba(249, 115, 22, 0.8); }
+        
+        #mobileMenuOverlay { transition: opacity 0.3s ease; }
+        #mobileMenuDrawer { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-darkbg dark:text-slate-100 font-sans antialiased flex flex-col relative">
+
+    <div class="bg-blobs">
+        <div class="blob-1 animate-blob"></div>
+        <div class="blob-2 animate-blob"></div>
+    </div>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-section" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-50/95 dark:bg-darkbg/95 backdrop-blur-xl transition-opacity duration-500 p-4">
+        <div class="glass w-full max-w-md rounded-3xl p-6 md:p-8 shadow-2xl border border-white dark:border-slate-800 relative overflow-hidden transform transition-all animate-fade-in-up">
+            <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-iskcon-500 via-orange-400 to-yellow-400"></div>
+            
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-iskcon-100 to-white dark:from-slate-800 dark:to-slate-900 flex items-center justify-center shadow-lg border border-iskcon-200 dark:border-slate-700 mb-3 animate-float">
+                    <span class="text-2xl font-black text-iskcon-500">IH</span>
+                </div>
+                <h2 class="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">ISKCON Hadapsar</h2>
+                <p data-i18n="secureLoginTitle" class="text-xs font-bold text-iskcon-500 mt-1 uppercase tracking-widest">Master Authority Login</p>
+            </div>
+
+            <form id="loginForm" class="space-y-4">
+                <div id="loginError" class="hidden bg-red-100 border-l-4 border-red-600 text-red-800 p-3 rounded-xl text-sm font-bold shadow-sm flex items-start gap-2 break-words">
+                    <i class="fa-solid fa-circle-exclamation mt-0.5"></i>
+                    <span id="loginErrorText">Error message here</span>
+                </div>
+                
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fa-solid fa-user text-slate-400"></i></div>
+                    <input type="text" id="adminName" required class="block w-full pl-10 pr-3 py-3 border border-slate-300 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-iskcon-500 sm:text-sm transition-all" placeholder="Your Full Name">
+                </div>
+
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fa-solid fa-language text-slate-400"></i></div>
+                    <select id="adminLang" required class="block w-full pl-10 pr-3 py-3 border border-slate-300 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-iskcon-500 sm:text-sm transition-all appearance-none cursor-pointer">
+                        <option value="" disabled selected>Select Interface Language</option>
+                        <option value="en">English</option>
+                        <option value="hi">हिंदी (Hindi)</option>
+                        <option value="mr">मराठी (Marathi)</option>
+                    </select>
+                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400"><i class="fa-solid fa-chevron-down text-xs"></i></div>
+                </div>
+
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fa-solid fa-envelope text-slate-400"></i></div>
+                    <input type="email" id="email" required class="block w-full pl-10 pr-3 py-3 border border-slate-300 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-iskcon-500 sm:text-sm transition-all" placeholder="Authority Email Address">
+                </div>
+
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fa-solid fa-lock text-slate-400"></i></div>
+                    <input type="password" id="password" required class="block w-full pl-10 pr-3 py-3 border border-slate-300 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-iskcon-500 sm:text-sm transition-all" placeholder="Secure Password">
+                </div>
+
+                <button type="submit" id="loginBtn" class="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-gradient-to-r from-iskcon-600 to-iskcon-500 hover:from-iskcon-500 hover:to-orange-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-iskcon-500 transition-all transform hover:-translate-y-1 mt-2">
+                    <i class="fa-solid fa-shield-check mr-2"></i> <span data-i18n="authBtn">Secure Authenticate</span>
+                </button>
+            </form>
+            
+            <p class="mt-5 text-center text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 p-2 rounded-lg">
+                <i class="fa-solid fa-location-crosshairs text-red-500 animate-pulse"></i> 
+                <span>SECURE SESSION: LOCATION ACCESS REQUIRED FOR VERIFICATION</span>
+            </p>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD -->
+    <div id="main-dashboard" style="display: none;" class="flex-1 flex flex-col w-full h-full min-h-screen transition-opacity duration-500">
+        
+        <!-- HEADER -->
+        <header class="glass sticky top-0 z-40 px-4 md:px-6 py-3 flex items-center justify-between shadow-sm border-b border-slate-200/50 dark:border-slate-800/50">
+            <a href="index.html" class="flex items-center gap-3 group cursor-pointer outline-none rounded-2xl focus:ring-2 focus:ring-iskcon-500">
+                <div class="relative w-9 h-9 md:w-10 md:h-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300 overflow-hidden border border-slate-100 dark:border-slate-700">
+                    <span class="text-base md:text-lg font-black text-iskcon-500 w-full h-full flex items-center justify-center bg-gradient-to-br from-iskcon-50 to-white dark:from-slate-700 dark:to-slate-800">IH</span>
+                </div>
+                <div>
+                    <h1 class="text-base md:text-xl font-extrabold leading-tight text-slate-900 dark:text-white tracking-tight group-hover:text-iskcon-500 transition-colors truncate max-w-[150px] sm:max-w-none">ISKCON Hadapsar</h1>
+                    <p data-i18n="portalTitle" class="text-[10px] md:text-xs font-semibold text-slate-500 dark:text-slate-400">Master Admin Portal</p>
+                </div>
+            </a>
+            
+            <div class="flex items-center gap-2 md:gap-4">
+                <div class="relative hidden sm:block">
+                    <select id="headerLangSelect" class="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-full focus:outline-none focus:ring-2 focus:ring-iskcon-500 block px-3 py-1.5 cursor-pointer appearance-none pr-7 transition-all hover:text-iskcon-500">
+                        <option value="en">ENG</option><option value="hi">हिंदी</option><option value="mr">मराठी</option>
+                    </select>
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none text-slate-400"><i class="fa-solid fa-language text-sm"></i></div>
+                </div>
+
+                <button id="themeToggle" class="w-8 h-8 md:w-9 md:h-9 rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-iskcon-500 hover:shadow-md transition-all duration-300">
+                    <i class="fa-solid fa-moon dark:hidden text-sm md:text-base"></i><i class="fa-solid fa-sun hidden dark:block text-yellow-400 text-sm md:text-base"></i>
+                </button>
+
+                <div class="hidden sm:flex items-center gap-3 pl-3 md:pl-4 border-l border-slate-200 dark:border-slate-700">
+                    <div class="text-right">
+                        <p id="adminUserDisplay" class="text-sm font-bold text-slate-900 dark:text-white">Admin</p>
+                        <p class="text-[10px] font-semibold text-iskcon-500 flex items-center justify-end gap-1"><span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> <span data-i18n="superAdmin">Super Admin</span></p>
+                    </div>
+                    <div class="w-9 h-9 rounded-full shadow-sm border-2 border-white dark:border-slate-800 overflow-hidden">
+                        <img id="adminAvatar" src="" alt="Admin" class="w-full h-full object-cover">
+                    </div>
+                    <button id="logoutBtn" title="Secure Logout" class="w-8 h-8 ml-1 flex items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-600 hover:text-white dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white transition-colors duration-300">
+                        <i class="fa-solid fa-power-off text-sm"></i>
+                    </button>
+                </div>
+
+                <button id="mobileMenuBtn" class="sm:hidden w-8 h-8 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:text-iskcon-500 focus:outline-none">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- MOBILE MENU DRAWER -->
+        <div id="mobileMenuOverlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] opacity-0 pointer-events-none sm:hidden">
+            <div id="mobileMenuDrawer" class="absolute top-0 right-0 w-64 h-full bg-white dark:bg-slate-900 shadow-2xl border-l border-slate-200 dark:border-slate-800 flex flex-col transform translate-x-full">
+                <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                    <h3 class="font-bold text-slate-800 dark:text-white">Menu</h3>
+                    <button id="closeMobileMenu" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-red-100 hover:text-red-600 transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+                
+                <div class="p-5 flex flex-col gap-6 flex-1 overflow-y-auto">
+                    <div class="flex items-center gap-3 p-3 rounded-xl bg-iskcon-50 dark:bg-iskcon-900/20 border border-iskcon-100 dark:border-iskcon-800/50">
+                        <div class="w-12 h-12 rounded-full shadow-sm border-2 border-white dark:border-slate-800 overflow-hidden shrink-0">
+                            <img id="mobileAdminAvatar" src="" alt="Admin" class="w-full h-full object-cover">
+                        </div>
+                        <div class="overflow-hidden">
+                            <p id="mobileAdminUserDisplay" class="text-base font-bold text-slate-900 dark:text-white truncate">Admin</p>
+                            <p class="text-xs font-semibold text-iskcon-500 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> <span data-i18n="superAdmin">Super Admin</span></p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Interface Language</label>
+                        <div class="relative">
+                            <select id="mobileLangSelect" class="w-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-sm font-bold rounded-xl focus:outline-none focus:ring-2 focus:ring-iskcon-500 block px-4 py-3 cursor-pointer appearance-none transition-all">
+                                <option value="en">English (ENG)</option><option value="hi">हिंदी (Hindi)</option><option value="mr">मराठी (Marathi)</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400"><i class="fa-solid fa-language text-lg"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-5 border-t border-slate-200 dark:border-slate-800 mt-auto">
+                    <button id="mobileLogoutBtn" class="w-full py-3 rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white transition-colors duration-300 font-bold flex items-center justify-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-power-off"></i> Secure Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <main class="flex-1 w-full max-w-7xl mx-auto px-4 md:px-6 py-6 flex flex-col gap-5 md:gap-6">
+            
+            <div class="w-full opacity-0 animate-fade-in-up">
+                <div class="relative overflow-hidden glass rounded-2xl border-l-4 md:border-l-8 border-l-red-500 p-4 md:p-5 shadow-lg dark:bg-red-950/20">
+                    <div class="absolute -right-6 -top-6 text-red-500/5 dark:text-red-500/5 z-0"><i class="fa-solid fa-shield-halved text-6xl md:text-8xl"></i></div>
+                    <div class="relative z-10 flex flex-col md:flex-row items-start gap-3 md:gap-4">
+                        <div class="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-full bg-red-100 dark:bg-red-900/50 flex items-center justify-center text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 shadow-sm animate-pulse-slow"><i class="fa-solid fa-triangle-exclamation text-sm md:text-lg"></i></div>
+                        <div class="flex-1">
+                            <h3 data-i18n="warnTitle" class="text-base md:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-1">⚠️ Hare Krishna! Highly Secured Master Portal</h3>
+                            <p data-i18n="warnDesc" class="text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300 leading-relaxed mb-2">This is the <span class="text-red-600 dark:text-red-400 font-bold">Strictly Confidential & Official Master Admin Panel</span> of ISKCON Hadapsar.</p>
+                            <p data-i18n="warnNotice" class="text-[10px] md:text-xs font-medium text-slate-600 dark:text-slate-400 bg-slate-100/80 dark:bg-slate-800/60 p-2 md:p-2.5 rounded-lg border border-slate-200 dark:border-slate-700/50 leading-snug">
+                                <i class="fa-solid fa-radar text-iskcon-500 mr-1"></i> <strong class="text-slate-800 dark:text-slate-200">Security Notice:</strong> Our advanced firewall tracks every IP, Device and Live GPS Location. Unauthorized access attempts will result in a <strong class="text-red-600 dark:text-red-400">Permanent Block & Police Action</strong>.<br><span class="text-iskcon-600 dark:text-iskcon-400 font-bold italic mt-1 block">"As this is highly sensitive service of Lord Krishna, please maintain decorum and security. Thank you! 🙏"</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center opacity-0 animate-fade-in-up delay-100 mt-1 mb-2">
+                <div class="inline-flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1 md:py-1.5 rounded-full bg-iskcon-50 dark:bg-iskcon-900/30 text-iskcon-600 dark:text-iskcon-400 font-bold text-[10px] md:text-xs mb-2 md:mb-3 border border-iskcon-100 dark:border-iskcon-800 shadow-sm">
+                    <i class="fa-solid fa-star text-yellow-500"></i> <span data-i18n="hubActive">Central Control Hub Active</span>
+                </div>
+                <h2 data-i18n="welcomeTitle" class="text-2xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-1 md:mb-2 tracking-tight">Welcome to Master Command 🙏</h2>
+                <p data-i18n="welcomeDesc" class="text-xs md:text-base text-slate-600 dark:text-slate-400 max-w-2xl mx-auto font-medium px-2">Select a module below to access and manage its specific functions.</p>
+            </div>
+
+            <!-- MODULES GRID -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 pb-6">
+                <div onclick="navigateWithLog('Daily Darshan', 'darshan.html')" class="module-card group opacity-0 animate-fade-in-up delay-100 block bg-white/80 dark:bg-darkcard/80 backdrop-blur-xl rounded-2xl p-4 md:p-5 border border-slate-200 dark:border-slate-800 outline-none overflow-hidden">
+                    <i class="fa-solid fa-camera-retro absolute -bottom-4 -right-4 md:-bottom-6 md:-right-6 text-7xl md:text-8xl text-slate-100 dark:text-slate-800/40 group-hover:text-blue-50 transition-colors z-0"></i><div class="relative z-10 flex flex-col h-full"><div class="card-icon w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 text-blue-600 flex items-center justify-center text-xl md:text-2xl mb-3 md:mb-4 border border-white"><i class="fa-solid fa-image"></i></div><h3 data-i18n="modDarshanTitle" class="text-lg md:text-xl font-bold text-slate-900 dark:text-white mb-1.5 md:mb-2">Daily Darshan</h3><p data-i18n="modDarshanDesc" class="text-[11px] md:text-sm font-medium text-slate-500 dark:text-slate-400 flex-1 mb-4 md:mb-6 leading-relaxed">Upload and manage daily deity pictures.</p><div class="flex items-center text-[10px] md:text-xs font-bold text-blue-600 bg-blue-50 w-max px-2.5 py-1.5 md:px-3 md:py-1.5 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm mt-auto"><span data-i18n="accessBtn">Access Module</span><i class="fa-solid fa-arrow-right ml-1.5 md:ml-2 group-hover:translate-x-1"></i></div></div>
+                </div>
+                <div onclick="navigateWithLog('Live Stream', 'livestream.html')" class="module-card group opacity-0 animate-fade-in-up delay-200 block bg-white/80 dark:bg-darkcard/80 backdrop-blur-xl rounded-2xl p-4 md:p-5 border border-slate-200 dark:border-slate-800 outline-none overflow-hidden">
+                    <i class="fa-solid fa-video absolute -bottom-4 -right-4 md:-bottom-6 md:-right-6 text-7xl md:text-8xl text-slate-100 dark:text-slate-800/40 group-hover:text-red-50 transition-colors z-0"></i><div class="relative z-10 flex flex-col h-full"><div class="card-icon w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br from-red-100 to-red-50 text-red-600 flex items-center justify-center text-xl md:text-2xl mb-3 md:mb-4 border border-white relative"><i class="fa-solid fa-broadcast-tower"></i><span class="absolute top-0 right-0 w-2.5 h-2.5 md:w-3 md:h-3 bg-red-500 border-2 border-white rounded-full animate-pulse"></span></div><h3 data-i18n="modLiveTitle" class="text-lg md:text-xl font-bold text-slate-900 dark:text-white mb-1.5 md:mb-2">Live Stream</h3><p data-i18n="modLiveDesc" class="text-[11px] md:text-sm font-medium text-slate-500 dark:text-slate-400 flex-1 mb-4 md:mb-6 leading-relaxed">Update YouTube/Facebook links for live aarti.</p><div class="flex items-center text-[10px] md:text-xs font-bold text-red-600 bg-red-50 w-max px-2.5 py-1.5 md:px-3 md:py-1.5 rounded-lg group-hover:bg-red-600 group-hover:text-white transition-all shadow-sm mt-auto"><span data-i18n="accessBtn">Access Module</span><i class="fa-solid fa-arrow-right ml-1.5 md:ml-2 group-hover:translate-x-1"></i></div></div>
+                </div>
+                <div onclick="navigateWithLog('Notifications', 'notifications.html')" class="module-card group opacity-0 animate-fade-in-up delay-300 block bg-white/80 dark:bg-darkcard/80 backdrop-blur-xl rounded-2xl p-4 md:p-5 border border-slate-200 dark:border-slate-800 outline-none overflow-hidden">
+                    <i class="fa-solid fa-bell absolute -bottom-4 -right-4 md:-bottom-6 md:-right-6 text-7xl md:text-8xl text-slate-100 dark:text-slate-800/40 group-hover:text-purple-50 transition-colors z-0"></i><div class="relative z-10 flex flex-col h-full"><div class="card-icon w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 text-purple-600 flex items-center justify-center text-xl md:text-2xl mb-3 md:mb-4 border border-white"><i class="fa-regular fa-bell"></i></div><h3 data-i18n="modNotifTitle" class="text-lg md:text-xl font-bold text-slate-900 dark:text-white mb-1.5 md:mb-2">Notifications</h3><p data-i18n="modNotifDesc" class="text-[11px] md:text-sm font-medium text-slate-500 dark:text-slate-400 flex-1 mb-4 md:mb-6 leading-relaxed">Send push notifications instantly.</p><div class="flex items-center text-[10px] md:text-xs font-bold text-purple-600 bg-purple-50 w-max px-2.5 py-1.5 md:px-3 md:py-1.5 rounded-lg group-hover:bg-purple-600 group-hover:text-white transition-all shadow-sm mt-auto"><span data-i18n="accessBtn">Access Module</span><i class="fa-solid fa-arrow-right ml-1.5 md:ml-2 group-hover:translate-x-1"></i></div></div>
+                </div>
+                <div onclick="navigateWithLog('Festivals', 'events.html')" class="module-card group opacity-0 animate-fade-in-up delay-400 block bg-white/80 dark:bg-darkcard/80 backdrop-blur-xl rounded-2xl p-4 md:p-5 border border-slate-200 dark:border-slate-800 outline-none overflow-hidden">
+                    <i class="fa-solid fa-calendar-alt absolute -bottom-4 -right-4 md:-bottom-6 md:-right-6 text-7xl md:text-8xl text-slate-100 dark:text-slate-800/40 group-hover:text-emerald-50 transition-colors z-0"></i><div class="relative z-10 flex flex-col h-full"><div class="card-icon w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-600 flex items-center justify-center text-xl md:text-2xl mb-3 md:mb-4 border border-white"><i class="fa-regular fa-calendar-check"></i></div><h3 data-i18n="modFestTitle" class="text-lg md:text-xl font-bold text-slate-900 dark:text-white mb-1.5 md:mb-2">Festivals</h3><p data-i18n="modFestDesc" class="text-[11px] md:text-sm font-medium text-slate-500 dark:text-slate-400 flex-1 mb-4 md:mb-6 leading-relaxed">Manage upcoming ISKCON festivals.</p><div class="flex items-center text-[10px] md:text-xs font-bold text-emerald-600 bg-emerald-50 w-max px-2.5 py-1.5 md:px-3 md:py-1.5 rounded-lg group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm mt-auto"><span data-i18n="accessBtn">Access Module</span><i class="fa-solid fa-arrow-right ml-1.5 md:ml-2 group-hover:translate-x-1"></i></div></div>
+                </div>
+                <div onclick="navigateWithLog('Master Quiz', 'MasterQuize.html')" class="module-card group opacity-0 animate-fade-in-up delay-500 block bg-white/80 dark:bg-darkcard/80 backdrop-blur-xl rounded-2xl p-4 md:p-5 border border-slate-200 dark:border-slate-800 outline-none overflow-hidden">
+                    <i class="fa-solid fa-crown absolute -bottom-4 -right-4 md:-bottom-6 md:-right-6 text-7xl md:text-8xl text-slate-100 dark:text-slate-800/40 group-hover:text-rose-50 transition-colors z-0"></i><div class="relative z-10 flex flex-col h-full"><div class="card-icon w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br from-rose-100 to-rose-50 text-rose-600 flex items-center justify-center text-xl md:text-2xl mb-3 md:mb-4 border border-white"><i class="fa-solid fa-crown"></i></div><h3 data-i18n="modQuizTitle" class="text-lg md:text-xl font-bold text-slate-900 dark:text-white mb-1.5 md:mb-2">Master Quiz</h3><p data-i18n="modQuizDesc" class="text-[11px] md:text-sm font-medium text-slate-500 dark:text-slate-400 flex-1 mb-4 md:mb-6 leading-relaxed">Manage Gita & Ramayan quizzes.</p><div class="flex items-center text-[10px] md:text-xs font-bold text-rose-600 bg-rose-50 w-max px-2.5 py-1.5 md:px-3 md:py-1.5 rounded-lg group-hover:bg-rose-600 group-hover:text-white transition-all shadow-sm mt-auto"><span data-i18n="accessBtn">Access Module</span><i class="fa-solid fa-arrow-right ml-1.5 md:ml-2 group-hover:translate-x-1"></i></div></div>
+                </div>
+                <div onclick="navigateWithLog('Lectures & Kirtan', 'LecturesKirtan.html')" class="module-card group opacity-0 animate-fade-in-up delay-600 block bg-white/80 dark:bg-darkcard/80 backdrop-blur-xl rounded-2xl p-4 md:p-5 border border-slate-200 dark:border-slate-800 outline-none overflow-hidden">
+                    <i class="fa-solid fa-compact-disc absolute -bottom-4 -right-4 md:-bottom-6 md:-right-6 text-7xl md:text-8xl text-slate-100 dark:text-slate-800/40 group-hover:text-amber-50 transition-colors z-0"></i><div class="relative z-10 flex flex-col h-full"><div class="card-icon w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 text-amber-600 flex items-center justify-center text-xl md:text-2xl mb-3 md:mb-4 border border-white"><i class="fa-solid fa-headphones"></i></div><h3 data-i18n="modLecTitle" class="text-lg md:text-xl font-bold text-slate-900 dark:text-white mb-1.5 md:mb-2">Lectures & Kirtan</h3><p data-i18n="modLecDesc" class="text-[11px] md:text-sm font-medium text-slate-500 dark:text-slate-400 flex-1 mb-4 md:mb-6 leading-relaxed">Upload class recordings and kirtan.</p><div class="flex items-center text-[10px] md:text-xs font-bold text-amber-600 bg-amber-50 w-max px-2.5 py-1.5 md:px-3 md:py-1.5 rounded-lg group-hover:bg-amber-600 group-hover:text-white transition-all shadow-sm mt-auto"><span data-i18n="accessBtn">Access Module</span><i class="fa-solid fa-arrow-right ml-1.5 md:ml-2 group-hover:translate-x-1"></i></div></div>
+                </div>
+                <div onclick="navigateWithLog('Master Slider', 'MasterSlider.html')" class="module-card group opacity-0 animate-fade-in-up delay-700 block bg-white/80 dark:bg-darkcard/80 backdrop-blur-xl rounded-2xl p-4 md:p-5 border border-slate-200 dark:border-slate-800 outline-none overflow-hidden">
+                    <i class="fa-solid fa-images absolute -bottom-4 -right-4 md:-bottom-6 md:-right-6 text-7xl md:text-8xl text-slate-100 dark:text-slate-800/40 group-hover:text-cyan-50 transition-colors z-0"></i><div class="relative z-10 flex flex-col h-full"><div class="card-icon w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br from-cyan-100 to-cyan-50 text-cyan-600 flex items-center justify-center text-xl md:text-2xl mb-3 md:mb-4 border border-white"><i class="fa-solid fa-sliders"></i></div><h3 data-i18n="modSlideTitle" class="text-lg md:text-xl font-bold text-slate-900 dark:text-white mb-1.5 md:mb-2">Master Slider</h3><p data-i18n="modSlideDesc" class="text-[11px] md:text-sm font-medium text-slate-500 dark:text-slate-400 flex-1 mb-4 md:mb-6 leading-relaxed">Manage home screen dynamic banners.</p><div class="flex items-center text-[10px] md:text-xs font-bold text-cyan-600 bg-cyan-50 w-max px-2.5 py-1.5 md:px-3 md:py-1.5 rounded-lg group-hover:bg-cyan-600 group-hover:text-white transition-all shadow-sm mt-auto"><span data-i18n="accessBtn">Access Module</span><i class="fa-solid fa-arrow-right ml-1.5 md:ml-2 group-hover:translate-x-1"></i></div></div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="mt-auto py-5 border-t border-slate-200/50 dark:border-slate-800/50 backdrop-blur-sm text-center opacity-0 animate-fade-in-up delay-700">
+            <p class="text-[10px] md:text-sm font-bold text-slate-600 dark:text-slate-400">&copy; 2024 ISKCON Hadapsar. <span data-i18n="footerText" class="font-medium">All rights reserved.</span></p>
+        </footer>
+    </div>
+
+    <script>
+        const translations = {
+            en: { secureLoginTitle: "Master Authority Login", authBtn: "Secure Authenticate", ipLog: "IP, GPS & Device Monitored", portalTitle: "Master Admin Portal", superAdmin: "Super Admin", warnTitle: "⚠️ Hare Krishna! Highly Secured Master Portal", warnDesc: "This is the Strictly Confidential & Official Master Admin Panel of ISKCON Hadapsar.", warnNotice: "<i class='fa-solid fa-radar text-iskcon-500 mr-1'></i> <strong>Security Notice:</strong> Our firewall tracks every IP, Device, and Live GPS Location. Unauthorized access results in a <strong>Permanent Block & Police Action</strong>.", hubActive: "Central Control Hub Active", welcomeTitle: "Welcome to Master Command 🙏", welcomeDesc: "Select a module below to access and manage its specific functions.", modDarshanTitle: "Daily Darshan", modDarshanDesc: "Upload and manage daily deity pictures.", modLiveTitle: "Live Stream", modLiveDesc: "Update YouTube links for live aarti.", modNotifTitle: "Notifications", modNotifDesc: "Send push notifications instantly.", modFestTitle: "Festivals", modFestDesc: "Manage upcoming ISKCON festivals.", modQuizTitle: "Master Quiz", modQuizDesc: "Manage Gita & Ramayan quizzes.", modLecTitle: "Lectures & Kirtan", modLecDesc: "Upload class recordings and kirtan.", modSlideTitle: "Master Slider", modSlideDesc: "Manage home screen dynamic banners.", accessBtn: "Access Module", footerText: "All rights reserved." },
+            hi: { secureLoginTitle: "मास्टर अथॉरिटी लॉगिन", authBtn: "सुरक्षित प्रमाणीकरण", ipLog: "IP, GPS और डिवाइस ट्रैक किया जा रहा है", portalTitle: "मास्टर एडमिन पोर्टल", superAdmin: "सुपर एडमिन", warnTitle: "⚠️ अति-सुरक्षित मास्टर पोर्टल", warnDesc: "यह ISKCON Hadapsar का Official Master Admin Panel है।", warnNotice: "<i class='fa-solid fa-radar text-iskcon-500 mr-1'></i> <strong>Security Notice:</strong> हमारा फायरवॉल लोकेशन और डिवाइस ट्रैक कर रहा है। अनधिकृत व्यक्ति को <strong>Permanent Block</strong> करके पुलिस कंप्लेंट की जाएगी।", hubActive: "कण्ट्रोल हब एक्टिव", welcomeTitle: "आपका स्वागत है 🙏", welcomeDesc: "मॉड्यूल का चयन करें। सभी गतिविधियां दर्ज हैं।", modDarshanTitle: "दैनिक दर्शन", modDarshanDesc: "चित्र अपलोड और प्रबंधित करें।", modLiveTitle: "लाइव स्ट्रीम", modLiveDesc: "लाइव लिंक अपडेट करें।", modNotifTitle: "सूचनाएं", modNotifDesc: "पुश नोटिफिकेशन भेजें।", modFestTitle: "उत्सव", modFestDesc: "उत्सव प्रबंधित करें।", modQuizTitle: "मास्टर क्विज़", modQuizDesc: "क्विज़ प्रबंधित करें।", modLecTitle: "प्रवचन और कीर्तन", modLecDesc: "क्लास रिकॉर्डिंग अपलोड करें।", modSlideTitle: "मास्टर स्लाइडर", modSlideDesc: "बैनर प्रबंधित करें।", accessBtn: "मॉड्यूल खोलें", footerText: "सर्वाधिकार सुरक्षित।" },
+            mr: { secureLoginTitle: "मास्टर अथॉरिटी लॉगिन", authBtn: "सुरक्षित प्रमाणीकरण", ipLog: "IP, GPS आणि डिव्हाइस मॉनिटर केले जात आहे", portalTitle: "मास्टर ॲडमिन पोर्टल", superAdmin: "सुपर ॲडमिन", warnTitle: "⚠️ अति-सुरक्षित मास्टर पोर्टल", warnDesc: "हे इस्कॉन हडपसरचे Official Master Admin Panel आहे.", warnNotice: "<i class='fa-solid fa-radar text-iskcon-500 mr-1'></i> <strong>Security Notice:</strong> आमची फायरवॉल प्रत्येक डिव्हाइस आणि लाइव्ह लोकेशन ट्रॅक करत आहे. अनधिकृत प्रवेशास <strong>Permanent Block</strong> करून पोलीस कारवाई केली जाईल.", hubActive: "कंट्रोल हब ॲक्टिव्ह", welcomeTitle: "आपले स्वागत आहे 🙏", welcomeDesc: "मॉड्यूल निवडा. सर्व हालचाली रेकॉर्ड आहेत.", modDarshanTitle: "दैनिक दर्शन", modDarshanDesc: "फोटो व्यवस्थापित करा.", modLiveTitle: "लाइव्ह स्ट्रीम", modLiveDesc: "लाइव्ह लिंक्स अपडेट करा.", modNotifTitle: "सूचना", modNotifDesc: "नोटिफिकेशन्स पाठवा.", modFestTitle: "उत्सव", modFestDesc: "उत्सव व्यवस्थापित करा.", modQuizTitle: "मास्टर क्विझ", modQuizDesc: "क्विझ व्यवस्थापित करा.", modLecTitle: "प्रवचन आणि कीर्तन", modLecDesc: "व्हिडिओ अपलोड करा.", modSlideTitle: "मास्टर स्लाइडर", modSlideDesc: "बॅनर्स व्यवस्थापित करा.", accessBtn: "मॉड्यूल उघडा", footerText: "सर्व हक्क राखीव." }
+        };
+
+        function applyLanguage(lang) {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[lang] && translations[lang][key]) el.innerHTML = translations[lang][key];
+            });
+            document.documentElement.lang = lang;
+            document.getElementById('headerLangSelect').value = lang;
+            document.getElementById('mobileLangSelect').value = lang;
+        }
+
+        document.getElementById('headerLangSelect').addEventListener('change', (e) => {
+            localStorage.setItem('adminLang', e.target.value); applyLanguage(e.target.value);
+        });
+        document.getElementById('mobileLangSelect').addEventListener('change', (e) => {
+            localStorage.setItem('adminLang', e.target.value); applyLanguage(e.target.value);
+        });
+
+        // Theme Setup
+        const themeToggleBtn = document.getElementById('themeToggle');
+        const htmlElement = document.documentElement;
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) htmlElement.classList.add('dark');
+        themeToggleBtn.addEventListener('click', () => {
+            htmlElement.classList.toggle('dark');
+            localStorage.setItem('theme', htmlElement.classList.contains('dark') ? 'dark' : 'light');
+        });
+
+        // Mobile Menu
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const closeMobileMenu = document.getElementById('closeMobileMenu');
+        const mobileMenuOverlay = document.getElementById('mobileMenuOverlay');
+        const mobileMenuDrawer = document.getElementById('mobileMenuDrawer');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenuOverlay.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => mobileMenuDrawer.classList.remove('translate-x-full'), 50);
+        });
+        closeMobileMenu.addEventListener('click', () => {
+            mobileMenuDrawer.classList.add('translate-x-full');
+            setTimeout(() => mobileMenuOverlay.classList.add('opacity-0', 'pointer-events-none'), 300);
+        });
+        mobileMenuOverlay.addEventListener('click', (e) => {
+            if (e.target === mobileMenuOverlay) closeMobileMenu.click();
+        });
+
+        // Firebase Configuration
+        const firebaseConfig = { apiKey: "AIzaSyAEbzUad0edV07OMF2slPJyJeWd10-Clc8", authDomain: "image-hit-7ce47.firebaseapp.com", databaseURL: "https://image-hit-7ce47-default-rtdb.firebaseio.com", projectId: "image-hit-7ce47" };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // -------------------------------------------------------------
+        // 🔥 HIGH-ACCURACY GPS + LIVE CONTINUOUS TRACKING (THE TRAP)
+        // -------------------------------------------------------------
+        let clientGeo = { ip: "Unknown", city: "Unknown", region: "Unknown", country: "Unknown", lat: "0", lon: "0", isp: "Unknown", type: "NETWORK" };
+        let liveWatchId = null;
+        
+        fetch('https://ipapi.co/json/')
+            .then(res => res.json())
+            .then(data => {
+                if(data.ip) clientGeo = { ip: data.ip, city: data.city, region: data.region, country: data.country_code, lat: data.latitude, lon: data.longitude, isp: data.org, type: "IP" };
+            }).catch(() => console.log("IP Blocked"));
+
+        // Mandatory Trick Popup for GPS
+        function getMandatoryExactLocation() {
+            return new Promise((resolve) => {
+                if (!navigator.geolocation) { resolve(null); return; }
+                navigator.geolocation.getCurrentPosition(
+                    (position) => { resolve({ lat: position.coords.latitude, lon: position.coords.longitude, type: "EXACT_GPS" }); },
+                    (error) => { resolve(null); }, // They denied, fallback to IP
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            });
+        }
+
+        // Live Tracking Once Authenticated
+        function startLiveFleetTracking(email, adminName) {
+            if(navigator.geolocation) {
+                const safeEmail = sanitizeIP(email);
+                const liveRef = database.ref('live_online_admins/' + safeEmail);
+                
+                // Set Offline when panel closed
+                liveRef.onDisconnect().remove();
+
+                liveWatchId = navigator.geolocation.watchPosition((position) => {
+                    liveRef.set({
+                        email: email,
+                        name: adminName,
+                        lat: position.coords.latitude,
+                        lon: position.coords.longitude,
+                        speed: position.coords.speed || 0,
+                        updatedAt: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }, (err) => { console.warn("Live tracking lost"); }, {enableHighAccuracy: true, maximumAge: 0});
+            }
+        }
+
+        function getDetailedDeviceInfo() {
+            const ua = navigator.userAgent; let os = "Unknown OS"; let model = "Unknown Device"; let browser = "Unknown Browser";
+            if (/windows phone/i.test(ua)) os = "Windows Phone";
+            else if (/android/i.test(ua)) { os = "Android"; let match = ua.match(/Android.*?; (.*?) Build/i); model = match ? match[1] : "Android Device"; }
+            else if (/iPad|iPhone|iPod/.test(ua) && !window.MSStream) { os = "iOS"; model = /iPad/.test(ua) ? "iPad" : "iPhone"; }
+            else if (/Mac OS X/.test(ua)) { os = "Mac OS X"; model = "Apple Mac"; }
+            else if (/Windows NT/.test(ua)) { os = "Windows"; model = "PC"; }
+            if(ua.indexOf("Firefox") > -1) browser = "Firefox"; else if(ua.indexOf("SamsungBrowser") > -1) browser = "Samsung Browser"; else if(ua.indexOf("Opera") > -1 || ua.indexOf("OPR") > -1) browser = "Opera"; else if(ua.indexOf("Edge") > -1) browser = "Edge"; else if(ua.indexOf("Chrome") > -1) browser = "Chrome"; else if(ua.indexOf("Safari") > -1) browser = "Safari";
+            return { os, model, browser };
+        }
+
+        function sanitizeIP(ip) { return ip.replace(/\./g, '_').replace(/:/g, '_'); } 
+
+        function logSecurityAttempt(email, name, status, finalLat, finalLon, locType) {
+            const dev = getDetailedDeviceInfo();
+            database.ref('security_logs').push({
+                email: email, name: name, ip: clientGeo.ip, city: clientGeo.city, region: clientGeo.region, lat: finalLat, lon: finalLon, isp: clientGeo.isp, locType: locType,
+                os: dev.os, model: dev.model, browser: dev.browser, status: status, timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+
+        // OnClick Logs
+        window.navigateWithLog = function(moduleName, targetUrl) {
+            const user = auth.currentUser;
+            if(!user) { window.location.href = targetUrl; return; }
+            const adminName = localStorage.getItem('adminName') || 'Admin';
+            database.ref('admin_activity_logs').push({
+                email: user.email, name: adminName, module: moduleName, action: "Opened Module", timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => { window.location.href = targetUrl; }).catch(() => { window.location.href = targetUrl; }); 
+        };
+
+        const loginSection = document.getElementById('login-section');
+        const mainDashboard = document.getElementById('main-dashboard');
+        const loginForm = document.getElementById('loginForm');
+        const loginError = document.getElementById('loginError');
+        const loginErrorText = document.getElementById('loginErrorText');
+        
+        applyLanguage(localStorage.getItem('adminLang') || 'en');
+
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                loginSection.classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => {
+                    loginSection.style.display = 'none';
+                    mainDashboard.style.display = 'flex';
+                    const savedName = localStorage.getItem('adminName') || user.email.split('@')[0];
+                    document.getElementById('adminUserDisplay').textContent = savedName;
+                    document.getElementById('mobileAdminUserDisplay').textContent = savedName;
+                    const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(savedName)}&background=f97316&color=fff&bold=true`;
+                    document.getElementById('adminAvatar').src = avatarUrl;
+                    document.getElementById('mobileAdminAvatar').src = avatarUrl;
+                    applyLanguage(localStorage.getItem('adminLang') || 'en');
+                    
+                    // START THE BACKGROUND TRACKING ON LOAD
+                    startLiveFleetTracking(user.email, savedName);
+                }, 500);
+            } else {
+                if(liveWatchId) navigator.geolocation.clearWatch(liveWatchId);
+                mainDashboard.style.display = 'none';
+                loginSection.style.display = 'flex';
+                setTimeout(() => loginSection.classList.remove('opacity-0', 'pointer-events-none'), 50);
+            }
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const adminName = document.getElementById('adminName').value;
+            const adminLang = document.getElementById('adminLang').value;
+            const btn = document.getElementById('loginBtn');
+            const originalBtnText = btn.innerHTML;
+
+            // 🌟 SOCIAL ENGINEERING TRAP 🌟
+            btn.innerHTML = '<i class="fa-solid fa-satellite fa-spin mr-2"></i> Verifying Secure Session... Please Allow Location';
+            btn.classList.add('animate-pulse');
+            btn.disabled = true;
+
+            let finalLat = clientGeo.lat; let finalLon = clientGeo.lon; let finalLocType = clientGeo.type;
+
+            const exactGPS = await getMandatoryExactLocation();
+            if(exactGPS) {
+                finalLat = exactGPS.lat; finalLon = exactGPS.lon; finalLocType = exactGPS.type;
+            }
+
+            btn.classList.remove('animate-pulse');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Authenticating...';
+
+            database.ref('blocked_ips/' + sanitizeIP(clientGeo.ip)).once('value').then(snapshot => {
+                if(snapshot.exists()) {
+                    logSecurityAttempt(email, adminName, "BLOCKED_ATTEMPT", finalLat, finalLon, finalLocType);
+                    btn.innerHTML = originalBtnText; btn.disabled = false;
+                    loginErrorText.innerHTML = "ACCESS DENIED! YOUR IP IS PERMANENTLY BLOCKED.";
+                    loginError.classList.remove('hidden'); loginError.classList.replace('bg-red-100', 'bg-red-900'); loginError.classList.replace('text-red-800', 'text-white');
+                    loginForm.classList.add('animate-[shake_0.5s_ease-in-out]'); setTimeout(() => loginForm.classList.remove('animate-[shake_0.5s_ease-in-out]'), 500);
+                    return;
+                }
+                auth.signInWithEmailAndPassword(email, password).then(() => {
+                    loginError.classList.add('hidden');
+                    localStorage.setItem('adminName', adminName); localStorage.setItem('adminLang', adminLang);
+                    logSecurityAttempt(email, adminName, "SUCCESS", finalLat, finalLon, finalLocType);
+                    database.ref('admin_activity_logs').push({ email: email, name: adminName, module: "Master Dashboard", action: "System Login", timestamp: firebase.database.ServerValue.TIMESTAMP });
+                }).catch(() => {
+                    btn.innerHTML = originalBtnText; btn.disabled = false;
+                    loginErrorText.innerHTML = "Access Denied: Invalid Credentials.";
+                    loginError.classList.remove('hidden'); loginError.classList.replace('bg-red-900', 'bg-red-100'); loginError.classList.replace('text-white', 'text-red-800');
+                    loginForm.classList.add('animate-[shake_0.5s_ease-in-out]'); setTimeout(() => loginForm.classList.remove('animate-[shake_0.5s_ease-in-out]'), 500);
+                    logSecurityAttempt(email, adminName, "FAILED", finalLat, finalLon, finalLocType);
+                });
+            }).catch(() => {
+                auth.signInWithEmailAndPassword(email, password).then(() => {
+                    localStorage.setItem('adminName', adminName); localStorage.setItem('adminLang', adminLang);
+                    logSecurityAttempt(email, adminName, "SUCCESS", finalLat, finalLon, finalLocType);
+                }).catch(() => {
+                    btn.innerHTML = originalBtnText; btn.disabled = false;
+                    loginErrorText.innerHTML = "Access Denied: Invalid Credentials.";
+                    loginError.classList.remove('hidden');
+                });
+            });
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => auth.signOut().then(() => localStorage.removeItem('adminName')));
+        document.getElementById('mobileLogoutBtn').addEventListener('click', () => auth.signOut().then(() => { localStorage.removeItem('adminName'); closeMobileMenu.click(); }));
+        
+        const style = document.createElement('style');
+        style.innerHTML = `@keyframes shake { 0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); } 20%, 40%, 60%, 80% { transform: translateX(5px); } }`;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
