@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
+<title>Admin - ISKCON Hadapsar IT Panel</title>
+<style>
+/* ═══════════════════════════════════════
+   PREMIUM ISKCON UI DESIGN (ADMIN PANEL)
+═══════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%;background:#FFFDF8; scroll-behavior: smooth;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#FFFDF8;color:#2c1e16;min-height:100%;-webkit-font-smoothing:antialiased}
+
+/* SCREENS */
+.screen { display: none; min-height: 100vh; flex-direction: column; }
+.screen.active { display: flex; animation: fadeIn 0.3s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ─── TOAST NOTIFICATIONS ─── */
+.toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: #333; color: #fff; padding: 12px 24px; border-radius: 30px; opacity: 0; transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); z-index: 1000; font-size: 14px; font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+/* ─── BACK BUTTONS ─── */
+.auth-back { position: absolute; top: 20px; left: 20px; background: #fff; color: #E65100; border: 1px solid rgba(230,81,0,0.2); box-shadow: 0 4px 10px rgba(0,0,0,0.05); padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; z-index: 10; }
+.auth-back:hover { background: #fdf5f0; transform: translateX(-4px); box-shadow: 0 6px 15px rgba(230,81,0,0.1); }
+.dash-back { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
+.dash-back:hover { background: rgba(255,255,255,0.35); transform: translateX(-2px); }
+
+/* ─── TEAM LOGIN UI ─── */
+.auth-wrapper{flex:1;display:flex;align-items:center;justify-content:center;padding:1.5rem;background:url('https://www.transparenttextures.com/patterns/cream-paper.png') #FFFDF8; position: relative;}
+.auth-box{background:#fff;width:100%;max-width:360px;padding:2.5rem 2rem;border-radius:20px;box-shadow:0 15px 35px rgba(230,81,0,0.1);text-align:center;border:1px solid rgba(230,81,0,0.1);}
+.auth-icon{font-size:40px;margin-bottom:10px;}
+.auth-title{font-size:20px;font-weight:bold;color:#E65100;margin-bottom:5px;}
+.auth-sub{font-size:13px;color:#8a6a55;margin-bottom:25px;}
+.auth-input{width:100%;padding:14px;border:2px solid #f5ece4;border-radius:10px;font-size:16px;text-align:center;margin-bottom:15px;outline:none;transition:border 0.3s, box-shadow 0.3s;letter-spacing:2px;font-weight:bold;}
+.auth-input:focus{border-color:#E65100;box-shadow:0 0 0 4px rgba(230,81,0,0.1);}
+.auth-btn{width:100%;background:linear-gradient(135deg, #E65100 0%, #FF9800 100%);color:#fff;border:none;padding:14px;border-radius:10px;font-size:16px;font-weight:bold;cursor:pointer;box-shadow:0 4px 15px rgba(230,81,0,0.3);transition:transform 0.2s;}
+.auth-btn:active{transform:scale(0.96);}
+
+/* ─── DASHBOARD UI ─── */
+.admin-hdr{position:sticky;top:0;z-index:20;height:65px;background:linear-gradient(135deg, #E65100 0%, #FF9800 100%);color:#fff;display:flex;align-items:center;padding:0 1.2rem;gap:12px;box-shadow:0 4px 15px rgba(230,81,0,0.2);}
+.admin-hdr h2{font-size:18px;font-weight:700;flex:1;margin-left:5px;}
+
+.dash-main{max-width:900px;margin:0 auto;padding:1.5rem 1rem;width:100%;}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:15px;margin-bottom:20px;}
+.stat-card{background:#fff;padding:20px;border-radius:16px;box-shadow:0 4px 15px rgba(0,0,0,0.03);border:1px solid rgba(230,81,0,0.08);text-align:center;}
+.stat-val{font-size:28px;font-weight:800;color:#E65100;margin-bottom:5px;}
+.stat-lbl{font-size:12px;font-weight:600;color:#8a6a55;text-transform:uppercase;letter-spacing:0.05em;}
+
+.admin-form-card{background:#fff;padding:20px;border-radius:16px;box-shadow:0 4px 15px rgba(0,0,0,0.03);border:1px solid rgba(230,81,0,0.08);margin-bottom:25px;transition:all 0.3s ease;}
+.admin-form-card.edit-mode { border:2px solid #FF9800; box-shadow:0 8px 25px rgba(230,81,0,0.15); }
+.admin-form-card h3{font-size:16px;color:#3e2723;margin-bottom:15px;border-bottom:2px solid #f5ece4;padding-bottom:10px;display:flex;align-items:center;gap:8px;}
+.admin-form{display:grid;grid-template-columns:1fr;gap:12px;}
+@media(min-width:600px){ .admin-form{grid-template-columns:1fr 1fr;} .af-full{grid-column:1/-1;} }
+.admin-form input, .admin-form select{padding:12px 14px;border:1px solid #d7c9c0;border-radius:8px;font-size:14px;background:#fdfcfb;color:#3e2723;outline:none;transition:border 0.2s;}
+.admin-form input:focus, .admin-form select:focus{border-color:#E65100;background:#fff;}
+.btn-group { grid-column:1/-1; display:flex; gap:10px; }
+.btn-submit{flex:1;background:#E65100;color:#fff;border:none;padding:14px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;transition:background 0.2s;box-shadow:0 4px 10px rgba(230,81,0,0.3);}
+.btn-submit:hover{background:#d34a00;}
+.btn-cancel{display:none;background:#757575;color:#fff;border:none;padding:14px 20px;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer;transition:background 0.2s;}
+.btn-cancel:hover{background:#616161;}
+
+/* SEARCH & LIST */
+.list-header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px; }
+.list-hdr{font-size:16px;font-weight:700;color:#3e2723;}
+.admin-search { padding:8px 14px; border-radius:20px; border:1px solid #d7c9c0; outline:none; font-size:13px; min-width:200px; }
+.admin-search:focus { border-color:#E65100; }
+
+.admin-list{display:flex;flex-direction:column;gap:12px;}
+.admin-item{display:flex;align-items:center;background:#fff;padding:10px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.03);border:1px solid #f0e6e0;gap:12px;transition: transform 0.2s;}
+.admin-item:hover{transform:translateX(5px);border-color:#E65100;}
+.admin-item img{width:90px;height:50px;object-fit:cover;border-radius:6px;background:#eee;}
+.admin-item-info{flex:1;display:flex;flex-direction:column;gap:4px;overflow:hidden;}
+.ai-title{font-size:14px;font-weight:600;color:#3e2723;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ai-meta{font-size:11px;color:#8a6a55;display:flex;gap:10px;align-items:center;}
+.ai-meta span{background:#f5ece4;padding:2px 6px;border-radius:4px;font-weight:bold;}
+
+.action-btns { display:flex; gap:8px; }
+.ai-btn{border:none;width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.1s, opacity 0.2s;}
+.ai-btn:active{transform:scale(0.9);}
+.ai-edit{background:#1976D2;color:#fff;box-shadow:0 2px 8px rgba(25,118,210,0.3);}
+.ai-del{background:#d32f2f;color:#fff;box-shadow:0 2px 8px rgba(211,47,47,0.3);}
+</style>
+</head>
+<body>
+
+<!-- TOAST NOTIFICATION -->
+<div id="toast" class="toast"></div>
+
+<!-- AUTH SCREEN -->
+<div id="authScreen" class="screen active">
+  <div class="auth-wrapper">
+    <!-- Back button to master portal before login -->
+    <button class="auth-back" onclick="goToMasterPanel()">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      Master Panel
+    </button>
+
+    <div class="auth-box">
+      <div class="auth-icon">🕉️</div>
+      <div class="auth-title">Team Login</div>
+      <div class="auth-sub">ISKCON Hadapsar IT Panel</div>
+      <input type="password" id="teamPin" class="auth-input" placeholder="Enter PIN" inputmode="numeric" />
+      <button class="auth-btn" onclick="verifyLogin()">Access Dashboard</button>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD SCREEN -->
+<div id="adminScreen" class="screen">
+  <div class="admin-hdr">
+    <!-- Back button to master portal after login -->
+    <button class="dash-back" onclick="goToMasterPanel()">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg> Back
+    </button>
+    <h2>Team Dashboard</h2>
+  </div>
+  
+  <div class="dash-main">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-val" id="statTotalVids">0</div>
+        <div class="stat-lbl">Total Videos</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="statTotalViews">0</div>
+        <div class="stat-lbl">Total Views</div>
+      </div>
+    </div>
+
+    <!-- FORM CARD WITH EDIT MODE LOGIC -->
+    <div class="admin-form-card" id="formCard">
+      <h3 id="formTitle">➕ Add New Content</h3>
+      <form class="admin-form" id="adminForm" onsubmit="submitVideo(event)">
+        <input type="text" class="af-full" id="vTitle" placeholder="Title (e.g. Sunday Feast Lecture)" required/>
+        <input type="url" class="af-full" id="vUrl" placeholder="YouTube Video URL" required/>
+        <select id="vType" required>
+          <option value="" disabled selected>Select Category</option>
+          <option value="lecture">Lecture</option>
+          <option value="video">Kirtan / Video</option>
+          <option value="shorts">Shorts</option>
+        </select>
+        <input type="url" id="vThumb" placeholder="Custom Thumb URL (Optional)"/>
+        
+        <div class="btn-group">
+          <button type="submit" id="submitBtn" class="btn-submit">Upload to App</button>
+          <button type="button" id="cancelEditBtn" class="btn-cancel" onclick="cancelEdit()">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="list-header-row">
+      <div class="list-hdr">Manage Videos</div>
+      <input type="text" class="admin-search" id="adminSearch" placeholder="🔍 Search database..." oninput="renderAdminDashboard()">
+    </div>
+    
+    <div class="admin-list" id="adminVideoList">
+      <div style='text-align:center;padding:20px;color:#888;'>Loading Content...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script>
+// FIREBASE INIT
+const firebaseConfig = {
+  apiKey: "AIzaSyBx6jCILnnsRmJ0ugdGJLJvH8d1sLuYtjc",
+  authDomain: "update-play-store-62fe4.firebaseapp.com",
+  databaseURL: "https://update-play-store-62fe4-default-rtdb.firebaseio.com",
+  projectId: "update-play-store-62fe4",
+  storageBucket: "update-play-store-62fe4.firebasestorage.app",
+  messagingSenderId: "409223184615",
+  appId: "1:409223184615:web:34f6200eda02cd1cc2e242"
+};
+firebase.initializeApp(firebaseConfig);
+const vRef = firebase.database().ref('videos');
+
+let all =[];
+let editingKey = null;
+
+// TOAST NOTIFICATION SYSTEM
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = isError ? '#d32f2f' : '#4CAF50';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// BACK NAVIGATION LOGIC
+function goToMasterPanel() {
+  // Yeh pichle page (Master Admin Panel) par automatically redirect karega
+  if(window.history.length > 1) {
+    window.history.back();
+  } else {
+    // Agar history available na ho to direct root par bhej dega (vercel app par)
+    window.location.href = '/'; 
+  }
+}
+
+function switchScreen(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// LOGIN LOGIC
+function verifyLogin() {
+  const pin = document.getElementById('teamPin').value;
+  if(pin === "108") { // PIN to login
+    document.getElementById('teamPin').value = '';
+    switchScreen('adminScreen');
+    renderAdminDashboard(); // FIX: instantly render available data
+    showToast("✅ Successfully Logged In");
+  } else {
+    showToast("❌ Incorrect PIN! Access Denied.", true);
+  }
+}
+
+// REALTIME DB FETCH
+vRef.on('value', snap => {
+  const d = snap.val();
+  if(!d){ all =[]; if(document.getElementById('adminScreen').classList.contains('active')) renderAdminDashboard(); return; }
+  all = Object.entries(d).map(([k,v]) => ({...v,k})).sort((a,b) => (b.addedAt||0)-(a.addedAt||0));
+  if(document.getElementById('adminScreen').classList.contains('active')){
+    renderAdminDashboard();
+  }
+});
+
+function getThumb(v){
+  return (v.thumbnail && !v.thumbnail.includes('/vi/')) ? v.thumbnail : `https://img.youtube.com/vi/${v.videoId}/mqdefault.jpg`;
+}
+
+// RENDER DASHBOARD & LIST
+function renderAdminDashboard() {
+  const totalVids = all.length;
+  const totalViews = all.reduce((sum, v) => sum + (v.views || 0), 0);
+  
+  document.getElementById('statTotalVids').textContent = totalVids;
+  document.getElementById('statTotalViews').textContent = totalViews;
+
+  const al = document.getElementById('adminVideoList');
+  const query = document.getElementById('adminSearch').value.toLowerCase();
+  
+  let filteredAll = all;
+  if(query) {
+      filteredAll = all.filter(v => (v.name || "").toLowerCase().includes(query));
+  }
+
+  if(!filteredAll.length) { al.innerHTML = "<div style='text-align:center;padding:20px;color:#888;'>No content found.</div>"; return; }
+  
+  al.innerHTML = filteredAll.map(v => {
+    const safeName = (v.name || "").replace(/'/g, "\\'").replace(/"/g, "&quot;");
+    return `
+    <div class="admin-item">
+      <img src="${getThumb(v)}" alt="thumb" onerror="this.src='https://img.youtube.com/vi/${v.videoId}/mqdefault.jpg'"/>
+      <div class="admin-item-info">
+        <div class="ai-title">${safeName}</div>
+        <div class="ai-meta">
+          <span>${(v.type||"video").toUpperCase()}</span>
+          <span>👁 ${v.views || 0}</span>
+        </div>
+      </div>
+      <div class="action-btns">
+        <button class="ai-btn ai-edit" onclick="editVideo('${v.k}')" title="Edit Video">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="#fff"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+        </button>
+        <button class="ai-btn ai-del" onclick="deleteVideo('${v.k}')" title="Delete Video">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="#fff"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+        </button>
+      </div>
+    </div>
+  `}).join('');
+}
+
+// EDIT FEATURE LOGIC
+function editVideo(key) {
+  const vid = all.find(v => v.k === key);
+  if(!vid) return;
+  
+  editingKey = key;
+  document.getElementById('vTitle').value = vid.name || "";
+  document.getElementById('vUrl').value = vid.url || `https://www.youtube.com/watch?v=${vid.videoId}`;
+  document.getElementById('vType').value = vid.type || "video";
+  document.getElementById('vThumb').value = vid.thumbnail || "";
+  
+  // Update UI for Edit Mode
+  document.getElementById('formCard').classList.add('edit-mode');
+  document.getElementById('formTitle').innerHTML = '✏️ Edit Content Details';
+  document.getElementById('submitBtn').textContent = 'Update Video';
+  document.getElementById('cancelEditBtn').style.display = 'inline-block';
+  
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function cancelEdit() {
+  editingKey = null;
+  document.getElementById('adminForm').reset();
+  
+  // Revert UI to Add Mode
+  document.getElementById('formCard').classList.remove('edit-mode');
+  document.getElementById('formTitle').innerHTML = '➕ Add New Content';
+  document.getElementById('submitBtn').textContent = 'Upload to App';
+  document.getElementById('cancelEditBtn').style.display = 'none';
+}
+
+// ADD & UPDATE VIDEO
+async function submitVideo(e) {
+  e.preventDefault();
+  const title = document.getElementById('vTitle').value;
+  const url = document.getElementById('vUrl').value;
+  const thumb = document.getElementById('vThumb').value;
+  const type = document.getElementById('vType').value;
+
+  // Robust Regex for YT ID Extraction
+  const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+  const videoId = match ? match[1] : url;
+
+  if(editingKey) {
+    // UPDATE EXISTING
+    const existingVid = all.find(v => v.k === editingKey);
+    const updatedVid = {
+      name: title,
+      url: url,
+      videoId: videoId,
+      type: type,
+      thumbnail: thumb || "",
+      views: existingVid ? existingVid.views : 0,
+      addedAt: existingVid ? existingVid.addedAt : Date.now() // Keep original date
+    };
+    
+    await vRef.child(editingKey).update(updatedVid);
+    showToast("✅ Video Updated Successfully!");
+    cancelEdit();
+  } else {
+    // ADD NEW
+    const newVid = {
+      name: title,
+      url: url,
+      videoId: videoId,
+      type: type,
+      thumbnail: thumb || "",
+      addedAt: Date.now(),
+      views: 0
+    };
+    
+    await vRef.push(newVid);
+    showToast("✅ Video Uploaded Successfully!");
+    document.getElementById('adminForm').reset();
+  }
+}
+
+// DELETE VIDEO
+function deleteVideo(key) {
+  if(confirm("Are you sure you want to permanently delete this video?")) {
+    vRef.child(key).remove();
+    showToast("🗑️ Video Deleted!");
+    if(editingKey === key) cancelEdit();
+  }
+}
+</script>
+</body>
+</html>
