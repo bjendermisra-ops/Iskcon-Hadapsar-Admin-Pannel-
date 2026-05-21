@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>ISKCON Admin | Master Padyatra Studio</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Barlow+Condensed:wght@700;900&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  
+  <!-- Firebase Compat Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  
+  <!-- Agora RTC Web SDK -->
+  <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.18.2.js"></script>
+
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #0f0e0c;
+    }
+    .font-condensed {
+      font-family: 'Barlow Condensed', sans-serif;
+    }
+    /* Floating reactions box anim */
+    .float-reaction{
+      position: absolute; bottom: 0; right: 5px; font-size: 1.5rem; opacity: 0;
+      animation: floatUp 3s ease-out forwards; pointer-events: none;
+    }
+    @keyframes floatUp {
+      0%   { opacity: 1; transform: translateY(0) scale(0.7) rotate(-5deg); }
+      30%  { opacity: 1; transform: translateY(-60px) scale(1.2) rotate(5deg); }
+      70%  { opacity: 0.7; transform: translateY(-130px) scale(1) rotate(-3deg); }
+      100% { opacity: 0; transform: translateY(-210px) scale(0.8) rotate(8deg); }
+    }
+  </style>
+</head>
+<body class="text-stone-200 antialiased">
+
+  <!-- ─── UNIFIED REGISTRATION & AUTHENTICATION BARRIER ─── -->
+  <div id="auth-overlay" class="fixed inset-0 bg-stone-950/95 z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-stone-900 border border-orange-900/30 rounded-2xl max-w-lg w-full p-6 space-y-6 shadow-2xl">
+      
+      <!-- Top switcher tabs -->
+      <div class="flex border-b border-orange-900/10">
+        <button onclick="switchAuthTab('login')" id="tab-auth-login" class="flex-1 pb-3 text-center border-b-2 border-orange-600 text-orange-400 font-bold text-sm">
+          Login with Access Key
+        </button>
+        <button onclick="switchAuthTab('register')" id="tab-auth-register" class="flex-1 pb-3 text-center border-b-2 border-transparent text-stone-400 font-semibold text-sm">
+          Register New Padyatra Route
+        </button>
+      </div>
+
+      <!-- Auth Log-in panel -->
+      <div id="auth-login-pane" class="space-y-4">
+        <div class="text-center">
+          <h2 class="text-xl font-bold text-orange-400">Welcome back, Coordinator</h2>
+          <p class="text-xs text-stone-500 mt-1">Provide your generated access key passcode to unlock control panel dashboard.</p>
+        </div>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-[10px] font-bold text-stone-400 uppercase mb-1">Access Key / Secret PIN</label>
+            <input type="password" id="auth-key-input" placeholder="e.g. ISKCON-PAD-XXXX" class="w-full text-sm p-3 bg-stone-950 border border-orange-900/20 rounded-lg text-orange-300 focus:outline-none focus:ring-1 focus:ring-orange-500 placeholder-stone-800">
+          </div>
+          <button onclick="handleLoginAttempt()" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 rounded-lg text-xs transition-all uppercase tracking-wider">
+            Unlock Control Room
+          </button>
+        </div>
+      </div>
+
+      <!-- Coordinator registration panel -->
+      <div id="auth-register-pane" class="space-y-4 hidden">
+        <div class="text-center">
+          <h2 class="text-xl font-bold text-orange-400">First-time Setup Registration</h2>
+          <p class="text-xs text-stone-500 mt-1">Provide all essential route coordinates and credentials. We will instantly generate your device access PIN.</p>
+        </div>
+        
+        <div class="space-y-3 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+          <div class="grid grid-cols-1 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold text-stone-400 uppercase">Padyatra Name (English) *</label>
+              <input type="text" id="reg-name-en" placeholder="e.g. Maharashtra Bhakti Padyatra" class="w-full text-xs p-2.5 bg-stone-950 border border-orange-900/20 rounded">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] font-bold text-stone-400 uppercase">नाम (हिन्दी) *</label>
+                <input type="text" id="reg-name-hi" placeholder="हिन्दी नाम" class="w-full text-xs p-2.5 bg-stone-950 border border-orange-900/20 rounded">
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-stone-400 uppercase">नाव (मराठी) *</label>
+                <input type="text" id="reg-name-mr" placeholder="मराठी नाव" class="w-full text-xs p-2.5 bg-stone-950 border border-orange-900/20 rounded">
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-bold text-stone-400 uppercase">Brief Description (English) *</label>
+            <textarea id="reg-desc-en" rows="2" placeholder="Brief goals or route mission..." class="w-full text-xs p-2 bg-stone-950 border border-orange-900/20 rounded"></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold text-stone-400 uppercase">विवरण (हिन्दी) *</label>
+              <textarea id="reg-desc-hi" rows="2" class="w-full text-xs p-2 bg-stone-950 border border-orange-900/20 rounded"></textarea>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-stone-400 uppercase">वर्णन (मराठी) *</label>
+              <textarea id="reg-desc-mr" rows="2" class="w-full text-xs p-2 bg-stone-950 border border-orange-900/20 rounded"></textarea>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold text-stone-400 uppercase">Starting Country *</label>
+              <input type="text" id="reg-country" placeholder="e.g. India" class="w-full text-xs p-2.5 bg-stone-950 border border-orange-900/20 rounded">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-stone-400 uppercase">Starting City *</label>
+              <input type="text" id="reg-city" placeholder="e.g. Hadapsar" class="w-full text-xs p-2.5 bg-stone-950 border border-orange-900/20 rounded">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-bold text-stone-400 uppercase">Planned Cities (Comma separated) *</label>
+            <input type="text" id="reg-route" placeholder="Hadapsar, Pune, Alandi, Pandharpur" class="w-full text-xs p-2.5 bg-stone-950 border border-orange-900/20 rounded">
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold text-stone-400 uppercase">Coordinator Phone *</label>
+              <input type="tel" id="reg-phone" placeholder="9876543210" class="w-full text-xs p-2.5 bg-stone-950 border border-orange-900/20 rounded">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-stone-400 uppercase">Leader Name *</label>
+              <input type="text" id="reg-leader" placeholder="e.g. HH Lokanath Swami" class="w-full text-xs p-2.5 bg-stone-950 border border-orange-900/20 rounded">
+            </div>
+          </div>
+        </div>
+
+        <button onclick="handleRouteRegistration()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg text-xs transition-all uppercase tracking-wider">
+          Register Route & Get Key
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- KEY GENERATED DISPLAY DIALOG POPUP -->
+  <div id="key-dialog" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-stone-900 border-2 border-emerald-500 rounded-2xl max-w-sm w-full p-6 text-center space-y-4">
+      <div class="w-12 h-12 rounded-full bg-emerald-950 border border-emerald-500 flex items-center justify-center mx-auto text-emerald-500 text-2xl">
+        <i class="fas fa-key"></i>
+      </div>
+      <h3 class="text-lg font-bold text-orange-400">Onboarding Successful!</h3>
+      <p class="text-xs text-stone-400 leading-relaxed">Here is your unique Coordinator Access Key. Save it carefully to login later or from other devices.</p>
+      
+      <div class="bg-stone-950 p-3 rounded-lg border border-orange-900/20 flex items-center justify-between">
+        <span id="generated-key-text" class="text-orange-300 font-mono font-bold tracking-widest text-sm">KEY-XXXX</span>
+        <button onclick="copyGeneratedKey()" class="text-xs text-emerald-400 hover:underline">Copy</button>
+      </div>
+
+      <button onclick="dismissKeyDialog()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded text-xs">
+        Enter Dashboard Room
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN VIEWPORT CONTROL PANEL -->
+  <div id="dashboard-viewport" class="hidden">
+    <nav class="bg-stone-950 border-b border-orange-900/30 sticky top-0 z-40">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+          <div class="flex items-center">
+            <span id="role-badge" class="bg-orange-600 text-white font-black text-[9px] px-2.5 py-1 rounded mr-3 tracking-widest uppercase">COORDINATOR</span>
+            <h1 class="font-bold text-sm md:text-base tracking-wider text-orange-400 font-condensed">
+              Padyatra Admin Studio
+            </h1>
+          </div>
+          <div class="flex items-center space-x-3 text-xs">
+            <span class="bg-emerald-950 text-emerald-400 border border-emerald-900/30 px-2 py-0.5 rounded text-[10px] font-bold">
+              ● Connected
+            </span>
+            <button onclick="logoutAdmin()" class="bg-stone-900 border border-orange-900/20 text-orange-400 px-3 py-1 rounded font-bold text-xs">
+              Exit Portal
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      
+      <!-- Stats Summary -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-stone-900/60 p-4 rounded-xl border border-orange-900/10">
+          <p class="text-[9px] text-stone-500 font-bold uppercase">Assigned Path</p>
+          <p id="stat-pad-name" class="text-sm font-bold text-orange-400 truncate mt-1">None</p>
+        </div>
+        <div class="bg-stone-900/60 p-4 rounded-xl border border-orange-900/10">
+          <p class="text-[9px] text-stone-500 font-bold uppercase">Precise Landmark Set</p>
+          <p id="stat-landmark" class="text-sm font-bold text-emerald-500 truncate mt-1">None</p>
+        </div>
+        <div class="bg-stone-900/60 p-4 rounded-xl border border-orange-900/10">
+          <p class="text-[9px] text-stone-500 font-bold uppercase">Departure Timer Set</p>
+          <p id="stat-stay-timer" class="text-sm font-bold text-blue-400 truncate mt-1">None</p>
+        </div>
+        <div class="bg-stone-900/60 p-4 rounded-xl border border-orange-900/10">
+          <p class="text-[9px] text-stone-500 font-bold uppercase">Upload Media Count</p>
+          <p id="stat-photos-count" class="text-sm font-bold text-purple-400 truncate mt-1">0 Items</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Column: Forms and Settings -->
+        <div class="lg:col-span-1 space-y-6">
+          
+          <!-- ImgBB API Input config -->
+          <div class="bg-amber-950/20 p-4 rounded-xl border border-orange-900/20 space-y-2">
+            <label class="block text-[10px] font-bold text-orange-400 uppercase">ImgBB Cloud Key Config</label>
+            <input type="text" id="imgbb-key-input" class="w-full text-xs p-2 bg-stone-950 border border-orange-900/20 rounded text-orange-300" value="548fb47d702b5ade3a1d6bea9c4b6461">
+            <p class="text-[9px] text-orange-800 leading-tight">Default high-capacity production API key is configured. Files sync globally instantly.</p>
+          </div>
+
+          <!-- Padyatra Route details form -->
+          <div class="bg-stone-900/60 p-5 rounded-xl border border-orange-900/10 space-y-4">
+            <h3 class="font-bold text-orange-300 text-xs uppercase tracking-wider pb-2 border-b border-orange-900/10">Configure Route Parameters</h3>
+            
+            <input type="hidden" id="edit-padyatra-id">
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] text-stone-500 uppercase">Current Country *</label>
+                <input type="text" id="form-country" class="w-full text-xs p-2.5 bg-stone-950 border border-orange-900/20 rounded">
+              </div>
+              <div>
+                <label class="block text-[10px] text-stone-500 uppercase">Current City *</label>
+                <input type="text" id="form-city" class="w-full text-xs p-2.5 bg-stone-950 border border-orange-900/20 rounded">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[10px] text-stone-500 uppercase">Route Timeline Path *</label>
+              <input type="text" id="form-route" class="w-full text-xs p-2.5 bg-stone-950 border border-orange-900/20 rounded">
+            </div>
+
+            <div class="bg-orange-950/10 p-3 rounded-lg border border-orange-900/10 space-y-3">
+              <span class="text-[10px] font-bold text-orange-500 uppercase tracking-widest block border-b border-orange-900/5 pb-1">📍 Stay Spot Landmark & Timers</span>
+              <div>
+                <label class="block text-[9px] text-stone-400 uppercase">Exact Spot Landmark Name (e.g. Chowk, Temple)</label>
+                <input type="text" id="form-precise-landmark" class="w-full text-xs p-2 bg-stone-950 border border-orange-900/20 rounded">
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[9px] text-stone-400 uppercase">Departure Time</label>
+                  <input type="datetime-local" id="form-stay-until" class="w-full text-xs p-2 bg-stone-950 border border-orange-900/20 rounded text-stone-400">
+                </div>
+                <div>
+                  <label class="block text-[9px] text-stone-400 uppercase">Maps Link</label>
+                  <input type="url" id="form-maps-link" class="w-full text-xs p-2 bg-stone-950 border border-orange-900/20 rounded">
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] text-stone-500 uppercase">Status *</label>
+                <select id="form-status" class="w-full text-xs p-2 bg-stone-950 border border-orange-900/20 rounded text-stone-400">
+                  <option value="live">🔴 Live Now</option>
+                  <option value="planned">Planned</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] text-stone-500 uppercase">Leader Name *</label>
+                <input type="text" id="form-leader" class="w-full text-xs p-2.5 bg-stone-950 border border-orange-900/20 rounded">
+              </div>
+            </div>
+
+            <button onclick="savePadyatraRouteInfo()" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2.5 rounded text-xs transition-colors uppercase tracking-wider">
+              Sync Parameters to Cloud
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Middle Column: Live Broadcast Module Control -->
+        <div class="lg:col-span-2 space-y-6">
+          
+          <!-- Unified Devotional Video Broadcast Control Room -->
+          <div class="bg-stone-900/60 p-5 rounded-xl border border-orange-900/10 space-y-4">
+            <div class="flex justify-between items-center border-b border-orange-900/10 pb-2">
+              <div>
+                <h3 class="font-bold text-orange-300 text-sm font-condensed">🔴 Devotional Broadcaster Room</h3>
+                <p class="text-[10px] text-stone-500">Preach the holy names with direct high fidelity mic/camera feed or sync active YouTube streams.</p>
+              </div>
+              <span id="broadcast-status-badge" class="bg-stone-950 text-stone-400 border border-orange-900/20 text-[9px] font-bold px-2 py-0.5 rounded">STREAM INACTIVE</span>
+            </div>
+
+            <!-- Broadcaster mode chooser -->
+            <div class="grid grid-cols-2 gap-2 p-1 bg-stone-950 rounded-lg">
+              <button onclick="switchLiveMode('agora')" id="mode-btn-agora" class="py-2 text-xs font-bold rounded-md bg-orange-600 text-white">
+                🎥 Camera & Mic Mode
+              </button>
+              <button onclick="switchLiveMode('youtube')" id="mode-btn-youtube" class="py-2 text-xs font-semibold rounded-md text-stone-400">
+                🔴 YouTube Streaming URL
+              </button>
+            </div>
+
+            <!-- YouTube Video Input block -->
+            <div id="panel-youtube-input" class="space-y-2 hidden">
+              <label class="block text-[10px] text-stone-500 uppercase font-bold">Paste YouTube Stream ID or watch link</label>
+              <input type="text" id="live-youtube-url" placeholder="e.g. https://www.youtube.com/watch?v=..." class="w-full text-xs p-2.5 bg-stone-950 border border-orange-900/20 rounded">
+            </div>
+
+            <!-- Agora Camera Preview Container block -->
+            <div id="panel-agora-preview" class="space-y-2">
+              <div class="w-full aspect-video bg-black rounded-lg border border-orange-900/15 overflow-hidden relative shadow-inner">
+                <div id="local-video-viewport" class="w-full h-full"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-3 pointer-events-none">
+                  <span class="text-xs text-orange-400 font-bold"><i class="fas fa-camera mr-1"></i> Admin Local Feed Preview</span>
+                </div>
+              </div>
+              <div class="flex space-x-2">
+                <button onclick="toggleLocalMic()" id="btn-mic-toggle" class="flex-1 bg-stone-950 border border-orange-900/10 py-2 rounded text-xs text-stone-400 font-semibold flex items-center justify-center space-x-1">
+                  <i class="fas fa-microphone"></i> <span>Mic Active</span>
+                </button>
+                <button onclick="toggleLocalCamera()" id="btn-camera-toggle" class="flex-1 bg-stone-950 border border-orange-900/10 py-2 rounded text-xs text-stone-400 font-semibold flex items-center justify-center space-x-1">
+                  <i class="fas fa-video"></i> <span>Camera Active</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Core Live stream Toggle button -->
+            <button onclick="toggleGlobalLiveStreamState()" id="btn-toggle-live" class="w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-black py-3 rounded-xl text-sm font-condensed tracking-widest uppercase">
+              Start Live Broadcast Transmission
+            </button>
+
+            <!-- Real-time reactions console -->
+            <div class="bg-stone-950 p-4 rounded-xl border border-orange-900/15 space-y-3 relative overflow-hidden">
+              <div id="reaction-floater-stage" class="absolute inset-y-0 right-4 w-24 pointer-events-none overflow-hidden"></div>
+              <span class="text-[10px] font-bold text-orange-500 uppercase tracking-wider block">Devotee Reactions Feed</span>
+              <div class="grid grid-cols-5 gap-2 text-center text-xs font-bold text-stone-400">
+                <div class="p-2 bg-stone-900 border border-orange-900/5 rounded">❤️ <span id="stat-react-heart">0</span></div>
+                <div class="p-2 bg-stone-900 border border-orange-900/5 rounded">🙏 <span id="stat-react-pray">0</span></div>
+                <div class="p-2 bg-stone-900 border border-orange-900/5 rounded">🌸 <span id="stat-react-flower">0</span></div>
+                <div class="p-2 bg-stone-900 border border-orange-900/5 rounded">🔔 <span id="stat-react-bell">0</span></div>
+                <div class="p-2 bg-stone-900 border border-orange-900/5 rounded">🌿 <span id="stat-react-leaf">0</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Media uploads section -->
+          <div class="bg-stone-900/60 p-5 rounded-xl border border-orange-900/10 space-y-4">
+            <h3 class="font-bold text-orange-300 text-xs uppercase tracking-wider pb-2 border-b border-orange-900/10">Padyatra Cloud Photo Gallery</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-[10px] text-stone-500 uppercase">Classify Gallery Type *</label>
+                  <select id="media-type" class="w-full text-xs p-2 bg-stone-950 border border-orange-900/20 rounded text-stone-400">
+                    <option value="live">Live Photo Feed</option>
+                    <option value="daily">Daily Darshan Highlight</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] text-stone-500 uppercase">Caption *</label>
+                  <input type="text" id="media-caption" placeholder="e.g. Harinama at Hadapsar Market" class="w-full text-xs p-2.5 bg-stone-950 border border-orange-900/20 rounded">
+                </div>
+                <div>
+                  <label class="block text-[10px] text-stone-500 uppercase">Select File *</label>
+                  <input type="file" id="media-file" accept="image/*" class="w-full text-xs p-1 bg-stone-950 border border-orange-900/20 rounded">
+                </div>
+                <div id="upload-progress-container" class="hidden">
+                  <div class="flex justify-between text-[10px] font-bold text-orange-500">
+                    <span class="animate-pulse">Uploading to ImgBB...</span>
+                    <span id="upload-percent">0%</span>
+                  </div>
+                  <div class="w-full bg-stone-950 rounded-full h-1">
+                    <div id="upload-progress-bar" class="bg-orange-600 h-1 rounded-full" style="width: 0%"></div>
+                  </div>
+                </div>
+                <button onclick="handleMediaUpload()" class="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 rounded text-xs transition-colors">
+                  Upload Photo to Gallery
+                </button>
+              </div>
+
+              <!-- Admin gallery display tracker -->
+              <div class="space-y-2">
+                <span class="text-[10px] font-bold text-orange-500 uppercase">Uploaded Assets Tracker</span>
+                <div id="admin-gallery-preview" class="grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+                  <!-- Load dynamically -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <div id="toast" class="fixed bottom-5 right-5 z-50 p-4 rounded-lg shadow-lg text-xs font-bold border transition-all duration-300 transform translate-y-4 opacity-0 hidden"></div>
+
+  <script>
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBfbNzASqzPt4kMP-LlpJasIras7ifTch4",
+      authDomain: "iskcon-hadapsar.firebaseapp.com",
+      databaseURL: "https://iskcon-hadapsar-default-rtdb.firebaseio.com",
+      projectId: "iskcon-hadapsar",
+      appId: "1:231589086724:web:64d8a5d7a136b39db39751"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    const MASTER_ADMIN_KEY = "ISKCON_MASTER_777";
+
+    let adminState = {
+      sessionKey: "",
+      isMaster: false,
+      assignedPadyatraId: null,
+      padyatras: [],
+      
+      // Live Broadcast engine parameters
+      isLive: false,
+      liveMode: 'agora', // 'agora' or 'youtube'
+      agoraClient: null,
+      localAudioTrack: null,
+      localVideoTrack: null,
+      isMicMuted: false,
+      isCameraMuted: false,
+      
+      // Default hardcoded Agora ID as per legacy code structure
+      agoraAppId: "AIzaSyAgGnN3iktLh8JgzCZMxQMdCwkxFFIz1Tw" 
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      // Session persistent retrieval
+      const savedKey = sessionStorage.getItem('iskcon_padyatra_session_key');
+      if (savedKey) {
+        document.getElementById('auth-key-input').value = savedKey;
+        handleLoginAttempt();
+      }
+    });
+
+    function switchAuthTab(tab) {
+      const loginTab = document.getElementById('tab-auth-login');
+      const regTab = document.getElementById('tab-auth-register');
+      const loginPane = document.getElementById('auth-login-pane');
+      const regPane = document.getElementById('auth-register-pane');
+
+      if (tab === 'login') {
+        loginTab.className = "flex-1 pb-3 text-center border-b-2 border-orange-600 text-orange-400 font-bold text-sm";
+        regTab.className = "flex-1 pb-3 text-center border-b-2 border-transparent text-stone-400 font-semibold text-sm";
+        loginPane.classList.remove('hidden');
+        regPane.classList.add('hidden');
+      } else {
+        regTab.className = "flex-1 pb-3 text-center border-b-2 border-orange-600 text-orange-400 font-bold text-sm";
+        loginTab.className = "flex-1 pb-3 text-center border-b-2 border-transparent text-stone-400 font-semibold text-sm";
+        regPane.classList.remove('hidden');
+        loginPane.classList.add('hidden');
+      }
+    }
+
+    // Handles Onboarding for first-time administrators. Prevents mismatch.
+    function handleRouteRegistration() {
+      const nameEn = document.getElementById('reg-name-en').value.trim();
+      const nameHi = document.getElementById('reg-name-hi').value.trim();
+      const nameMr = document.getElementById('reg-name-mr').value.trim();
+      const descEn = document.getElementById('reg-desc-en').value.trim();
+      const descHi = document.getElementById('reg-desc-hi').value.trim();
+      const descMr = document.getElementById('reg-desc-mr').value.trim();
+      const country = document.getElementById('reg-country').value.trim();
+      const city = document.getElementById('reg-city').value.trim();
+      const routeStr = document.getElementById('reg-route').value.trim();
+      const phone = document.getElementById('reg-phone').value.trim();
+      const leader = document.getElementById('reg-leader').value.trim();
+
+      if (!nameEn || !nameHi || !nameMr || !descEn || !country || !city || !routeStr || !phone || !leader) {
+        alert("Please fill out all mandatory registration fields.");
+        return;
+      }
+
+      const routeArr = routeStr.split(',').map(r => r.trim()).filter(r => r !== '');
+      const uniquePin = 'ISKCON-PAD-' + Math.random().toString(36).substr(2, 4).toUpperCase();
+      const newId = 'padyatra-' + Date.now();
+
+      const payload = {
+        name: { en: nameEn, hi: nameHi, mr: nameMr },
+        description: { en: descEn, hi: descHi, mr: descMr },
+        currentCountry: country,
+        currentCity: city,
+        route: routeArr,
+        preciseLandmark: "",
+        coordinatorPhone: phone,
+        stayUntilTime: "",
+        googleMapsLink: "",
+        youtubeLiveUrl: "",
+        status: "planned",
+        startDate: new Date().toISOString().split('T')[0],
+        leader: leader,
+        accessKey: uniquePin,
+        photos: [],
+        liveState: {
+          isLive: false,
+          reactions: { heart: 0, pray: 0, flower: 0, bell: 0, leaf: 0 }
+        }
+      };
+
+      database.ref('padyatras/' + newId).set(payload)
+        .then(() => {
+          // Display the unique generated access key pin
+          document.getElementById('generated-key-text').textContent = uniquePin;
+          document.getElementById('key-dialog').classList.remove('hidden');
+        })
+        .catch(err => {
+          console.error(err);
+          alert("Firebase sync registration failed.");
+        });
+    }
+
+    function copyGeneratedKey() {
+      const keyText = document.getElementById('generated-key-text').textContent;
+      navigator.clipboard.writeText(keyText).then(() => {
+        alert("Coordinator Key copied!");
+      });
+    }
+
+    function dismissKeyDialog() {
+      const keyText = document.getElementById('generated-key-text').textContent;
+      document.getElementById('key-dialog').classList.add('hidden');
+      document.getElementById('auth-key-input').value = keyText;
+      switchAuthTab('login');
+      handleLoginAttempt();
+    }
+
+    function handleLoginAttempt() {
+      const key = document.getElementById('auth-key-input').value.trim();
+      if (!key) {
+        alert("Provide Access Key PIN to unlock dashboard.");
+        return;
+      }
+
+      database.ref('padyatras').once('value', (snapshot) => {
+        const data = snapshot.val() || {};
+        const list = Object.keys(data).map(k => ({ id: k, ...data[k] }));
+
+        let authenticated = false;
+        if (key === MASTER_ADMIN_KEY) {
+          authenticated = true;
+          adminState.isMaster = true;
+          adminState.assignedPadyatraId = null;
+        } else {
+          const match = list.find(p => p.accessKey === key);
+          if (match) {
+            authenticated = true;
+            adminState.isMaster = false;
+            adminState.assignedPadyatraId = match.id;
+          }
+        }
+
+        if (authenticated) {
+          adminState.sessionKey = key;
+          sessionStorage.setItem('iskcon_padyatra_session_key', key);
+
+          document.getElementById('auth-overlay').classList.add('hidden');
+          document.getElementById('dashboard-viewport').classList.remove('hidden');
+
+          // Initialize view settings
+          initAdminDashboardView();
+        } else {
+          alert("Invalid Access PIN.");
+          sessionStorage.removeItem('iskcon_padyatra_session_key');
+        }
+      });
+    }
+
+    function logoutAdmin() {
+      sessionStorage.removeItem('iskcon_padyatra_session_key');
+      location.reload();
+    }
+
+    // Setups dynamic real-time sync listeners for the dashboard
+    function initAdminDashboardView() {
+      const badge = document.getElementById('role-badge');
+      if (adminState.isMaster) {
+        badge.textContent = "MASTER ADMIN";
+        badge.className = "bg-red-600 text-white font-black text-[9px] px-2.5 py-1 rounded mr-3 tracking-widest uppercase animate-pulse";
+      } else {
+        badge.textContent = "COORDINATOR";
+        badge.className = "bg-orange-500 text-white font-black text-[9px] px-2.5 py-1 rounded mr-3 tracking-widest uppercase";
+      }
+
+      // Read updates from firebase
+      database.ref('padyatras').on('value', (snapshot) => {
+        const data = snapshot.val() || {};
+        const allList = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+
+        if (adminState.isMaster) {
+          adminState.padyatras = allList;
+        } else {
+          adminState.padyatras = allList.filter(p => p.id === adminState.assignedPadyatraId);
+          
+          // Pre populate coordinator values immediately on load
+          if (adminState.padyatras.length > 0) {
+            populateFormWithPadyatra(adminState.padyatras[0]);
+          }
+        }
+
+        updateStatsWidget();
+        renderAdminGalleryPreview();
+        populateDropdown();
+        syncLiveReactionsData();
+      });
+
+      // Init local audio / video tracks preview
+      initAgoraLocalStreamPreview();
+    }
+
+    function populateFormWithPadyatra(item) {
+      document.getElementById('edit-padyatra-id').value = item.id;
+      document.getElementById('form-country').value = item.currentCountry || '';
+      document.getElementById('form-city').value = item.currentCity || '';
+      document.getElementById('form-route').value = item.route ? item.route.join(', ') : '';
+      document.getElementById('form-precise-landmark').value = item.preciseLandmark || '';
+      document.getElementById('form-stay-until').value = item.stayUntilTime || '';
+      document.getElementById('form-maps-link').value = item.googleMapsLink || '';
+      document.getElementById('form-status').value = item.status || 'live';
+      document.getElementById('form-leader').value = item.leader || '';
+    }
+
+    function updateStatsWidget() {
+      if (adminState.padyatras.length === 0) return;
+      const main = adminState.padyatras[0];
+
+      document.getElementById('stat-pad-name').textContent = main.name.en;
+      document.getElementById('stat-landmark').textContent = main.preciseLandmark ? main.preciseLandmark : "Not Set";
+      document.getElementById('stat-stay-timer').textContent = main.stayUntilTime ? new Date(main.stayUntilTime).toLocaleDateString() : "Not Set";
+      document.getElementById('stat-photos-count').textContent = (main.photos ? main.photos.length : 0) + " Items";
+    }
+
+    function populateDropdown() {
+      const select = document.getElementById('media-padyatra-select');
+      select.innerHTML = '';
+      adminState.padyatras.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name.en;
+        select.appendChild(opt);
+      });
+    }
+
+    function showNotification(msg, type = 'success') {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.className = `fixed bottom-5 right-5 z-50 p-4 rounded-lg shadow-lg text-xs font-bold border transition-all duration-300 ${
+        type === 'success' ? 'bg-emerald-950 text-emerald-400 border-emerald-900/30' : 'bg-red-950 text-red-400 border-red-950/30'
+      }`;
+      toast.classList.remove('hidden', 'translate-y-4', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-4', 'opacity-0');
+        setTimeout(() => toast.classList.add('hidden'), 300);
+      }, 3000);
+    }
+
+    // Dynamic state saving
+    function savePadyatraRouteInfo() {
+      const id = document.getElementById('edit-padyatra-id').value;
+      const country = document.getElementById('form-country').value.trim();
+      const city = document.getElementById('form-city').value.trim();
+      const routeStr = document.getElementById('form-route').value.trim();
+      const landmark = document.getElementById('form-precise-landmark').value.trim();
+      const departure = document.getElementById('form-stay-until').value;
+      const maps = document.getElementById('form-maps-link').value.trim();
+      const status = document.getElementById('form-status').value;
+      const leader = document.getElementById('form-leader').value.trim();
+
+      if (!country || !city || !routeStr || !leader) {
+        showNotification("Please fill all mandatory parameter fields (*)", "error");
+        return;
+      }
+
+      const routeArr = routeStr.split(',').map(r => r.trim()).filter(r => r !== '');
+
+      // Fetch pristine original metadata elements to prevent override loss
+      const original = adminState.padyatras.find(p => p.id === id);
+      if (!original) return;
+
+      const payload = {
+        name: original.name,
+        description: original.description,
+        currentCountry: country,
+        currentCity: city,
+        route: routeArr,
+        preciseLandmark: landmark,
+        coordinatorPhone: original.coordinatorPhone,
+        stayUntilTime: departure,
+        googleMapsLink: maps,
+        status: status,
+        startDate: original.startDate,
+        leader: leader,
+        accessKey: original.accessKey,
+        photos: original.photos || [],
+        liveState: original.liveState || { isLive: false, reactions: { heart: 0, pray: 0, flower: 0, bell: 0, leaf: 0 } }
+      };
+
+      database.ref('padyatras/' + id).set(payload)
+        .then(() => {
+          showNotification("Parameters synced dynamically to Cloud!");
+        })
+        .catch(err => {
+          console.error(err);
+          showNotification("Firebase cloud sync failed.", "error");
+        });
+    }
+
+    // ─── HIGH VISIBILITY VIDEO BROADCAST ENGINE CONTROLLER ───
+    
+    function switchLiveMode(mode) {
+      adminState.liveMode = mode;
+      
+      const btnAgora = document.getElementById('mode-btn-agora');
+      const btnYt = document.getElementById('mode-btn-youtube');
+      const paneYt = document.getElementById('panel-youtube-input');
+      const paneAgora = document.getElementById('panel-agora-preview');
+
+      if (mode === 'agora') {
+        btnAgora.className = "py-2 text-xs font-bold rounded-md bg-orange-600 text-white";
+        btnYt.className = "py-2 text-xs font-semibold rounded-md text-stone-400";
+        paneAgora.classList.remove('hidden');
+        paneYt.classList.add('hidden');
+      } else {
+        btnYt.className = "py-2 text-xs font-bold rounded-md bg-orange-600 text-white";
+        btnAgora.className = "py-2 text-xs font-semibold rounded-md text-stone-400";
+        paneYt.classList.remove('hidden');
+        paneAgora.classList.add('hidden');
+      }
+    }
+
+    // Local WebRTC stream configuration
+    async function initAgoraLocalStreamPreview() {
+      try {
+        [adminState.localAudioTrack, adminState.localVideoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks(
+          { encoderConfig: "music_standard" },
+          { encoderConfig: { width: 640, height: 480, frameRate: 15 } }
+        );
+        adminState.localVideoTrack.play("local-video-viewport");
+      } catch (e) {
+        console.error("Local tracks preview initialization failed", e);
+      }
+    }
+
+    function toggleLocalMic() {
+      if (!adminState.localAudioTrack) return;
+      adminState.isMicMuted = !adminState.isMicMuted;
+      adminState.localAudioTrack.setEnabled(!adminState.isMicMuted);
+      
+      const btn = document.getElementById('btn-mic-toggle');
+      if (adminState.isMicMuted) {
+        btn.innerHTML = `<i class="fas fa-microphone-slash"></i> <span>Mic Muted</span>`;
+        btn.className = "flex-1 bg-red-950/40 border border-red-900/20 py-2 rounded text-xs text-red-400 font-semibold flex items-center justify-center space-x-1";
+      } else {
+        btn.innerHTML = `<i class="fas fa-microphone"></i> <span>Mic Active</span>`;
+        btn.className = "flex-1 bg-stone-950 border border-orange-900/10 py-2 rounded text-xs text-stone-400 font-semibold flex items-center justify-center space-x-1";
+      }
+    }
+
+    function toggleLocalCamera() {
+      if (!adminState.localVideoTrack) return;
+      adminState.isCameraMuted = !adminState.isCameraMuted;
+      adminState.localVideoTrack.setEnabled(!adminState.isCameraMuted);
+
+      const btn = document.getElementById('btn-camera-toggle');
+      if (adminState.isCameraMuted) {
+        btn.innerHTML = `<i class="fas fa-video-slash"></i> <span>Camera Muted</span>`;
+        btn.className = "flex-1 bg-red-950/40 border border-red-900/20 py-2 rounded text-xs text-red-400 font-semibold flex items-center justify-center space-x-1";
+      } else {
+        btn.innerHTML = `<i class="fas fa-video"></i> <span>Camera Active</span>`;
+        btn.className = "flex-1 bg-stone-950 border border-orange-900/10 py-2 rounded text-xs text-stone-400 font-semibold flex items-center justify-center space-x-1";
+      }
+    }
+
+    async function toggleGlobalLiveStreamState() {
+      const activeId = adminState.padyatras[0].id;
+      if (!activeId) return;
+
+      const btn = document.getElementById('btn-toggle-live');
+
+      if (adminState.isLive) {
+        // Stop Streaming sequence
+        if (confirm("Stop the current live video transmission?")) {
+          if (adminState.liveMode === 'agora' && adminState.agoraClient) {
+            await adminState.agoraClient.leave();
+          }
+
+          // Write stop metadata to specific Padyatra's Firebase live state
+          database.ref(`padyatras/${activeId}/liveState`).set({
+            isLive: false,
+            reactions: { heart: 0, pray: 0, flower: 0, bell: 0, leaf: 0 }
+          }).then(() => {
+            adminState.isLive = false;
+            setBroadcastUIState(false);
+            showNotification("Live Broadcast disconnected successfully.");
+          });
+        }
+
+      } else {
+        // Start streaming sequence
+        let ytId = "";
+        if (adminState.liveMode === 'youtube') {
+          const ytUrl = document.getElementById('live-youtube-url').value.trim();
+          const match = ytUrl.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+          if (match) {
+            ytId = match[1];
+          } else if (ytUrl.length === 11) {
+            ytId = ytUrl;
+          } else {
+            showNotification("Please provide valid YouTube link parameters.", "error");
+            return;
+          }
+        }
+
+        btn.disabled = true;
+        btn.textContent = "Establishing Connection to Server...";
+
+        try {
+          if (adminState.liveMode === 'agora') {
+            const client = AgoraRTC.createClient({ mode: "live", codec: "h264" });
+            adminState.agoraClient = client;
+
+            await client.setClientRole("host");
+            await client.join(adminState.agoraAppId, "iskcon_live", null, null);
+
+            if (adminState.localVideoTrack && adminState.localAudioTrack) {
+              await client.publish([adminState.localVideoTrack, adminState.localAudioTrack]);
+            }
+          }
+
+          const livePayload = {
+            isLive: true,
+            mode: adminState.liveMode,
+            ytVideoId: ytId,
+            agoraAppId: adminState.agoraAppId,
+            startedAt: Date.now(),
+            reactions: { heart: 0, pray: 0, flower: 0, bell: 0, leaf: 0 }
+          };
+
+          database.ref(`padyatras/${activeId}/liveState`).set(livePayload)
+            .then(() => {
+              adminState.isLive = true;
+              setBroadcastUIState(true);
+              showNotification("You are now transmitting LIVE broadcast stream!");
+            });
+
+        } catch (e) {
+          console.error(e);
+          showNotification("Error: Cannot start live feed", "error");
+          setBroadcastUIState(false);
+        } finally {
+          btn.disabled = false;
+        }
+      }
+    }
+
+    function setBroadcastUIState(live) {
+      const btn = document.getElementById('btn-toggle-live');
+      const badge = document.getElementById('broadcast-status-badge');
+
+      if (live) {
+        btn.textContent = "Terminate Live Broadcast Transmission";
+        btn.className = "w-full bg-red-600 hover:bg-red-700 text-white font-black py-3 rounded-xl text-sm font-condensed tracking-widest uppercase shadow-lg";
+        badge.textContent = "● TRANSMITTING LIVE";
+        badge.className = "bg-red-950 text-red-400 border border-red-900/30 text-[9px] font-bold px-2 py-0.5 rounded animate-pulse";
+      } else {
+        btn.textContent = "Start Live Broadcast Transmission";
+        btn.className = "w-full bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-black py-3 rounded-xl text-sm font-condensed tracking-widest uppercase";
+        badge.textContent = "STREAM INACTIVE";
+        badge.className = "bg-stone-950 text-stone-400 border border-orange-900/20 text-[9px] font-bold px-2 py-0.5 rounded";
+      }
+    }
+
+    // Sync Reactions counter dashboard statistics
+    function syncLiveReactionsData() {
+      if (adminState.padyatras.length === 0) return;
+      const active = adminState.padyatras[0];
+      const state = active.liveState;
+
+      if (state && state.reactions) {
+        document.getElementById('stat-react-heart').textContent = state.reactions.heart || 0;
+        document.getElementById('stat-react-pray').textContent = state.reactions.pray || 0;
+        document.getElementById('stat-react-flower').textContent = state.reactions.flower || 0;
+        document.getElementById('stat-react-bell').textContent = state.reactions.bell || 0;
+        document.getElementById('stat-react-leaf').textContent = state.reactions.leaf || 0;
+
+        // Animate floating emoji on admin screen whenever devotees tap reactions
+        if (state.latestReaction && state.latestReaction.ts) {
+          spawnFloatingAdminReaction(state.latestReaction.emoji);
+        }
+      }
+    }
+
+    function spawnFloatingAdminReaction(emoji) {
+      const stage = document.getElementById('reaction-stage');
+      if (!stage) return;
+      const el = document.createElement('div');
+      el.className = 'float-reaction';
+      el.textContent = emoji;
+      el.style.right = (Math.random() * 40) + 'px';
+      stage.appendChild(el);
+      setTimeout(() => el.remove(), 3200);
+    }
+
+    // ─── ImgBB PHOTO FEED UPLOAD COMPONENT ───
+
+    async function handleMediaUpload() {
+      const id = document.getElementById('media-padyatra-select').value;
+      const caption = document.getElementById('media-caption').value.trim();
+      const type = document.getElementById('media-type').value;
+      const key = document.getElementById('imgbb-key-input').value.trim();
+      const fileInput = document.getElementById('media-file');
+
+      if (!id || !caption || !fileInput.files[0]) {
+        showNotification("All media upload parameters are mandatory.", "error");
+        return;
+      }
+
+      const file = fileInput.files[0];
+      const container = document.getElementById('upload-progress-container');
+      const bar = document.getElementById('upload-progress-bar');
+      const text = document.getElementById('upload-percent');
+
+      container.classList.remove('hidden');
+      bar.style.width = "25%";
+      text.textContent = "25%";
+
+      const formData = new FormData();
+      formData.append('image', file);
+
+      try {
+        bar.style.width = "60%";
+        text.textContent = "60%";
+
+        const response = await fetch(`https://api.imgbb.com/1/upload?key=${key}`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) throw new Error("Upload aborted");
+        const resObj = await response.json();
+
+        if (resObj.success) {
+          savePhotoToFirebase(id, resObj.data.url, caption, type);
+          bar.style.width = "100%";
+          text.textContent = "100%";
+          showNotification("Photo synced to cloud successfully!");
+        } else {
+          throw new Error("ImgBB rejected upload");
+        }
+
+      } catch (err) {
+        console.error(err);
+        showNotification("Cloud synchronization upload failed.", "error");
+      } finally {
+        setTimeout(() => {
+          container.classList.add('hidden');
+          fileInput.value = '';
+          document.getElementById('media-caption').value = '';
+        }, 800);
+      }
+    }
+
+    function savePhotoToFirebase(padId, url, caption, type) {
+      const item = adminState.padyatras.find(p => p.id === padId);
+      if (item) {
+        if (!item.photos) item.photos = [];
+        item.photos.push({
+          id: 'photo-' + Date.now(),
+          url: url,
+          caption: caption,
+          type: type,
+          date: new Date().toISOString().split('T')[0]
+        });
+
+        database.ref(`padyatras/${padId}/photos`).set(item.photos);
+      }
+    }
+
+    function renderAdminGalleryPreview() {
+      const container = document.getElementById('admin-gallery-preview');
+      container.innerHTML = '';
+      let count = 0;
+
+      adminState.padyatras.forEach(p => {
+        if (p.photos) {
+          p.photos.forEach(ph => {
+            count++;
+            const cell = document.createElement('div');
+            cell.className = "relative group h-24 bg-stone-950 border border-orange-900/10 rounded overflow-hidden shadow-xs";
+            cell.innerHTML = `
+              <img src="${ph.url}" alt="" class="w-full h-full object-cover">
+              <div class="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-between p-2">
+                <span class="text-[8px] bg-orange-600 text-white font-bold px-1.5 py-0.5 rounded self-start truncate">${p.name.en}</span>
+                <div class="flex items-center justify-between text-white">
+                  <span class="text-[9px] truncate pr-2">${ph.caption}</span>
+                  <button onclick="deletePhoto('${p.id}', '${ph.id}')" class="text-red-500 hover:text-red-400 font-bold text-xs">×</button>
+                </div>
+              </div>
+            `;
+            container.appendChild(cell);
+          });
+        }
+      });
+
+      if (count === 0) {
+        container.innerHTML = `<div class="col-span-2 text-center text-xs text-stone-500 py-6 italic">No photos synced.</div>`;
+      }
+    }
+
+    function deletePhoto(padId, photoId) {
+      if (confirm("Delete this photo link from the database?")) {
+        const item = adminState.padyatras.find(p => p.id === padId);
+        if (item && item.photos) {
+          const updated = item.photos.filter(ph => ph.id !== photoId);
+          database.ref(`padyatras/${padId}/photos`).set(updated);
+        }
+      }
+    }
+  </script>
+</body>
+</html>
