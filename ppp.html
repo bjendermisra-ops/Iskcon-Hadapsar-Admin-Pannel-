@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#080604">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>ISKCON Hadapsar | Padyatra & Live Devotee Portal</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Devanagari:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  
+  <!-- Firebase Compat Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    :root {
+      --saffron:#FF9933; --saffron-d:#D4710A; --saffron-glow:rgba(255,153,51,.28);
+      --bg:#080604; --panel:#141209; --card:#1c1912;
+      --border:rgba(255,153,51,.12); --border-hard:rgba(255,153,51,.22);
+      --danger:#FF3B3B; --success:#2ECC71; --warn:#FFB300;
+      --muted:#5a5040; --text-dim:#6b5e48; --text-mid:#a8936e;
+    }
+    body {
+      font-family: 'Barlow', sans-serif;
+      background-color: var(--bg);
+    }
+    .gradient-bg {
+      background: linear-gradient(135deg, #ea580c 0%, #f59e0b 100%);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #0f0e0c;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #d97706;
+      border-radius: 4px;
+    }
+    
+    /* GPU Accelerated Floating Reactions Animation */
+    .float-emoji {
+      position: absolute; bottom: 0; right: 6px; font-size: 1.8rem; opacity: 0; pointer-events: none;
+      animation: floatUp 3s ease-out forwards; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); z-index: 50;
+      will-change: transform, opacity;
+    }
+    @keyframes floatUp {
+      0% { opacity:1; transform: translateY(0) scale(.6) rotate(-8deg); }
+      30% { opacity:1; transform: translateY(-65px) scale(1.2) rotate(6deg); }
+      70% { opacity:.7; transform: translateY(-150px) scale(1) rotate(-3deg); }
+      100% { opacity:0; transform: translateY(-240px) scale(.7) rotate(8deg); }
+    }
+    .font-devanagari {
+      font-family: 'Noto Serif Devanagari', serif;
+    }
+
+    /* RECONNECT BANNER */
+    #reconnect-banner { position:fixed; top:0; left:0; right:0; background:rgba(255,179,0,.95); color:#000; text-align:center; padding:10px 16px; font-size:.85rem; font-weight:700; z-index:9990; display:none; align-items:center; justify-content:center; gap:10px; box-shadow:0 4px 10px rgba(0,0,0,0.5); }
+    #reconnect-banner.show { display:flex; animation:slideDown 0.3s ease; }
+    @keyframes slideDown { from{transform:translateY(-100%);} to{transform:translateY(0);} }
+    .rspin { width:16px; height:16px; border:2px solid rgba(0,0,0,.2); border-top-color:#000; border-radius:50%; animation:spinCW .7s linear infinite; flex-shrink:0; }
+    @keyframes spinCW { to{transform:rotate(360deg);} }
+  </style>
+</head>
+<body class="text-gray-100 antialiased overflow-x-hidden">
+
+  <div id="reconnect-banner">
+    <div class="rspin"></div>
+    <span id="reconnect-text">Server se jod raha hai...</span>
+  </div>
+
+  <!-- Navigation Bar (Optimized for ultra-responsive viewport widths) -->
+  <nav class="bg-stone-900/60 backdrop-blur-xl border-b border-white/5 sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16 items-center">
+        <div class="flex items-center min-w-0">
+          <!-- Saffron Maharaj Logo Placeholder -->
+          <div class="w-9 h-9 sm:w-11 sm:h-11 rounded-xl gradient-bg flex items-center justify-center text-white shadow-lg shadow-orange-600/25 border border-white/10 relative overflow-hidden flex-shrink-0" id="logo-holder">
+            <i class="fas fa-dharmachakra text-white text-xs sm:text-lg animate-spin" style="animation-duration: 30s;"></i>
+          </div>
+          <span class="ml-2 sm:ml-3 font-extrabold text-xs sm:text-base md:text-lg text-orange-400 tracking-wide font-devanagari truncate max-w-[140px] xs:max-w-none" id="nav-title">ISKCON Hadapsar Padyatra</span>
+        </div>
+        <div class="flex items-center space-x-1.5 flex-shrink-0">
+          <span class="inline-flex items-center px-1.5 py-0.5 sm:px-2 sm:py-1 rounded text-[8px] sm:text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-900/30">
+            <span class="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-pulse mr-1"></span> Live Sync
+          </span>
+          <select id="lang-select" onchange="changeLanguage(this.value)" class="bg-stone-900 border border-white/5 text-orange-200 text-[10px] sm:text-xs rounded-lg block p-1 sm:p-1.5 font-medium">
+            <option value="en">English</option>
+            <option value="hi">हिन्दी</option>
+            <option value="mr">मराठी</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- ─── REAL-TIME SYNCED BROADCAST CONTAINER ─── -->
+    <div id="unified-live-broadcast-area" class="hidden">
+      <!-- Loaded dynamically via active live status Padyatra -->
+    </div>
+
+    <!-- Saffron Hero Banner -->
+    <div class="gradient-bg rounded-2xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
+      <div class="absolute right-0 bottom-0 opacity-10 pointer-events-none">
+        <svg width="240" height="240" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"></path></svg>
+      </div>
+      <div class="relative z-10 max-w-2xl">
+        <span class="bg-white/20 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider" id="hero-badge">ISKCON Hadapsar Initiative</span>
+        <h1 class="text-2xl md:text-4xl font-extrabold mt-3 leading-tight tracking-wide font-devanagari" id="hero-title">Browse Global Devotional Journeys</h1>
+        <p class="text-orange-100 mt-2 text-xs md:text-sm" id="hero-desc">Experience real-time updates, geographical routes, coordinates and daily darshan from spiritual foot-marathons around the globe.</p>
+      </div>
+    </div>
+
+    <!-- Filters Panel -->
+    <div class="bg-stone-900/40 backdrop-blur-md p-4 rounded-xl border border-white/5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div class="relative flex-1">
+        <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+          <i class="fas fa-search text-orange-800"></i>
+        </span>
+        <input type="text" id="user-search-input" oninput="renderUserPadyatras()" placeholder="Search Padyatra by name, city, country..." class="pl-10 pr-4 py-2.5 w-full bg-stone-950/80 border border-white/5 rounded-lg text-xs text-orange-100 placeholder-stone-600 focus:outline-none focus:ring-1 focus:ring-orange-500">
+      </div>
+      <div class="flex items-center space-x-2 overflow-x-auto">
+        <button onclick="setUserFilter('all')" id="tab-all" class="px-4 py-2.5 rounded-lg text-xs font-semibold bg-orange-600 text-white whitespace-nowrap">All Padyatras</button>
+        <button onclick="setUserFilter('live')" id="tab-live" class="px-4 py-2.5 rounded-lg text-xs font-semibold bg-stone-950 text-orange-400 border border-orange-950 hover:bg-stone-900 whitespace-nowrap">🔴 Live Only</button>
+        <button onclick="setUserFilter('favorites')" id="tab-fav" class="px-4 py-2.5 rounded-lg text-xs font-semibold bg-stone-950 text-orange-400 border border-orange-950 hover:bg-stone-900 whitespace-nowrap flex items-center space-x-1">
+          <span>⭐ Favorites</span>
+          <span id="fav-count" class="bg-orange-800 text-orange-100 text-[10px] px-1.5 py-0.5 rounded-full font-bold">0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Listings of Padyatras -->
+    <div class="grid grid-cols-1 gap-6">
+      <div class="space-y-6">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-bold text-orange-300 flex items-center font-devanagari" id="heading-padyatra-list">🚶 Active & Upcoming Padyatras</h2>
+          <span id="padyatras-found-count" class="text-xs font-semibold text-orange-800">0 journeys active</span>
+        </div>
+        <div id="padyatras-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Detailed Padyatra Modal -->
+  <div id="padyatra-detail-modal" class="fixed inset-0 z-50 overflow-y-auto hidden" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+      <div class="fixed inset-0 bg-black/80" onclick="closeModal()"></div>
+      <span class="hidden sm:inline-block sm:align-middle sm:h-screen">​</span>
+      <div class="inline-block align-bottom bg-[#0c0a06] rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full border border-white/5">
+        <div class="relative gradient-bg px-6 py-6 text-white">
+          <button onclick="closeModal()" class="absolute top-4 right-4 text-white text-2xl font-bold">×</button>
+          <span id="modal-badge" class="bg-white/20 text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">Live</span>
+          <h3 class="text-xl md:text-2xl font-black mt-1 font-devanagari" id="modal-title-text">Padyatra Title</h3>
+          <p class="text-orange-100 text-xs mt-1" id="modal-leader-text">Coordinator</p>
+        </div>
+        <div class="p-6 space-y-6">
+          
+          <!-- 📍 DAFNE DUAL GLOW EXACT LIVE LOCATION CARD (Optimized for Small Mobile Responsiveness) -->
+          <div id="modal-live-box" class="bg-gradient-to-r from-red-950/20 via-orange-950/20 to-stone-950/20 border-2 border-red-600/30 rounded-2xl p-4 sm:p-5 shadow-2xl relative overflow-hidden hidden">
+            <!-- Backstage soft aura glow -->
+            <div class="absolute -right-16 -top-16 w-32 h-32 rounded-full bg-red-600/10 blur-xl pointer-events-none"></div>
+
+            <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div class="space-y-2">
+                <span class="inline-flex items-center bg-red-600 text-white text-[9px] font-black px-2.5 py-1 rounded-md uppercase tracking-wider animate-pulse">
+                  <span class="w-1.5 h-1.5 rounded-full bg-white mr-1.5"></span> Exact Live Location
+                </span>
+                <h4 class="font-extrabold text-orange-400 text-base sm:text-lg tracking-wide font-devanagari" id="modal-live-landmark">Spot Name</h4>
+                
+                <!-- Realtime countdown timer -->
+                <div class="flex items-center space-x-2 text-[11px] sm:text-xs text-stone-400 bg-black/40 px-2.5 py-1.5 rounded-lg w-max border border-white/5">
+                  <i class="fas fa-clock text-red-500 animate-pulse"></i>
+                  <span id="modal-live-countdown-lbl" class="mr-1">Leaving in:</span>
+                  <span class="font-black text-red-500" id="modal-live-countdown" data-countdown-id="" data-time="">Calculating...</span>
+                </div>
+              </div>
+              
+              <!-- Stack layout on mobile, side-by-side on larger screens to prevent cuts -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full md:flex md:w-auto md:self-end">
+                <a id="modal-live-map-btn" href="#" target="_blank" class="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs px-3.5 py-2.5 rounded-xl font-bold shadow-md shadow-blue-500/10 transition-transform active:scale-95 text-center leading-tight">
+                  <i class="fas fa-map-marked-alt flex-shrink-0 text-sm"></i> <span id="modal-live-map-text">Get Navigation Path</span>
+                </a>
+                <a id="modal-live-phone-btn" href="#" class="flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs px-3.5 py-2.5 rounded-xl font-bold shadow-md shadow-emerald-500/10 transition-transform active:scale-95 text-center leading-tight">
+                  <i class="fas fa-phone-alt flex-shrink-0 text-sm"></i> <span id="modal-live-phone-text">Call Coordinator</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="text-xs font-bold uppercase text-orange-500 mb-1" id="modal-lbl-desc">About Journey</h4>
+            <p class="text-xs text-orange-100/80 leading-relaxed font-devanagari animate-pulse" id="modal-desc-text">Description...</p>
+          </div>
+          <div>
+            <h4 class="text-xs font-bold uppercase text-orange-500 mb-2" id="modal-lbl-route">Route Progression Map</h4>
+            <!-- Scroll timeline wrapping container with alignment properties -->
+            <div id="modal-route-timeline-container" class="overflow-x-auto pb-2 custom-scrollbar scroll-smooth">
+              <div class="flex items-center space-x-2 min-w-max p-1" id="modal-route-timeline"></div>
+            </div>
+          </div>
+
+          <!-- 📍 DYNAMIC HALT DETAILS & JOURNEY DURATIONS CARD -->
+          <div class="bg-stone-950 p-4 rounded-xl border border-white/5 space-y-3 shadow-inner">
+            <h4 class="text-xs font-bold uppercase text-orange-500" id="modal-lbl-halt-details">Halt Details & Travel Durations</h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+              <!-- Last Stop -->
+              <div class="bg-stone-900/60 p-3 rounded-lg border border-white/5">
+                <span class="text-[10px] text-orange-600 font-bold block" id="modal-lbl-last-halt">Last Halt:</span>
+                <span id="modal-val-last-halt" class="text-white font-semibold font-devanagari">Calculating...</span>
+              </div>
+              <!-- Current Location -->
+              <div class="bg-stone-900/60 p-3 rounded-lg border border-white/5">
+                <span class="text-[10px] text-orange-600 font-bold block" id="modal-lbl-curr-halt">Current Location:</span>
+                <span id="modal-val-curr-halt" class="text-white font-semibold font-devanagari">Calculating...</span>
+              </div>
+              <!-- Next Destination -->
+              <div class="bg-stone-900/60 p-3 rounded-lg border border-white/5">
+                <span class="text-[10px] text-orange-600 font-bold block" id="modal-lbl-next-halt">Next Stop:</span>
+                <span id="modal-val-next-halt" class="text-white font-semibold font-devanagari">Calculating...</span>
+              </div>
+            </div>
+            <!-- Duration Elapsed Tracker -->
+            <div class="bg-stone-900/40 p-3 rounded-lg border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+              <span class="text-stone-400 font-bold" id="modal-lbl-elapsed">Time Elapsed Since Departure:</span>
+              <span id="modal-val-elapsed" class="text-emerald-500 font-bold">Calculating...</span>
+            </div>
+          </div>
+
+          <!-- Daily Highlights Gallery Section -->
+          <div>
+            <div class="border-b border-orange-900/30 flex items-center justify-between mb-3">
+              <span class="pb-1 text-xs font-bold text-orange-500 font-devanagari" id="modal-lbl-darshan-highlights">📸 Daily Darshan Highlights</span>
+              <span class="text-[10px] font-semibold text-orange-800" id="modal-photo-counter">0 photos</span>
+            </div>
+            <div id="modal-gallery-container" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
+          </div>
+        </div>
+        <div class="bg-stone-950 px-6 py-4 flex flex-row-reverse gap-2 border-t border-orange-900/10">
+          <button onclick="closeModal()" class="bg-stone-800 text-orange-100 hover:bg-stone-700 px-4 py-1.5 rounded text-xs font-semibold">Close</button>
+          <button id="modal-fav-toggle-btn" onclick="toggleModalFavorite()" class="border border-white/5 text-orange-400 hover:bg-orange-950 px-4 py-1.5 rounded text-xs font-semibold">⭐ Favorite</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Share Overlay Modal (Unified) -->
+  <div id="share-overlay" class="fixed inset-0 bg-black/88 z-[500] hidden justify-center items-end pb-8 backdrop-blur-sm" onclick="closeShareOverlay()">
+    <div class="bg-stone-900 border border-orange-500 border-b-0 rounded-t-3xl p-6 w-full max-w-lg shadow-2xl" onclick="event.stopPropagation()">
+      <div class="w-10 h-1.5 bg-stone-700 rounded-full mx-auto mb-5"></div>
+      <h3 class="font-condensed font-black text-lg text-orange-400 tracking-wide mb-1.5" id="lbl-share-overlay-title">🙏 DARSHAN SHARE KARO</h3>
+      <p class="text-xs text-stone-500 mb-5" id="lbl-share-overlay-sub">Apne parivar aur mitra ko bhi darshan ka labh milega</p>
+      <button class="w-full flex items-center justify-center gap-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-4 rounded-xl font-condensed font-bold text-lg tracking-wide mb-4 shadow-lg shadow-emerald-500/10" onclick="shareVia('whatsapp')">
+        <i class="fab fa-whatsapp text-xl"></i> WhatsApp Par Bhejein
+      </button>
+      <div class="flex gap-2">
+        <input class="flex-1 bg-stone-950 border border-orange-900/10 rounded-lg p-3 text-stone-300 text-xs" id="share-link-input" readonly value="https://play.google.com/store/apps/details?id=iskcon.hadapsar">
+        <button class="bg-orange-500 text-black font-bold text-xs px-5 rounded-lg shadow-md shadow-orange-500/10" onclick="copyLink()">Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── IMMERSIVE FULL-SCREEN DARSHAN OVERLAY MODE ─── -->
+  <div id="immersive-fullscreen-overlay" class="fixed inset-0 bg-black z-[1000] flex flex-col hidden overflow-hidden">
+    <!-- Close button & Live Status Header -->
+    <div class="h-14 bg-stone-950/80 border-b border-orange-900/10 flex justify-between items-center px-4">
+      <div class="flex items-center space-x-2">
+        <span class="bg-red-600 text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider animate-pulse">● LIVE</span>
+        <h4 id="fs-p-title" class="font-bold text-xs text-orange-400 truncate w-40 sm:w-60 font-devanagari">Radha Vrindavanchandra</h4>
+      </div>
+      <div class="flex items-center space-x-3 text-xs">
+        <span class="bg-stone-900 border border-orange-900/20 px-2 py-1 rounded text-[10px] font-bold text-orange-400">
+          <i class="fas fa-eye text-stone-500 mr-1"></i> <span id="fs-viewerCount">—</span>
+        </span>
+        <button onclick="closeFullscreenDarshan()" class="bg-orange-600 text-white font-bold px-3 py-1 rounded text-xs">Minimize</button>
+      </div>
+    </div>
+
+    <!-- Immersive Stage Fill -->
+    <div class="flex-1 relative bg-black flex items-center justify-center">
+      <div id="yt-fullscreen-player-container" class="w-full h-full"></div>
+      
+      <!-- Video Off overlay inside fullscreen mode -->
+      <div id="fs-video-off-overlay" class="absolute inset-0 bg-stone-950 flex flex-col items-center justify-center gap-3 hidden z-30">
+        <div class="w-14 h-14 rounded-full border border-orange-500 flex items-center justify-center text-orange-500 animate-spin">ॐ</div>
+        <span class="text-xs text-orange-200 font-bold tracking-wider">Darshan Audio on 🙏</span>
+      </div>
+
+      <!-- Autoplay click block handler -->
+      <div id="fs-interaction-overlay" class="absolute inset-0 bg-black/60 z-30 flex flex-col items-center justify-center cursor-pointer hidden" onclick="bypassFullscreenAutoplay()">
+        <div class="w-16 h-16 bg-orange-600 rounded-full flex items-center justify-center text-black text-2xl pl-1 shadow-lg animate-pulse"><i class="fas fa-play"></i></div>
+        <span class="text-xs text-orange-100 font-bold mt-2">Darshan Play Karein 🙏</span>
+      </div>
+
+      <!-- Realtime floating overlay -->
+      <div id="fs-reaction-stage" class="absolute inset-y-0 right-4 w-24 pointer-events-none overflow-hidden z-20"></div>
+    </div>
+
+    <!-- Info & Interactions Panel at Bottom -->
+    <div class="bg-[#141209] border-t border-orange-900/10 p-4 pb-max flex flex-col gap-3">
+      <div class="flex justify-between items-center text-xs">
+        <div>
+          <span class="text-orange-500 font-bold font-devanagari block text-[10px]" id="fs-lbl-curr">CURRENT STOP:</span>
+          <span id="fs-current-city" class="text-white font-bold text-sm">Pune</span>
+        </div>
+        <div class="text-right">
+          <span class="text-orange-500 font-bold font-devanagari block text-[10px]" id="fs-lbl-spot">EXACT SPOT:</span>
+          <span id="fs-precise-spot" class="text-stone-300 font-semibold font-devanagari text-xs">Manjri</span>
+        </div>
+      </div>
+
+      <!-- Unified reaction counters under full screen stream -->
+      <div class="flex justify-center space-x-4 bg-stone-950 p-2 rounded border border-orange-950 text-xs">
+        <span>❤️ <span id="fs-cnt-heart">0</span></span>
+        <span>🙏 <span id="fs-cnt-pray">0</span></span>
+        <span>🌸 <span id="fs-cnt-flower">0</span></span>
+        <span>🔔 <span id="fs-cnt-bell">0</span></span>
+        <span>🌿 <span id="fs-cnt-leaf">0</span></span>
+      </div>
+
+      <!-- Custom quick reaction buttons strip inside fullscreen modal -->
+      <div class="flex justify-between items-center mt-1">
+        <div class="flex space-x-2">
+          <button onclick="sendUserReaction(appState.activeLivePadyatraId, '❤️')" class="w-11 h-11 rounded-xl bg-stone-900 border border-orange-900/20 text-lg">❤️</button>
+          <button onclick="sendUserReaction(appState.activeLivePadyatraId, '🙏')" class="w-11 h-11 rounded-xl bg-stone-900 border border-orange-900/20 text-lg">🙏</button>
+          <button onclick="sendUserReaction(appState.activeLivePadyatraId, '🌸')" class="w-11 h-11 rounded-xl bg-stone-900 border border-orange-900/20 text-lg">🌸</button>
+          <button onclick="sendUserReaction(appState.activeLivePadyatraId, '🔔')" class="w-11 h-11 rounded-xl bg-stone-900 border border-orange-900/20 text-lg">🔔</button>
+          <button onclick="sendUserReaction(appState.activeLivePadyatraId, '🌿')" class="w-11 h-11 rounded-xl bg-stone-900 border border-orange-900/20 text-lg">🌿</button>
+        </div>
+        <button onclick="openShareOverlay()" class="w-11 h-11 rounded-xl bg-stone-900 border border-orange-900/20 text-orange-400 flex items-center justify-center"><i class="fas fa-share-alt"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-area" class="fixed bottom-5 right-5 z-[500] space-y-2 pointer-events-none"></div>
+
+  <!-- YouTube Iframe API Script -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+
+  <script>
+    const dict = {
+      en: {
+        navTitle: "ISKCON Hadapsar Padyatra", heroBadge: "ISKCON Hadapsar", heroTitle: "Track Live Padyatras Globally",
+        heroDesc: "Find exact coordinates, real-time stopover durations, coordinators and join the spiritual congregational walks.",
+        searchPlaceholder: "Search Padyatra by name, city, country...", tabAll: "All Padyatras", tabLive: "🔴 Live Only",
+        tabFav: "⭐ Favorites", headingPadyatras: "🚶 Active & Upcoming Padyatras", showingCount: "{n} journeys active",
+        recentHighlights: "📸 Recent Highlights", aboutJourney: "About Journey", routeProgression: "Route Progression Map",
+        dailyDarshan: "📸 Daily Darshan Highlights", photosAvailable: "{n} photos available",
+        leaderPrefix: "By: ", currentLocation: "Current: ", noPadyatras: "No matching campaigns found.",
+        leavingIn: "Leaves in: ", staysAt: "Stays at ", hours: "h", minutes: "m", seconds: "s", days: "d", expired: "Departed",
+        joiningTitle: "Join Journey Physically", callCoordinator: "Call Coordinator", mapsNavigate: "Get Navigation Path",
+        nextDestination: "Next Stop: ", exactSpot: "Exact Spot: ", stayAtSpot: "Staying at: ",
+        
+        // Dynamic Halt translations
+        modalHaltDetailsTitle: "Halt Details & Travel Durations",
+        modalLastHalt: "Last Halt: ",
+        modalCurrentLocation: "Current Location: ",
+        modalNextHalt: "Next Stop: ",
+        modalDepartureDuration: "Time Elapsed Since Departure: ",
+        timeNotAvailable: "In Transit / Not Available",
+        lblShareOverlayTitle: "🙏 SHARE DARSHAN",
+        lblShareOverlaySub: "Share with family and friends so they can receive blessings too",
+        fsLblCurr: "CURRENT STOP:",
+        fsLblSpot: "EXACT SPOT:",
+        moreText: "More"
+      },
+      hi: {
+        navTitle: "इस्कॉन हडपसर पदयात्रा", heroBadge: "इस्कॉन हडपसर", heroTitle: "वैश्विक पदयात्रा लाइव ट्रैक करें",
+        heroDesc: "सटीक स्थान, रुकने की अवधि, और समन्वयकों से संपर्क करके आध्यात्मिक संकीर्तन यात्रा में शामिल हों।",
+        searchPlaceholder: "नाम, शहर, देश द्वारा पदयात्रा खोजें...", tabAll: "सभी पदयात्राएं", tabLive: "🔴 केवल लाइव",
+        tabFav: "⭐ पसंदीदा", headingPadyatras: "🚶 सक्रिय और आगामी पदयात्राएं", showingCount: "{n} यात्राएं सक्रिय हैं",
+        recentHighlights: "📸 हाल की झलकियाँ", aboutJourney: "यात्रा के बारे में", routeProgression: "मार्ग प्रगति मानचित्र",
+        dailyDarshan: "📸 दैनिक दर्शन झलकियाँ", photosAvailable: "{n} तस्वीरें उपलब्ध",
+        leaderPrefix: "मार्गदर्शक: ", currentLocation: "वर्तमान: ", noPadyatras: "वर्तमान में कोई पदयात्रा नहीं मिली।",
+        leavingIn: "प्रस्थान में शेष: ", staysAt: "पड़ाव: ", hours: "घंटे", minutes: "मिनट", seconds: "सेकंड", days: "दिन", expired: "प्रस्थान हो चुका",
+        joiningTitle: "शारीरिक रूप से शामिल हों", callCoordinator: "समन्वयक से संपर्क करें", mapsNavigate: "गूगल मैप्स नेविगेशन",
+        nextDestination: "अगला पड़ाव: ", exactSpot: "सटीक स्थान: ", stayAtSpot: "निवास स्थान: ",
+        
+        // Dynamic Halt translations
+        modalHaltDetailsTitle: "पड़ाव विवरण और यात्रा अवधि",
+        modalLastHalt: "पिछला पड़ाव: ",
+        modalCurrentLocation: "वर्तमान स्थान: ",
+        modalNextHalt: "अगला पड़ाव: ",
+        modalDepartureDuration: "प्रस्थान के बाद बीता समय: ",
+        timeNotAvailable: "मार्ग में / उपलब्ध नहीं",
+        lblShareOverlayTitle: "🙏 दर्शन शेयर करें",
+        lblShareOverlaySub: "अपने परिवार और मित्रों के साथ साझा करें ताकि वे भी दर्शन का लाभ पा सकें",
+        fsLblCurr: "वर्तमान शहर:",
+        fsLblSpot: "सटीक स्थान:",
+        moreText: "अधिक"
+      },
+      mr: {
+        navTitle: "इस्कॉन हडपसर पदयात्रा", heroBadge: "इस्कॉन हडपसर", heroTitle: "वैश्विक पदयात्रा थेट ट्रॅक करा",
+        heroDesc: "अचूक मुक्काम ठिकाण, थांबण्याची वेळ, आणि समन्वयकांशी थेट संपर्क साधून यात्रेत सहभागी व्हा.",
+        searchPlaceholder: "नाव, शहर, देशानुसार पदयात्रा शोधा...", tabAll: "सर्व पदयात्रा", tabLive: "🔴 फक्त थेट",
+        tabFav: "⭐ आवडते", headingPadyatras: "🚶 सक्रिय आणि आगामी पदयात्रा", showingCount: "{n} यात्रा सक्रिय आहेत",
+        recentHighlights: "📸 ठळक घडामोडी", aboutJourney: "यात्रेबद्दल माहिती", routeProgression: "मार्ग प्रगती नकाशा",
+        dailyDarshan: "📸 दैनिक दर्शन ठळक मुद्दे", photosAvailable: "{n} फोटो उपलब्ध",
+        leaderPrefix: "मार्गदर्शक: ", currentLocation: "सध्याचे स्थान: ", noPadyatras: "सध्या कोणतीही पदयात्रा आढळli नाही.",
+        leavingIn: "प्रस्थानासाठी वेळशिल्लक: ", staysAt: "मुक्काम: ", hours: "तास", minutes: "मिनिटे", seconds: "सेकंद", days: "दिवस", expired: "प्रस्थान झाले",
+        joiningTitle: "थेट प्रवासात सामील व्हा", callCoordinator: "समन्वयकाशी बोला", mapsNavigate: "नकाशा मार्ग दाखवा",
+        nextDestination: "पुढील थांबा: ", exactSpot: "अचूक ठिकाण: ", stayAtSpot: "मुक्कामाचे ठिकाण: ",
+        
+        // Dynamic Halt translations
+        modalHaltDetailsTitle: "मुक्काम तपशील आणि प्रवास कालावधी",
+        modalLastHalt: "मागील मुक्काम: ",
+        modalCurrentLocation: "सध्याचे स्थान: ",
+        modalNextHalt: "पुढील थांबा: ",
+        modalDepartureDuration: "प्रस्थानानंतरचा कालावधी: ",
+        timeNotAvailable: "प्रवासात / उपलब्ध नाही",
+        lblShareOverlayTitle: "🙏 दर्शन शेअर करा",
+        lblShareOverlaySub: "तुमच्या कुटुंबासह आणि मित्रांसह सामायिक करा जेणेकरून त्यांनाही आशीर्वाद मिळतील",
+        fsLblCurr: "सध्याचे शहर:",
+        fsLblSpot: "अचूक ठिकाण:",
+        moreText: "अधिक"
+      }
+    };
+
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyAgGnN3iktLh8JgzCZMxQMdCwkxFFIz1Tw",
+      authDomain: "video-only-om11.firebaseapp.com",
+      databaseURL: "https://video-only-om11-default-rtdb.firebaseio.com",
+      projectId: "video-only-om11",
+      storageBucket: "video-only-om11.firebasestorage.app",
+      messagingSenderId: "839907917457",
+      appId: "1:839907917457:web:87eb570818adc132370930"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    let appState = {
+      currentLanguage: 'en', userFilter: 'all', selectedPadyatraIdForModal: null, modalGalleryTab: 'daily',
+      padyatras: [], favorites: [], ytPlayers: {}, reactionQueue: [], lastRenderTime: 0,
+      localBatchReactions: {}, reactionTimerId: null,
+      
+      viewerId: 'v_' + Math.random().toString(36).substr(2, 9),
+      viewerRef: null,
+      activeLivePadyatraId: null,
+      isFullscreenActive: false
+    };
+
+    let ytApiReady = false;
+
+    window.onYouTubeIframeAPIReady = function() {
+      ytApiReady = true;
+      const liveItem = appState.padyatras.find(p => p.liveState && p.liveState.isLive === true && p.liveState.ytVideoId);
+      if (liveItem) {
+        syncDevoteePlayerEngine(liveItem.id, liveItem.liveState);
+      }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadLocalFavorites();
+      localizeUI();
+
+      database.ref('padyatras').on('value', (snapshot) => {
+        const data = snapshot.val();
+        appState.padyatras = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+        renderUserPadyatras();
+        if (appState.selectedPadyatraIdForModal) {
+          updateModalInPlace();
+          renderModalPhotos();
+        }
+      });
+
+      setInterval(updateAllTimers, 1000);
+      requestAnimationFrame(renderReactionsAnimTick);
+    });
+
+    function loadLocalFavorites() {
+      const saved = localStorage.getItem('iskcon_padyatra_favorites');
+      if (saved) { try { appState.favorites = JSON.parse(saved); } catch(e) {} }
+    }
+
+    function saveLocalFavorites() {
+      localStorage.setItem('iskcon_padyatra_favorites', JSON.stringify(appState.favorites));
+    }
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-area');
+      const el = document.createElement('div');
+      el.className = `flex items-center p-3 text-xs rounded-lg shadow-lg border pointer-events-auto transition-all duration-300 transform translate-y-2 opacity-0 ${
+        type === 'success' ? 'bg-emerald-950 text-emerald-400 border-emerald-900/30' : 'bg-red-950 text-red-400 border-red-950/30'
+      }`;
+      el.innerHTML = `<span>${type === 'success' ? '✓' : '✕'}</span><span class="ml-2 font-semibold">${message}</span>`;
+      container.appendChild(el);
+      setTimeout(() => el.classList.remove('translate-y-2', 'opacity-0'), 10);
+      setTimeout(() => {
+        el.classList.add('opacity-0');
+        setTimeout(() => el.remove(), 300);
+      }, 3000);
+    }
+
+    function changeLanguage(langCode) {
+      appState.currentLanguage = langCode;
+      localizeUI();
+      renderUserPadyatras();
+      if (appState.selectedPadyatraIdForModal) openModal(appState.selectedPadyatraIdForModal);
+    }
+
+    function localizeUI() {
+      const cDict = dict[appState.currentLanguage];
+      document.getElementById('nav-title').textContent = cDict.navTitle;
+      document.getElementById('hero-badge').textContent = cDict.heroBadge;
+      document.getElementById('hero-title').textContent = cDict.heroTitle;
+      document.getElementById('hero-desc').textContent = cDict.heroDesc;
+      document.getElementById('user-search-input').placeholder = cDict.searchPlaceholder;
+      document.getElementById('tab-all').textContent = cDict.tabAll;
+      document.getElementById('tab-live').textContent = cDict.tabLive;
+      document.getElementById('tab-fav').innerHTML = `<span>${cDict.tabFav}</span> <span id="fav-count" class="bg-orange-800 text-orange-100 text-[10px] px-1.5 py-0.5 rounded-full font-bold">${appState.favorites.length}</span>`;
+      document.getElementById('heading-padyatra-list').innerHTML = `<span class="mr-2">🚶</span> ${cDict.headingPadyatras}`;
+      
+      document.getElementById('fs-lbl-curr').textContent = cDict.fsLblCurr;
+      document.getElementById('fs-lbl-spot').textContent = cDict.fsLblSpot;
+      document.getElementById('lbl-share-overlay-title').textContent = cDict.lblShareOverlayTitle;
+      document.getElementById('lbl-share-overlay-sub').textContent = cDict.lblShareOverlaySub;
+
+      // Halt trackers dynamic translation binding
+      const hTitle = document.getElementById('modal-lbl-halt-details');
+      const hLast = document.getElementById('modal-lbl-last-halt');
+      const hCurr = document.getElementById('modal-lbl-curr-halt');
+      const hNext = document.getElementById('modal-lbl-next-halt');
+      const hElap = document.getElementById('modal-lbl-elapsed');
+      const hHighlights = document.getElementById('modal-lbl-darshan-highlights');
+
+      const modalLiveCountDownLbl = document.getElementById('modal-live-countdown-lbl');
+      const modalLiveMapText = document.getElementById('modal-live-map-text');
+      const modalLivePhoneText = document.getElementById('modal-live-phone-text');
+
+      if (hTitle) hTitle.textContent = cDict.modalHaltDetailsTitle;
+      if (hLast) hLast.textContent = cDict.modalLastHalt;
+      if (hCurr) hCurr.textContent = cDict.modalCurrentLocation;
+      if (hNext) hNext.textContent = cDict.modalNextHalt;
+      if (hElap) hElap.textContent = cDict.modalDepartureDuration;
+      if (hHighlights) hHighlights.textContent = cDict.dailyDarshan;
+
+      if (modalLiveCountDownLbl) modalLiveCountDownLbl.textContent = cDict.leavingIn;
+      if (modalLiveMapText) modalLiveMapText.textContent = cDict.mapsNavigate;
+      if (modalLivePhoneText) modalLivePhoneText.textContent = cDict.callCoordinator;
+    }
+
+    function setUserFilter(filter) {
+      appState.userFilter = filter;
+      const tabs = { all: document.getElementById('tab-all'), live: document.getElementById('tab-live'), favorites: document.getElementById('tab-fav') };
+      Object.keys(tabs).forEach(k => {
+        tabs[k].className = (k === filter) ? "px-4 py-2 rounded-lg text-xs font-semibold bg-orange-600 text-white whitespace-nowrap shadow-md" : "px-4 py-2 rounded-lg text-xs font-semibold bg-stone-950 text-orange-400 border border-orange-950 hover:bg-stone-900 whitespace-nowrap";
+      });
+      renderUserPadyatras();
+    }
+
+    // ─── HIGH PERFORMANCE UNIFIED LIVE BROADCAST CONSOLE SYNCHRONIZATION ───
+    function renderUserPadyatras() {
+      const query = document.getElementById('user-search-input').value.toLowerCase();
+      const container = document.getElementById('padyatras-container');
+      container.innerHTML = '';
+      const cDict = dict[appState.currentLanguage];
+
+      const filtered = appState.padyatras.filter(item => {
+        const nameLoc = ((item.name && item.name[appState.currentLanguage]) || (item.name && item.name['en']) || '').toLowerCase();
+        const matchesSearch = nameLoc.includes(query) || (item.currentCity && item.currentCity.toLowerCase().includes(query));
+        if (appState.userFilter === 'live') return matchesSearch && item.status === 'live';
+        if (appState.userFilter === 'favorites') return matchesSearch && appState.favorites.includes(item.id);
+        return matchesSearch;
+      });
+
+      document.getElementById('padyatras-found-count').textContent = cDict.showingCount.replace('{n}', filtered.length);
+
+      const liveStreamItem = appState.padyatras.find(p => p.liveState && p.liveState.isLive === true && p.liveState.ytVideoId);
+      const broadcastArea = document.getElementById('unified-live-broadcast-area');
+
+      if (liveStreamItem) {
+        const liveName = liveStreamItem.name[appState.currentLanguage] || liveStreamItem.name['en'];
+        const state = liveStreamItem.liveState;
+
+        let nextDestinationCity = "None";
+        if (liveStreamItem.route && liveStreamItem.currentCity) {
+          const curIdx = liveStreamItem.route.indexOf(liveStreamItem.currentCity);
+          if (curIdx > -1 && curIdx < liveStreamItem.route.length - 1) {
+            nextDestinationCity = liveStreamItem.route[curIdx + 1];
+          } else {
+            nextDestinationCity = "Destination Reached";
+          }
+        }
+
+        if (appState.activeLivePadyatraId !== liveStreamItem.id) {
+          removeDevoteePresence();
+          appState.activeLivePadyatraId = liveStreamItem.id;
+          registerDevoteePresence(liveStreamItem.id);
+        }
+
+        // Render dynamic spotlight card
+        broadcastArea.innerHTML = `
+          <div class="bg-gradient-to-br from-stone-950 to-amber-950/40 border-2 border-red-600 rounded-2xl p-4 md:p-6 text-white shadow-2xl flex flex-col lg:flex-row gap-6 relative overflow-hidden">
+            <div class="flex-1 space-y-3 w-full relative z-10 flex flex-col justify-between">
+              <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                  <span class="bg-red-600 text-white text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-widest animate-pulse inline-flex items-center">
+                    <span class="w-1.5 h-1.5 rounded-full bg-white mr-1.5"></span> LIVE DARSHAN BROADCASTING
+                  </span>
+                  <div class="flex items-center space-x-2">
+                    <div class="flex items-center gap-1.5 bg-stone-900 border border-orange-900/10 px-3 py-1 rounded-full font-bold text-xs">
+                        <i class="fas fa-eye text-stone-500"></i>
+                        <span id="viewerCount" class="text-white">—</span>
+                    </div>
+                  </div>
+                </div>
+                <h2 class="text-lg md:text-xl font-bold text-orange-400 font-devanagari cursor-pointer hover:underline" onclick="launchFullscreenDarshan('${liveStreamItem.id}')">${liveName}</h2>
+                <p class="text-xs text-orange-100/70 leading-relaxed font-devanagari">${(liveStreamItem.description && liveStreamItem.description[appState.currentLanguage]) || ''}</p>
+              </div>
+
+              <!-- REAL-TIME TRACKING BINDING -->
+              <div class="bg-stone-900/80 border border-orange-500/10 p-3 rounded-lg space-y-2 text-xs">
+                <div class="grid grid-cols-2 gap-2 text-[11px]">
+                  <div>
+                    <span class="text-orange-500 font-bold">${cDict.currentLocation}</span>
+                    <span class="text-white font-semibold block">${state.currentCity || liveStreamItem.currentCity}</span>
+                  </div>
+                  <div>
+                    <span class="text-orange-500 font-bold">${cDict.nextDestination}</span>
+                    <span class="text-white font-semibold block">${nextDestinationCity}</span>
+                  </div>
+                </div>
+                
+                <div class="border-t border-orange-900/10 pt-2 text-[11px] space-y-1">
+                  <p><span class="text-orange-500 font-bold">${cDict.exactSpot}</span> <span class="text-stone-300 font-semibold font-devanagari">${state.preciseLandmark || "Not Specified"}</span></p>
+                  ${state.stayUntilTime ? `
+                    <div class="flex justify-between items-center bg-stone-950 p-1.5 rounded text-[10px] mt-1">
+                      <span class="text-stone-400">${cDict.leavingIn}</span>
+                      <span class="font-bold text-red-500" data-countdown-id="${liveStreamItem.id}" data-time="${state.stayUntilTime}">Calculating...</span>
+                    </div>
+                  ` : ''}
+                </div>
+
+                <div class="flex gap-2 pt-2 border-t border-orange-900/10">
+                  ${state.coordinatorPhone ? `
+                    <a href="tel:${state.coordinatorPhone}" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-center py-1.5 rounded text-[10px] font-bold"><i class="fas fa-phone mr-1"></i> Call Coordinator</a>
+                  ` : ''}
+                  ${state.googleMapsLink ? `
+                    <a href="${state.googleMapsLink}" target="_blank" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-center py-1.5 rounded text-[10px] font-bold"><i class="fas fa-map-marker-alt mr-1"></i> Navigation</a>
+                  ` : ''}
+                </div>
+              </div>
+
+              <!-- Admin Muted Tag alerts -->
+              <div id="user-audio-off-banner-${liveStreamItem.id}" class="hidden p-2 bg-red-950/40 border border-red-900/30 rounded text-red-400 text-xs font-bold items-center gap-1">
+                <i class="fas fa-microphone-slash"></i> MIC MUTED BY COORDINATOR 🙏
+              </div>
+
+              <div class="flex items-center justify-between pt-3 border-t border-orange-900/10">
+                <div class="flex space-x-1.5">
+                  <button onclick="sendUserReaction('${liveStreamItem.id}', '❤️')" class="w-10 h-10 rounded-xl bg-stone-950 border border-orange-900/15 text-sm hover:border-orange-500 transition-colors">❤️</button>
+                  <button onclick="sendUserReaction('${liveStreamItem.id}', '🙏')" class="w-10 h-10 rounded-xl bg-stone-950 border border-orange-900/15 text-sm hover:border-orange-500 transition-colors">🙏</button>
+                  <button onclick="sendUserReaction('${liveStreamItem.id}', '🌸')" class="w-10 h-10 rounded-xl bg-stone-950 border border-orange-900/15 text-sm hover:border-orange-500 transition-colors">🌸</button>
+                  <button onclick="sendUserReaction('${liveStreamItem.id}', '🔔')" class="w-10 h-10 rounded-xl bg-stone-950 border border-orange-900/15 text-sm hover:border-orange-500 transition-colors">🔔</button>
+                  <button onclick="sendUserReaction('${liveStreamItem.id}', '🌿')" class="w-10 h-10 rounded-xl bg-stone-950 border border-orange-900/15 text-sm hover:border-orange-500 transition-colors">🌿</button>
+                </div>
+                <div class="flex space-x-1">
+                  <button onclick="openShareOverlay()" class="bg-stone-900 border border-orange-900/10 text-orange-400 p-2.5 rounded-lg text-xs font-bold hover:bg-stone-800"><i class="fas fa-share-alt"></i></button>
+                  <button onclick="launchFullscreenDarshan('${liveStreamItem.id}')" class="bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-bold px-4 py-2.5 rounded-lg text-xs uppercase tracking-wider shadow-md">Full Screen</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- YouTube Video Sync Stage with click handler to trigger immersive fullscreen mode -->
+            <div class="w-full lg:w-[420px] aspect-video bg-black rounded-xl overflow-hidden shadow-lg border-2 border-red-600/30 relative cursor-pointer group" onclick="launchFullscreenDarshan('${liveStreamItem.id}')">
+              
+              <!-- Clean Iframe stage -->
+              <div id="yt-devotee-player-${liveStreamItem.id}" class="w-full h-full"></div>
+              
+              <!-- Click bypass overlay trigger block -->
+              <div id="user-interaction-overlay-${liveStreamItem.id}" class="absolute inset-0 bg-black/60 z-30 flex flex-col items-center justify-center cursor-pointer hidden" onclick="event.stopPropagation(); bypassAutoplayMutePolicy('${liveStreamItem.id}')">
+                <div class="w-14 h-14 bg-orange-600 rounded-full flex items-center justify-center text-black text-xl pl-1 animate-pulse"><i class="fas fa-play"></i></div>
+                <span class="text-xs text-orange-100 font-bold mt-2 font-devanagari">Darshan Play Karein 🙏</span>
+              </div>
+
+              <!-- Video Off Overlay placeholder -->
+              <div id="user-video-off-overlay-${liveStreamItem.id}" class="absolute inset-0 bg-stone-950 z-30 flex flex-col items-center justify-center gap-3 hidden">
+                <div class="w-12 h-12 rounded-full border border-orange-500 flex items-center justify-center text-orange-500 animate-spin">ॐ</div>
+                <span class="text-xs text-orange-200 font-bold tracking-wider">Darshan Audio on 🙏</span>
+              </div>
+
+              <!-- Local Floating animations stage -->
+              <div id="user-reaction-floating-stage-${liveStreamItem.id}" class="absolute inset-y-0 right-4 w-24 pointer-events-none overflow-hidden z-20"></div>
+
+              <!-- Hover zoom click instructions overlay banner -->
+              <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 text-[10px] font-bold text-orange-400 uppercase tracking-wider font-devanagari">
+                <i class="fas fa-expand mr-1.5"></i> Tap to Fullscreen Darshan
+              </div>
+            </div>
+          </div>
+        `;
+        broadcastArea.classList.remove('hidden');
+
+        setTimeout(() => {
+          syncDevoteePlayerEngine(liveStreamItem.id, state);
+        }, 120);
+
+        database.ref(`padyatras/${liveStreamItem.id}/liveState/latestReaction`).off();
+        database.ref(`padyatras/${liveStreamItem.id}/liveState/latestReaction`).on('value', (snap) => {
+          const r = snap.val();
+          if (r && r.ts) {
+            appState.reactionQueue.push({ padId: liveStreamItem.id, emoji: r.emoji });
+          }
+        });
+
+      } else {
+        broadcastArea.classList.add('hidden');
+        removeDevoteePresence();
+        appState.activeLivePadyatraId = null;
+        closeFullscreenDarshan();
+        Object.keys(appState.ytPlayers).forEach(id => {
+          try { appState.ytPlayers[id].destroy(); } catch(e){}
+          delete appState.ytPlayers[id];
+        });
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="col-span-1 md:col-span-2 lg:col-span-3 bg-stone-900/20 border border-dashed border-orange-900/10 text-center py-12 rounded-xl"><p class="text-xs text-orange-900/40 font-medium">${cDict.noPadyatras}</p></div>`;
+        return;
+      }
+
+      filtered.forEach(item => {
+        const name = (item.name && item.name[appState.currentLanguage]) || (item.name && item.name['en']) || 'Unnamed';
+        const desc = (item.description && item.description[appState.currentLanguage]) || (item.description && item.description['en']) || '';
+        const isFav = appState.favorites.includes(item.id);
+        const hasCoords = item.preciseLandmark && item.stayUntilTime;
+        const displayImg = item.photos && item.photos.length > 0 ? item.photos[item.photos.length - 1].url : "https://images.unsplash.com/photo-1545128485-c400e7702796?auto=format&fit=crop&q=80&w=800";
+
+        const card = document.createElement('div');
+        card.className = "bg-stone-900/40 backdrop-blur-md rounded-xl border border-white/5 overflow-hidden flex flex-col justify-between hover:border-orange-900/30 hover:shadow-lg hover:shadow-orange-500/5 transition-all duration-300";
+        card.innerHTML = `
+          <div>
+            <div class="h-40 w-full relative overflow-hidden bg-stone-950">
+              <img src="${displayImg}" alt="" class="w-full h-full object-cover">
+              <div class="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent"></div>
+              <div class="absolute top-3 left-3 flex gap-1.5">
+                <span class="bg-red-600 text-white text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">${item.status}</span>
+                ${item.liveState && item.liveState.isLive ? `<span class="bg-orange-600 text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider animate-pulse">● LIVE</span>` : ''}
+              </div>
+              <button onclick="toggleFavorite('${item.id}', event)" class="absolute top-3 right-3 p-1.5 rounded-full bg-black/60 hover:bg-black/80 text-orange-500 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="${isFav ? 'currentColor' : 'none'}" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.907c.961 0 1.36 1.253.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" ></path>
+                </svg>
+              </button>
+              <div class="absolute bottom-3 left-3 text-white">
+                <span class="text-[9px] uppercase tracking-wider text-orange-400 font-bold">${item.currentCountry || ''}</span>
+                <p class="text-xs font-bold mt-0.5">📍 ${cDict.currentLocation} <span class="text-amber-300">${item.currentCity || ''}</span></p>
+              </div>
+            </div>
+            <div class="p-4 space-y-3">
+              <h3 onclick="openModal('${item.id}')" class="font-bold text-orange-300 text-sm hover:text-orange-400 cursor-pointer line-clamp-1 font-devanagari">${name}</h3>
+              <p class="text-xs text-orange-100/60 line-clamp-2 leading-relaxed font-devanagari">${desc}</p>
+              ${hasCoords ? `
+                <div class="bg-orange-950/20 border border-orange-900/15 rounded-lg p-2.5 space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[9px] font-bold text-orange-500 uppercase tracking-wider">${cDict.staysAt}:</span>
+                    <span class="text-[9px] bg-red-900/40 text-red-400 font-bold px-1.5 py-0.5 rounded">STAY TIMER</span>
+                  </div>
+                  <p class="text-xs font-bold text-orange-200 truncate font-devanagari">${item.preciseLandmark}</p>
+                  <div class="text-[10px] text-orange-700/80 flex items-center justify-between pt-1 border-t border-orange-900/10">
+                    <span>${cDict.leavingIn}</span>
+                    <span class="font-bold text-red-500" data-countdown-id="${item.id}" data-time="${item.stayUntilTime}">Calculating...</span>
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+          <div class="px-4 pb-4 pt-2 border-t border-orange-900/5 flex items-center justify-between">
+            <span class="text-[10px] text-orange-700">${cDict.leaderPrefix} <span class="text-orange-400 font-bold">${item.leader || ''}</span></span>
+            <div class="flex items-center space-x-1.5">
+              ${item.coordinatorPhone ? `<a href="tel:${item.coordinatorPhone}" class="p-2 bg-stone-950 rounded-full border border-orange-900/10 text-emerald-500 hover:text-emerald-400 text-xs transition-colors"><i class="fas fa-phone-alt"></i></a>` : ''}
+              ${item.googleMapsLink ? `<a href="${item.googleMapsLink}" target="_blank" class="p-2 bg-stone-950 rounded-full border border-orange-900/10 text-blue-500 hover:text-blue-400 text-xs transition-colors"><i class="fas fa-map-marked-alt"></i></a>` : ''}
+              <button onclick="openModal('${item.id}')" class="px-3.5 py-1.5 rounded-lg bg-orange-600/10 hover:bg-orange-600 border border-orange-500/20 hover:border-orange-500 text-orange-400 hover:text-black text-xs font-bold font-devanagari transition-all duration-200 shadow-sm flex items-center gap-1">
+                <span>${cDict.moreText}</span>
+                <i class="fas fa-chevron-right text-[9px] animate-pulse"></i>
+              </button>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      renderSidebarTimeline();
+      updateAllTimers();
+    }
+
+    // Dynamic browser autoplay sync bypass
+    function bypassAutoplayMutePolicy(id) {
+      const player = appState.ytPlayers[id];
+      if (player && typeof player.playVideo === 'function') {
+        player.unMute();
+        player.playVideo();
+        const b = document.getElementById(`user-interaction-overlay-${id}`);
+        if (b) b.classList.add('hidden');
+      }
+    }
+
+    // High performance sync engine matching admin playback exactly
+    function syncDevoteePlayerEngine(id, liveState) {
+      const isFs = appState.isFullscreenActive;
+      const containerId = isFs ? `yt-fullscreen-player-container` : `yt-devotee-player-${id}`;
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      const overlayId = isFs ? `fs-video-off-overlay` : `user-video-off-overlay-${id}`;
+      const audioId = isFs ? `fs-interaction-overlay` : `user-interaction-overlay-${id}`;
+      
+      const overlayEl = document.getElementById(overlayId);
+      if (overlayEl) overlayEl.style.display = liveState.videoMuted ? 'flex' : 'none';
+
+      const audioBanner = document.getElementById(isFs ? `fs-interaction-overlay` : `user-audio-off-banner-${id}`);
+      if (audioBanner && !isFs) {
+        audioBanner.style.display = liveState.muted ? 'flex' : 'none';
+      }
+
+      // Latency compensation drift calculation
+      let targetSec = liveState.ytTime || 0;
+      if (liveState.timestamp) {
+        const elapsed = (Date.now() - liveState.timestamp) / 1000;
+        targetSec += Math.min(elapsed, 15); 
+      }
+
+      // ─── 🔴 NO-FAIL IFRAME FALLBACK (ELIMINATES BLACK SCREEN ON API LAG) ───
+      if (!window.YT || !window.YT.Player || !ytApiReady) {
+        const fallbackUrl = `https://www.youtube.com/embed/${liveState.ytVideoId}?autoplay=1&mute=${liveState.muted ? 1 : 0}&controls=0&playsinline=1&rel=0&modestbranding=1&start=${Math.floor(targetSec)}`;
+        
+        if (container.tagName !== 'IFRAME' || !container.src.includes(liveState.ytVideoId)) {
+          container.outerHTML = `<iframe id="${containerId}" src="${fallbackUrl}" class="w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="pointer-events: none;"></iframe>`;
+        }
+        return;
+      }
+
+      // Advanced API Player Sync Logic
+      if (appState.ytPlayers[id]) {
+        const player = appState.ytPlayers[id];
+        try {
+          if (typeof player.getPlayerState === 'function' && typeof player.getCurrentTime === 'function') {
+            const playerState = player.getPlayerState();
+            const currentTime = player.getCurrentTime();
+
+            if (liveState.muted) player.mute(); else player.unMute();
+
+            if (liveState.ytState === 2) {
+              if (playerState !== 2) player.pauseVideo();
+            } else if (liveState.ytState === 1) {
+              if (playerState !== 1 && playerState !== 3) player.playVideo();
+
+              if (Math.abs(targetSec - currentTime) > 2.5) {
+                player.seekTo(targetSec, true);
+              }
+            }
+          }
+        } catch(e){}
+        return;
+      }
+
+      if (container.tagName === 'IFRAME') {
+        container.outerHTML = `<div id="${containerId}" class="w-full h-full"></div>`;
+      }
+
+      // Official YouTube Iframe API initialization
+      try {
+        appState.ytPlayers[id] = new YT.Player(containerId, {
+          height: '100%', width: '100%',
+          videoId: liveState.ytVideoId,
+          playerVars: { 
+            autoplay: 1, 
+            controls: 0, 
+            rel: 0, 
+            modestbranding: 1, 
+            playsinline: 1, 
+            disablekb: 1,
+            fs: 0,
+            mute: liveState.muted ? 1 : 0 
+          },
+          events: {
+            onReady: (e) => {
+              if (liveState.muted) e.target.mute(); else e.target.unMute();
+              e.target.seekTo(targetSec, true);
+              e.target.playVideo();
+
+              // Auto-play block compliance handler check
+              setTimeout(() => {
+                if (typeof e.target.getPlayerState === 'function' && e.target.getPlayerState() !== 1) {
+                  const b = document.getElementById(audioId);
+                  if (b) b.classList.remove('hidden');
+                }
+              }, 1200);
+            }
+          }
+        });
+      } catch(err) {
+        console.warn("Official API initialization crashed, falling back to direct iframe injection.");
+        const fallbackUrl = `https://www.youtube.com/embed/${liveState.ytVideoId}?autoplay=1&mute=${liveState.muted ? 1 : 0}&controls=0&playsinline=1&rel=0&modestbranding=1&start=${Math.floor(targetSec)}`;
+        container.outerHTML = `<iframe id="${containerId}" src="${fallbackUrl}" class="w-full h-full" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="pointer-events: none;"></iframe>`;
+      }
+    }
+
+    // Spectator Presence Node sync
+    function registerDevoteePresence(padId) {
+      try {
+        appState.viewerRef = database.ref(`padyatras/${padId}/liveState/viewers/${appState.viewerId}`);
+        appState.viewerRef.set({ joinedAt: firebase.database.ServerValue.TIMESTAMP });
+        appState.viewerRef.onDisconnect().remove();
+
+        database.ref(`padyatras/${padId}/liveState/viewers`).on('value', snap => {
+          const c = snap.numChildren() || 0;
+          const v = document.getElementById('viewerCount');
+          if (v) v.textContent = c;
+        });
+
+      } catch(e){}
+    }
+
+    function removeDevoteePresence() {
+      if (appState.activeLivePadyatraId) {
+        database.ref(`padyatras/${appState.activeLivePadyatraId}/liveState/viewers`).off();
+      }
+      if (appState.viewerRef) {
+        appState.viewerRef.remove();
+        appState.viewerRef = null;
+      }
+    }
+
+    function sendUserReaction(padId, emoji) {
+      if (!padId) return;
+      if (!appState.localBatchReactions) appState.localBatchReactions = {};
+      if (!appState.localBatchReactions[padId]) appState.localBatchReactions[padId] = {};
+      appState.localBatchReactions[padId][emoji] = (appState.localBatchReactions[padId][emoji] || 0) + 1;
+      
+      spawnEmojiAtContainer(padId, emoji);
+
+      // Unified fullscreen reaction visual render
+      if (appState.isFullscreenActive) {
+        const fsStage = document.getElementById('fs-reaction-stage');
+        if (fsStage) {
+          const el = document.createElement('div');
+          el.className = 'float-emoji';
+          el.textContent = emoji;
+          el.style.right = (Math.random() * 40) + 'px';
+          fsStage.appendChild(el);
+          setTimeout(() => el.remove(), 3200);
+        }
+      }
+
+      if (!appState.reactionTimerId) {
+        appState.reactionTimerId = setTimeout(() => {
+          const updates = {};
+          for (const pid in appState.localBatchReactions) {
+            const batch = appState.localBatchReactions[pid];
+            let lastEm = null;
+            for (const em in batch) {
+              const safeEm = em === '❤️' ? 'heart' : em === '🙏' ? 'pray' : em === '🌸' ? 'flower' : em === '🔔' ? 'bell' : 'leaf';
+              updates[`padyatras/${pid}/liveState/reactions/${safeEm}`] = firebase.database.ServerValue.increment(batch[em]);
+              lastEm = em;
+            }
+            if (lastEm) {
+              updates[`padyatras/${pid}/liveState/latestReaction`] = { emoji: lastEm, ts: firebase.database.ServerValue.TIMESTAMP };
+              updates[`padyatras/${pid}/liveState/reactions/total`] = firebase.database.ServerValue.increment(Object.values(batch).reduce((a,b)=>a+b, 0));
+            }
+          }
+          database.ref().update(updates).then(() => {
+            appState.localBatchReactions = {};
+            appState.reactionTimerId = null;
+          });
+        }, 1500);
+      }
+    }
+
+    function spawnEmojiAtContainer(padId, emoji) {
+      const container = document.getElementById(`user-reaction-floating-stage-${padId}`);
+      if (!container) return;
+      const el = document.createElement('div');
+      el.className = 'float-emoji';
+      el.textContent = emoji;
+      el.style.right = (Math.random() * 50) + 'px';
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 3200);
+    }
+
+    function renderReactionsAnimTick(timestamp) {
+      if (timestamp - appState.lastRenderTime >= 100) {
+        if (appState.reactionQueue.length > 0) {
+          const item = appState.reactionQueue.shift();
+          spawnEmojiAtContainer(item.padId, item.emoji);
+          if (appState.reactionQueue.length > 30) appState.reactionQueue = appState.reactionQueue.slice(-10);
+        }
+        appState.lastRenderTime = timestamp;
+      }
+      requestAnimationFrame(renderReactionsAnimTick);
+    }
+
+    function renderSidebarTimeline() {
+      const container = document.getElementById('mini-tracker-widget');
+      if (!container) return;
+      container.innerHTML = '';
+      const activePads = appState.padyatras.filter(p => p.status === 'live');
+      if (activePads.length === 0) {
+        container.innerHTML = `<p class="text-xs text-orange-800 italic">No live travels active today.</p>`;
+        return;
+      }
+      activePads.forEach(p => {
+        const name = (p.name && p.name[appState.currentLanguage]) || (p.name && p.name['en']) || 'Unnamed';
+        let timelineStr = '';
+        if (p.route) {
+          p.route.slice(0, 4).forEach((c, idx) => {
+            const isCur = p.currentCity && c.toLowerCase() === p.currentCity.toLowerCase();
+            timelineStr += `<span class="inline-flex items-center ${isCur ? 'font-bold text-red-500' : 'text-orange-100/40'}">${isCur ? '🔴 ' : ''}${c}${idx < p.route.slice(0,4).length - 1 ? ' →' : ''}</span>`;
+          });
+        }
+        container.innerHTML += `
+          <div class="bg-stone-950 p-3 rounded-lg border border-orange-900/10 space-y-2 text-xs shadow-xs">
+            <div class="flex items-center justify-between font-bold text-orange-300">
+              <span onclick="openModal('${p.id}')" class="truncate cursor-pointer hover:underline font-devanagari">${name}</span>
+              <span class="text-[9px] text-red-600 animate-pulse">●</span>
+            </div>
+            <div class="text-[10px] flex flex-wrap gap-1 leading-tight">${timelineStr}</div>
+            ${p.preciseLandmark ? `<div class="text-[10px] bg-orange-950/20 text-orange-200 p-2 rounded mt-1 border border-orange-900/10"><strong>Spot:</strong> ${p.preciseLandmark}</div>` : ''}
+          </div>
+        `;
+      });
+    }
+
+    function updateAllTimers() {
+      const timers = document.querySelectorAll('[data-countdown-id]');
+      timers.forEach(t => {
+        const targetTime = new Date(t.getAttribute('data-time')).getTime();
+        const now = new Date().getTime();
+        const diff = targetTime - now;
+        const cDict = dict[appState.currentLanguage];
+        if (isNaN(targetTime) || diff <= 0) { t.textContent = cDict.expired; t.className = "text-orange-900 font-semibold"; return; }
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const secs = Math.floor((diff % (1000 * 60)) / 1000);
+        t.textContent = (days > 0 ? `${days}${cDict.days} ` : '') + `${hours}${cDict.hours} ${mins}${cDict.minutes} ${secs}${cDict.seconds}`;
+      });
+    }
+
+    function openModal(id) {
+      appState.selectedPadyatraIdForModal = id;
+      const currentDict = dict[appState.currentLanguage];
+      const item = appState.padyatras.find(p => p.id === id);
+      if (!item) return;
+
+      document.getElementById('modal-title-text').textContent = (item.name && item.name[appState.currentLanguage]) || 'Unnamed';
+      document.getElementById('modal-badge').textContent = (item.status || 'Planned').toUpperCase();
+      document.getElementById('modal-leader-text').textContent = `${currentDict.leaderPrefix} ${item.leader || ''} | Started: ${item.startDate || ''}`;
+      document.getElementById('modal-desc-text').textContent = (item.description && item.description[appState.currentLanguage]) || '';
+
+      // Set up exact location details inside state-of-the-art live status glowing card
+      const liveBox = document.getElementById('modal-live-box');
+      if (item.preciseLandmark && item.stayUntilTime) {
+        document.getElementById('modal-live-landmark').textContent = item.preciseLandmark;
+        document.getElementById('modal-live-countdown').setAttribute('data-countdown-id', item.id);
+        document.getElementById('modal-live-countdown').setAttribute('data-time', item.stayUntilTime);
+        document.getElementById('modal-live-map-btn').href = item.googleMapsLink || '#';
+        document.getElementById('modal-live-phone-btn').href = item.coordinatorPhone ? `tel:${item.coordinatorPhone}` : '#';
+        liveBox.classList.remove('hidden');
+      } else { liveBox.classList.add('hidden'); }
+
+      // Set up progress timeline
+      const timeline = document.getElementById('modal-route-timeline');
+      timeline.innerHTML = '';
+      if (item.route) {
+        item.route.forEach((city, index) => {
+          const isCurrent = item.currentCity && city.toLowerCase() === item.currentCity.toLowerCase();
+          timeline.innerHTML += `
+            <div class="flex items-center space-x-2" ${isCurrent ? 'id="modal-active-city-stop"' : ''}>
+              <div class="flex flex-col items-center">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${isCurrent ? 'bg-red-600 text-white animate-bounce shadow-md border-2 border-white animate-pulse' : 'bg-stone-800 text-orange-500 border border-orange-900/10' || 'bg-stone-800 text-orange-500 border border-orange-900/10'}">${index + 1}</div>
+                <span class="text-xs mt-1 font-semibold ${isCurrent ? 'text-red-500 font-extrabold font-devanagari' : 'text-stone-400 font-devanagari'}">${city}</span>
+              </div>
+              ${index < item.route.length - 1 ? `<div class="h-0.5 w-12 bg-stone-800 relative"><div class="absolute inset-0 bg-orange-600" style="width: ${isCurrent || index < item.route.indexOf(item.currentCity) ? '100%' : '0%'}"></div></div>` : ''}
+            </div>
+          `;
+        });
+      }
+
+      // 📍 Halt Details & Travel Durations computations
+      let lastCity = "None";
+      let currentCityLabel = item.currentCity || "None";
+      let nextCity = "Destination Reached";
+
+      if (item.route && item.currentCity) {
+        const curIdx = item.route.indexOf(item.currentCity);
+        if (curIdx > 0) {
+          lastCity = item.route[curIdx - 1];
+        } else {
+          lastCity = "Start Point";
+        }
+
+        if (curIdx > -1 && curIdx < item.route.length - 1) {
+          nextCity = item.route[curIdx + 1];
+        }
+      }
+
+      if (item.preciseLandmark) {
+        currentCityLabel += ` (${item.preciseLandmark})`;
+      }
+
+      document.getElementById('modal-val-last-halt').textContent = lastCity;
+      document.getElementById('modal-val-curr-halt').textContent = currentCityLabel;
+      document.getElementById('modal-val-next-halt').textContent = nextCity;
+
+      // Realtime duration calculation since startup
+      if (item.startDate) {
+        const startMs = new Date(item.startDate).getTime();
+        const diffMs = Date.now() - startMs;
+        if (diffMs > 0) {
+          const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+          
+          let durationStr = "";
+          if (days > 0) durationStr += `${days}${currentDict.days} `;
+          if (hours > 0) durationStr += `${hours}${currentDict.hours} `;
+          durationStr += `${mins}${currentDict.minutes}`;
+          document.getElementById('modal-val-elapsed').textContent = durationStr;
+          document.getElementById('modal-val-elapsed').className = "text-emerald-500 font-bold";
+        } else {
+          document.getElementById('modal-val-elapsed').textContent = currentDict.timeNotAvailable;
+          document.getElementById('modal-val-elapsed').className = "text-stone-500 font-bold";
+        }
+      } else {
+        document.getElementById('modal-val-elapsed').textContent = currentDict.timeNotAvailable;
+        document.getElementById('modal-val-elapsed').className = "text-stone-500 font-bold";
+      }
+
+      updateModalFavBtnState();
+      renderModalPhotos();
+      localizeUI();
+      
+      // Lock background scrolling completely (Scroll Chain Fix)
+      document.body.style.overflow = 'hidden';
+      
+      document.getElementById('padyatra-detail-modal').classList.remove('hidden');
+
+      // ─── 📍 ROUTE TIMELINE AUTO-SCROLL TO ACTIVE STOP ───
+      setTimeout(() => {
+        const activeStop = document.getElementById('modal-active-city-stop');
+        const scrollContainer = document.getElementById('modal-route-timeline-container');
+        if (activeStop && scrollContainer) {
+          const containerWidth = scrollContainer.clientWidth;
+          const stopOffset = activeStop.offsetLeft;
+          const stopWidth = activeStop.clientWidth;
+          scrollContainer.scrollTo({
+            left: stopOffset - (containerWidth / 2) + (stopWidth / 2),
+            behavior: 'smooth'
+          });
+        }
+      }, 300);
+    }
+
+    function updateModalInPlace() {
+      const item = appState.padyatras.find(p => p.id === appState.selectedPadyatraIdForModal);
+      if (item && item.preciseLandmark && item.stayUntilTime) {
+        document.getElementById('modal-live-landmark').textContent = item.preciseLandmark;
+        document.getElementById('modal-live-countdown').setAttribute('data-time', item.stayUntilTime);
+      }
+    }
+
+    function renderModalPhotos() {
+      const item = appState.padyatras.find(p => p.id === appState.selectedPadyatraIdForModal);
+      if (!item) return;
+      const container = document.getElementById('modal-gallery-container');
+      container.innerHTML = '';
+      
+      const filtered = (item.photos || []).filter(p => p.type === 'daily');
+      document.getElementById('modal-photo-counter').textContent = dict[appState.currentLanguage].photosAvailable.replace('{n}', filtered.length);
+      
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="col-span-3 text-center py-8 border border-dashed rounded-lg border-orange-900/10"><p class="text-xs text-orange-800 italic">No photos available.</p></div>`;
+        return;
+      }
+      filtered.forEach(p => {
+        container.innerHTML += `
+          <div class="bg-stone-950 border border-orange-900/10 rounded-lg overflow-hidden shadow-xs">
+            <div class="h-32 bg-stone-950 overflow-hidden relative">
+              <img src="${p.url}" alt="" class="w-full h-full object-cover">
+              <span class="absolute bottom-2 right-2 bg-black/60 text-white text-[8px] px-1.5 py-0.5 rounded">${p.date}</span>
+            </div>
+            <p class="text-[11px] text-orange-100 p-2 font-medium truncate">${p.caption}</p>
+          </div>
+        `;
+      });
+    }
+
+    // Restore primary layout scroll physics flawlessly
+    function closeModal() { 
+      document.getElementById('padyatra-detail-modal').classList.add('hidden'); 
+      appState.selectedPadyatraIdForModal = null; 
+      document.body.style.overflow = '';
+    }
+
+    function toggleModalFavorite() { if (appState.selectedPadyatraIdForModal) { toggleFavorite(appState.selectedPadyatraIdForModal); updateModalFavBtnState(); } }
+    function updateModalFavBtnState() {
+      const isFav = appState.favorites.includes(appState.selectedPadyatraIdForModal);
+      document.getElementById('modal-fav-toggle-btn').className = isFav ? "border border-orange-500 bg-orange-950/40 text-orange-400 px-4 py-1.5 rounded text-xs font-semibold" : "border border-orange-900/30 text-orange-700 hover:bg-orange-950 px-4 py-1.5 rounded text-xs font-semibold";
+    }
+
+    function toggleFavorite(id, event) {
+      if (event) event.stopPropagation();
+      const idx = appState.favorites.indexOf(id);
+      if (idx > -1) {
+        appState.favorites.splice(idx, 1);
+        showToast("Removed from favorites", "error");
+      } else {
+        appState.favorites.push(id);
+        showToast("Added to favorites", "success");
+      }
+      saveLocalFavorites();
+      localizeUI();
+      renderUserPadyatras();
+    }
+
+    // ─── IMMERSIVE FULLSCREEN DARSHAN OVERLAYS ───
+    function launchFullscreenDarshan(id) {
+      const item = appState.padyatras.find(p => p.id === id);
+      if (!item || !item.liveState) return;
+
+      appState.isFullscreenActive = true;
+      document.getElementById('immersive-fullscreen-overlay').classList.remove('hidden');
+
+      document.getElementById('fs-p-title').textContent = item.name[appState.currentLanguage] || item.name['en'];
+      document.getElementById('fs-current-city').textContent = item.liveState.currentCity || item.currentCity || "None";
+      document.getElementById('fs-precise-spot').textContent = item.liveState.preciseLandmark || item.preciseLandmark || "Not Specified";
+
+      database.ref(`padyatras/${id}/liveState`).on('value', (snap) => {
+        const data = snap.val();
+        if (data && appState.isFullscreenActive) {
+          document.getElementById('fs-cnt-heart').textContent = data.reactions ? data.reactions.heart || 0 : 0;
+          document.getElementById('fs-cnt-pray').textContent = data.reactions ? data.reactions.pray || 0 : 0;
+          document.getElementById('fs-cnt-flower').textContent = data.reactions ? data.reactions.flower || 0 : 0;
+          document.getElementById('fs-cnt-bell').textContent = data.reactions ? data.reactions.bell || 0 : 0;
+          document.getElementById('fs-cnt-leaf').textContent = data.reactions ? data.reactions.leaf || 0 : 0;
+          
+          const fsViewer = document.getElementById('fs-viewerCount');
+          if (fsViewer && data.viewers) fsViewer.textContent = Object.keys(data.viewers).length;
+        }
+      });
+
+      if (appState.ytPlayers[id]) {
+        try { appState.ytPlayers[id].destroy(); } catch(e){}
+        delete appState.ytPlayers[id];
+      }
+
+      syncDevoteePlayerEngine(id, item.liveState);
+    }
+
+    function closeFullscreenDarshan() {
+      appState.isFullscreenActive = false;
+      document.getElementById('immersive-fullscreen-overlay').classList.add('hidden');
+      
+      const id = appState.activeLivePadyatraId;
+      if (id) {
+        database.ref(`padyatras/${id}/liveState`).off('value');
+        if (appState.ytPlayers[id]) {
+          try { appState.ytPlayers[id].destroy(); } catch(e){}
+          delete appState.ytPlayers[id];
+        }
+        renderUserPadyatras();
+      }
+    }
+
+    function bypassFullscreenAutoplay() {
+      const id = appState.activeLivePadyatraId;
+      if (!id) return;
+      const player = appState.ytPlayers[id];
+      if (player && typeof player.playVideo === 'function') {
+        player.unMute();
+        player.playVideo();
+        const b = document.getElementById('fs-interaction-overlay');
+        if (b) b.classList.add('hidden');
+      }
+    }
+
+    // ─── SHARE & LINK COPY OPERATIONS ───
+    window.openShareOverlay = () => {
+      document.getElementById('share-overlay').classList.remove('hidden');
+      document.getElementById('share-overlay').classList.add('flex');
+    };
+
+    window.closeShareOverlay = () => {
+      document.getElementById('share-overlay').classList.add('hidden');
+      document.getElementById('share-overlay').classList.remove('flex');
+    };
+
+    window.shareVia = (platform) => {
+      const url = document.getElementById('share-link-input').value;
+      const msg = encodeURIComponent('🚩 Live Darshan Alert! 🙏\n\nAb ISKCON Hadapsar ka Live Darshan mobile me dekho.\nGhar baithe darshan ka anand lo. 🌸!\nApp Link: ' + url);
+      if (platform === 'whatsapp') { 
+        window.location.href = 'whatsapp://send?text=' + msg; 
+        closeShareOverlay(); 
+      }
+    };
+
+    window.copyLink = () => {
+      const val = document.getElementById('share-link-input').value;
+      navigator.clipboard.writeText(val)
+        .then(() => { 
+          showToast("Link Copied Successfully!", "success"); 
+          closeShareOverlay(); 
+        })
+        .catch(() => { 
+          document.getElementById('share-link-input').select(); 
+          document.execCommand('copy'); 
+          showToast("Link Copied Successfully!", "success"); 
+          closeShareOverlay(); 
+        });
+    };
+  </script>
+</body>
+</html>
