@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Unified Master Admin | ISKCON Hadapsar</title>
+    
+    <!-- Bootstrap 5 & FontAwesome 6 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Cinzel:wght@700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Firebase 8.x for Quiz & Modern 9.x Module in script -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        :root { 
+            --primary: #FF7B00; 
+            --primary-dark: #E65100;
+            --secondary: #1E293B; 
+            --bg-body: #F1F5F9; 
+            --sidebar-bg: #FFFFFF; 
+            --text-dark: #0F172A; 
+            --text-muted: #64748B; 
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03); 
+            --border-radius: 18px; 
+        }
+        *, *::before, *::after { box-sizing: border-box !important; }
+        html, body { margin: 0; padding: 0; width: 100%; max-width: 100vw; overflow-x: hidden; background: var(--bg-body); font-family: 'Plus Jakarta Sans', sans-serif; color: var(--text-dark); }
+        
+        .dashboard-wrapper { display: flex; height: 100dvh; width: 100%; overflow: hidden; }
+        .dashboard-sidebar { width: 280px; background: var(--sidebar-bg); box-shadow: 4px 0 24px rgba(0,0,0,0.04); display: flex; flex-direction: column; z-index: 1000; transition: all 0.3s ease; flex-shrink: 0; }
+        .brand-logo { padding: 22px 20px; display: flex; align-items: center; gap: 12px; font-family: 'Poppins', sans-serif; font-size: 1.25rem; font-weight: 800; color: var(--secondary); border-bottom: 1px solid #E2E8F0; }
+        .img-logo { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #FF7B00, #FF5722); display: flex; justify-content: center; align-items: center; font-size: 18px; color: #fff; box-shadow: 0 4px 12px rgba(255,123,0,0.3); }
+        .sidebar-menu { padding: 18px 14px; display: flex; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; }
+        .menu-btn { background: transparent; border: none; padding: 14px 18px; border-radius: 12px; color: var(--text-muted); font-weight: 700; font-size: 0.95rem; text-align: left; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s ease; width: 100%; }
+        .menu-btn:hover { background: #FFF7ED; color: var(--primary); }
+        .menu-btn.active { background: linear-gradient(135deg, var(--primary) 0%, #FF5722 100%); color: white; box-shadow: 0 8px 20px rgba(255, 123, 0, 0.28); }
+        
+        .dashboard-main { flex: 1; height: 100dvh; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; position: relative; width: 100%; }
+        .mobile-header { display: none; background: white; padding: 14px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 990; width: 100%; }
+        .mobile-toggle { background: transparent; border: none; font-size: 1.4rem; color: var(--secondary); cursor: pointer;}
+        
+        @media(max-width: 992px) { 
+            .dashboard-sidebar { position: fixed; left: -300px; height: 100dvh; max-width: 82vw; } 
+            .dashboard-sidebar.show { left: 0; } 
+            .mobile-header { display: flex; } 
+            .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0,0,0,0.45); z-index: 999; display: none; backdrop-filter: blur(2px); } 
+            .sidebar-overlay.show { display: block; } 
+        }
+
+        /* VIEW CONTAINER */
+        .app-view { display: none !important; width: 100%; min-height: 100%; }
+        #view-slider.active-view { display: block !important; }
+        #view-quiz.active-view { display: flex !important; }
+
+        /* CARDS & INPUTS */
+        .app-container { max-width: 920px; margin: 0 auto; width: 100%; padding: 25px 20px 60px 20px; }
+        .card-box { background: white; border-radius: var(--border-radius); padding: 25px; box-shadow: var(--card-shadow); border: 1px solid rgba(226, 232, 240, 0.8); margin-bottom: 22px; width: 100%; transition: all 0.3s ease; }
+        .label-c { font-size: 0.8rem; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: space-between; }
+        .input-c { width: 100%; padding: 12px 16px; border: 2px solid #E2E8F0; border-radius: 12px; font-weight: 600; font-size: 0.95rem; color: var(--text-dark); outline: none; transition: 0.2s; background: #F8FAFC; }
+        .input-c:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(255,123,0,0.12); }
+        
+        .custom-grid { display: grid; grid-template-columns: 1fr; gap: 14px; width: 100%; }
+        @media(min-width: 768px) { 
+            .custom-grid.two-col { grid-template-columns: 1fr 1fr; } 
+            .custom-grid.three-col { grid-template-columns: 1fr 1fr 1fr; } 
+            .custom-grid.link-col { grid-template-columns: 1.2fr 2fr; } 
+        }
+
+        /* BUTTONS */
+        .btn-main { width: 100%; padding: 14px 20px; background: linear-gradient(135deg, var(--primary) 0%, #FF5722 100%); color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 1rem; letter-spacing: 0.5px; box-shadow: 0 6px 18px rgba(255,123,0,0.3); transition: 0.2s; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-main:active { transform: scale(0.98); }
+        .btn-update { background: linear-gradient(135deg, #10B981 0%, #059669 100%); box-shadow: 0 6px 18px rgba(16, 185, 129, 0.3); }
+        .btn-cancel { background: #E2E8F0; color: #475569; border: none; border-radius: 12px; font-weight: 800; width: 100%; padding: 14px; transition: 0.2s; cursor: pointer; }
+
+        /* GITHUB & REAL 20KB COMPRESSOR STYLING */
+        .gh-badge-status { background: #F0FDF4; border: 1.5px solid #BBF7D0; border-radius: 14px; padding: 14px 18px; margin-bottom: 22px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+        .compressor-dropzone { border: 2px dashed #CBD5E1; background: #F8FAFC; border-radius: 16px; padding: 22px; text-align: center; cursor: pointer; transition: 0.25s; position: relative; }
+        .compressor-dropzone:hover { border-color: var(--primary); background: #FFF7ED; }
+        .compressor-stats { display: none; background: #ECFDF5; border: 1.5px solid #A7F3D0; border-radius: 12px; padding: 12px 16px; margin-top: 14px; }
+
+        /* DYNAMIC CATEGORY PILL SELECTOR */
+        .category-builder-box { background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: 14px; padding: 16px; margin-top: 12px; }
+        .preset-gradient-chip { width: 34px; height: 34px; border-radius: 10px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
+        .preset-gradient-chip.selected { border-color: #0F172A; transform: scale(1.15); box-shadow: 0 4px 10px rgba(0,0,0,0.25); }
+
+        /* ITEM ROWS */
+        .item-row { background: white; padding: 16px 20px; border-radius: 16px; margin-bottom: 12px; border-left: 6px solid #CBD5E1; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--card-shadow); gap: 12px; transition: 0.2s; width: 100%; flex-wrap: wrap; }
+        .item-info { flex: 1; min-width: 0; }
+        .item-name { font-weight: 800; color: var(--secondary); font-size: 1.05rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .item-meta { font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-top: 6px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .action-btns { display: flex; gap: 8px; }
+        .btn-icon { width: 40px; height: 40px; border-radius: 10px; border: none; display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: 0.2s; cursor: pointer; }
+        .btn-edit { background: #EFF6FF; color: #2563EB; }
+        .btn-del { background: #FEF2F2; color: #DC2626; }
+        
+        /* QUIZ STYLES (RETAINED) */
+        #view-quiz { background: var(--bg-body); height: 100%; flex-direction: column; padding: 20px; width: 100%; }
+        #view-quiz header { background: white; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; border-radius: var(--border-radius); box-shadow: var(--card-shadow); margin-bottom: 20px; gap: 15px; width: 100%; }
+        .quiz-layout-wrapper { display: flex; flex: 1; gap: 20px; position: relative; width: 100%; }
+        .quiz-sidebar { width: 300px; background: white; border-radius: var(--border-radius); display: flex; flex-direction: column; box-shadow: var(--card-shadow); overflow: hidden; flex-shrink: 0; }
+        .lvl-item { padding: 14px 16px; border-radius: 12px; margin-bottom: 6px; font-weight: 700; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); transition: 0.2s; }
+        .lvl-item.active { background: #FFF7ED; color: var(--primary); border: 1.5px solid rgba(255,123,0,0.25); }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-wrapper">
+        <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+        
+        <!-- SIDEBAR -->
+        <aside class="dashboard-sidebar" id="mainSidebar">
+            <div class="brand-logo">
+                <div class="img-logo"><i class="fas fa-om"></i></div>
+                <div>
+                    <div style="line-height:1.2;">ISKCON Hadapsar</div>
+                    <small style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">Production Master Admin</small>
+                </div>
+            </div>
+            <nav class="sidebar-menu">
+                <button class="menu-btn active" onclick="switchApp('slider', this); toggleSidebarMobile()">
+                    <i class="fas fa-sliders-h"></i> Slider & Cards Hub
+                </button>
+                <button class="menu-btn" onclick="openGitHubSettings(); toggleSidebarMobile()">
+                    <i class="fab fa-github"></i> GitHub & CDN Setup
+                </button>
+                <button class="menu-btn" onclick="switchApp('quiz', this); toggleSidebarMobile()">
+                    <i class="fas fa-book-open"></i> Quiz Database
+                </button>
+            </nav>
+            <div class="p-3 border-top mt-auto">
+                <button class="btn btn-sm btn-outline-secondary w-100 fw-bold rounded-3" onclick="syncVersionTickManually()">
+                    <i class="fas fa-rotate me-1"></i> Force Cache Invalidation
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="dashboard-main">
+            <!-- Mobile Topbar -->
+            <div class="mobile-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="img-logo" style="width:32px; height:32px; font-size:15px;"><i class="fas fa-om"></i></div>
+                    <span class="fw-bold" style="font-size:1.15rem; color:var(--secondary);">ISKCON Admin</span>
+                </div>
+                <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+            </div>
+
+            <!-- ==============================================
+                 APP 1: DYNAMIC SLIDER & REAL 20KB ENGINE
+            =============================================== -->
+            <div id="view-slider" class="app-view active-view">
+                <div class="app-container">
+                    
+                    <!-- TOP CLOUD & CDN STATUS BAR -->
+                    <div class="gh-badge-status">
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="fab fa-github fa-2x text-dark"></i>
+                            <div>
+                                <div class="fw-bold" style="font-size:0.95rem;">GitHub Edge CDN Engine: <span class="text-success">Active</span></div>
+                                <small class="text-muted" id="ghRepoInfo">Repo: <b>bjendermisra-ops/Iskcon-Hadapsar-Admin-Pannel-</b> (Branch: main)</small>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-dark px-3 py-2 rounded-3 fw-bold" onclick="openGitHubSettings()">
+                            <i class="fas fa-key me-1"></i> Settings / Token
+                        </button>
+                    </div>
+
+                    <!-- 1. DATE / TIME PRIORITY WIDGET -->
+                    <div class="card-box">
+                        <label class="label-c">
+                            <span><i class="far fa-clock text-warning me-2"></i>Date / Time & Alert Capsule Order</span>
+                            <span class="badge bg-light text-dark border">Priority Rank</span>
+                        </label>
+                        <div class="custom-grid two-col mt-2">
+                            <input type="number" id="inpDateOrder" class="input-c" value="1" placeholder="Rank (e.g. 1)">
+                            <button onclick="saveDateOrder()" class="btn-main"><i class="fas fa-check-circle"></i> Update Position</button>
+                        </div>
+                        <small class="text-muted mt-2 d-block">यह तय करता है कि लाइव घड़ी और एकादशी वाला कार्ड किस नंबर पर रोटेट होगा (1 = सबसे पहले)।</small>
+                    </div>
+
+                    <!-- 2. ADD / EDIT SLIDE FORM -->
+                    <div id="formCard" class="card-box">
+                        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                            <h5 class="fw-bold m-0" style="color:var(--secondary);" id="formTitle">
+                                <i class="fas fa-plus-circle text-primary me-2"></i> Create Dynamic Slide
+                            </h5>
+                            <span id="editBadge" class="badge bg-warning text-dark px-3 py-2 fw-bold" style="display:none; border-radius:8px;">EDITING ACTIVE</span>
+                        </div>
+                        
+                        <input type="hidden" id="editKey">
+
+                        <!-- CATEGORY SELECTION -->
+                        <div class="custom-grid two-col">
+                            <div>
+                                <label class="label-c">Slide Category</label>
+                                <select id="inpType" class="input-c" onchange="handleCategoryChange()">
+                                    <optgroup label="Standard Presets">
+                                        <option value="image">🖼️ Custom Image Banner (jsDelivr CDN)</option>
+                                        <option value="birthday">🎂 Birthday Blessings</option>
+                                        <option value="anniversary">💍 Anniversary</option>
+                                        <option value="notice">📢 Important Notice / Katha</option>
+                                        <option value="donation">🙏 Donation Seva</option>
+                                    </optgroup>
+                                    <optgroup label="Dynamic Architecture">
+                                        <option value="custom">✨ + Create Custom Dynamic Category</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="label-c">Display Sequence (Order Number)</label>
+                                <input type="number" id="inpOrder" class="input-c" value="2" placeholder="e.g. 2, 3, 4">
+                            </div>
+                        </div>
+
+                        <!-- SLIDE DURATION & ACTIVE ORDER HINT -->
+                        <div class="custom-grid two-col mt-3">
+                            <div>
+                                <label class="label-c">Slide Duration (Seconds)</label>
+                                <input type="number" step="0.5" id="inpDuration" class="input-c" value="2.5" placeholder="Default: 2.5">
+                            </div>
+                            <div>
+                                <label class="label-c">Reserved Positions</label>
+                                <div id="usedOrdersHint" class="input-c" style="background:#FFF7ED; border-color:#FED7AA; color:#9A3412; font-size:0.82rem; overflow-x:auto; white-space:nowrap;">
+                                    Checking occupied order numbers...
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DYNAMIC CATEGORY ARCHITECT BOX (Appears when custom selected) -->
+                        <div id="boxCustomCategory" class="category-builder-box" style="display:none;">
+                            <div class="fw-bold mb-2 text-primary" style="font-size:0.9rem;"><i class="fas fa-wand-magic-sparkles me-2"></i>Zero-Update Custom Category Builder</div>
+                            <div class="custom-grid two-col">
+                                <div>
+                                    <label class="label-c">Category Display Title</label>
+                                    <input type="text" id="inpCustomTitle" class="input-c" placeholder="e.g. दीक्षा महोत्सव / Special Seva">
+                                </div>
+                                <div>
+                                    <label class="label-c">Header Tag Badge</label>
+                                    <input type="text" id="inpCustomBadge" class="input-c" placeholder="e.g. UPCOMING, SPECIAL, BLESSINGS">
+                                </div>
+                            </div>
+                            <div class="custom-grid two-col mt-2">
+                                <div>
+                                    <label class="label-c">FontAwesome Icon Class</label>
+                                    <input type="text" id="inpCustomIcon" class="input-c" value="fa-hands-praying" placeholder="e.g. fa-om, fa-star, fa-heart, fa-bell">
+                                </div>
+                                <div>
+                                    <label class="label-c">Theme Gradient Style</label>
+                                    <div class="d-flex gap-2 align-items-center mt-1">
+                                        <div class="preset-gradient-chip selected" style="background:linear-gradient(135deg, #FF6F00, #E65100);" onclick="selectGradient(this, 'linear-gradient(135deg, #FF6F00, #E65100)')"></div>
+                                        <div class="preset-gradient-chip" style="background:linear-gradient(135deg, #4A0E3D, #C2185B);" onclick="selectGradient(this, 'linear-gradient(135deg, #4A0E3D, #C2185B)')"></div>
+                                        <div class="preset-gradient-chip" style="background:linear-gradient(135deg, #004D40, #00897B);" onclick="selectGradient(this, 'linear-gradient(135deg, #004D40, #00897B)')"></div>
+                                        <div class="preset-gradient-chip" style="background:linear-gradient(135deg, #1E3A8A, #3B82F6);" onclick="selectGradient(this, 'linear-gradient(135deg, #1E3A8A, #3B82F6)')"></div>
+                                        <input type="hidden" id="inpCustomGradient" value="linear-gradient(135deg, #FF6F00, #E65100)">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 20KB REAL COMPRESSION ENGINE & GITHUB UPLOADER -->
+                        <div id="boxImageUpload" class="mt-3">
+                            <label class="label-c">
+                                <span>Image Banner Asset</span>
+                                <span class="text-success"><i class="fas fa-bolt me-1"></i>Real 20KB WebP Engine</span>
+                            </label>
+                            
+                            <div class="compressor-dropzone" onclick="document.getElementById('fileInput').click()">
+                                <i class="fas fa-cloud-arrow-up fa-2x text-primary mb-2"></i>
+                                <div class="fw-bold">Click to Select or Drop Any Photo (Even 10MB+)</div>
+                                <small class="text-muted">It will mathematically compress strictly to ~18KB - 20KB WebP and push to GitHub!</small>
+                                <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="handleImageSelection(this)">
+                            </div>
+
+                            <!-- REALTIME COMPRESSION RESULT BAR -->
+                            <div id="compressorStats" class="compressor-stats">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <img id="imgPreviewThumb" style="width:50px; height:50px; object-fit:cover; border-radius:8px; border:2px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+                                        <div>
+                                            <div class="fw-bold text-success" id="compSizeText">Optimized: 19.2 KB</div>
+                                            <small class="text-muted" id="compRatioText">Original: 4.8 MB (Saved 99.4%)</small>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-sm btn-success fw-bold px-3 py-2 rounded-3" id="btnUploadGH" onclick="startGitHubUpload()">
+                                        <i class="fab fa-github me-1"></i> Push to GitHub CDN
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <label class="label-c">Direct Asset URL (jsDelivr CDN)</label>
+                                <input type="text" id="inpImgUrl" class="input-c" placeholder="https://cdn.jsdelivr.net/gh/bjendermisra-ops/...">
+                            </div>
+                        </div>
+
+                        <!-- DYNAMIC METADATA CONTENT FIELDS -->
+                        <div id="boxTextData" style="display:none;" class="mt-3">
+                            <div class="custom-grid two-col">
+                                <div><label class="label-c">Event Date</label><input type="date" id="inpDate" class="input-c"></div>
+                                <div><label class="label-c">Name / Title</label><input type="text" id="inpName" class="input-c" placeholder="E.g. Sundar Shyam Das"></div>
+                            </div>
+                            <div class="custom-grid two-col mt-3">
+                                <div><label class="label-c">Subtitle / Role / Amount</label><input type="text" id="inpId" class="input-c" placeholder="E.g. Life Patron Member / ₹5,100 Seva"></div>
+                                <div><label class="label-c">Location / Extra Note</label><input type="text" id="inpAddr" class="input-c" placeholder="E.g. Hadapsar, Pune"></div>
+                            </div>
+                        </div>
+
+                        <!-- CLICK INTERACTION LINK -->
+                        <div class="custom-grid link-col mt-3">
+                            <div>
+                                <label class="label-c">Click Action</label>
+                                <select id="inpLinkType" class="input-c" onchange="handleLinkTypeChange()">
+                                    <option value="none">No Action</option>
+                                    <option value="go">Internal App Page (.html)</option>
+                                    <option value="web">External Website (URL)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="label-c">Destination Link</label>
+                                <input type="text" id="inpLinkVal" class="input-c" placeholder="-- disabled --" disabled>
+                            </div>
+                        </div>
+
+                        <!-- SUBMISSION BUTTONS -->
+                        <div class="custom-grid two-col mt-4">
+                            <button id="btnSubmit" onclick="submitSlideEntry()" class="btn-main">
+                                <i class="fas fa-cloud-arrow-up"></i> PUBLISH SLIDE TO APP
+                            </button>
+                            <button id="btnCancel" onclick="resetSlideForm()" class="btn-cancel" style="display:none;">CANCEL</button>
+                        </div>
+                    </div>
+
+                    <!-- 3. ACTIVE LIVE SLIDES LIST -->
+                    <div class="d-flex justify-content-between align-items-center mb-3 mt-4 px-2">
+                        <h6 class="fw-bold m-0 text-muted" style="letter-spacing:1px; font-size:0.85rem;">ACTIVE LIVE SLIDES IN APP</h6>
+                    </div>
+                    
+                    <div id="itemList" class="pb-5 w-100">
+                        <div class="text-center py-5"><i class="fas fa-circle-notch fa-spin text-muted fa-2x"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==============================================
+                 APP 2: QUIZ ADMIN (PRESERVED)
+            =============================================== -->
+            <div id="view-quiz" class="app-view">
+                <header>
+                    <div class="brand fw-bold fs-5 text-dark d-flex align-items-center gap-2">
+                        <button class="btn btn-light d-xl-none p-2 border" onclick="toggleQuizMenu()"><i class="fas fa-bars"></i></button>
+                        <i class="fas fa-book-open text-primary"></i> Quiz Controller
+                    </div>
+                    <select class="form-select border-2 shadow-none" style="width:auto; font-weight:700;" id="db-path" onchange="loadLevels()">
+                        <option value="levels_multi">👳 Srila Prabhupada</option>
+                        <option value="levels_krishna">🦚 Lord Krishna</option>
+                        <option value="levels_ramayan">🏹 Ramayan</option>
+                        <option value="levels_gita">🕉️ Bhagavad Gita</option>
+                    </select>
+                </header>
+                <div class="quiz-layout-wrapper">
+                    <div class="quiz-sidebar" id="quiz-sidebar">
+                        <div class="p-3 border-bottom"><button class="btn btn-dark w-100 fw-bold rounded-3" onclick="addLevel()"><i class="fas fa-plus me-2"></i> ADD LEVEL</button></div>
+                        <div class="lvl-list p-2" id="lvl-list"><div class="text-center p-4 text-muted"><i class="fas fa-spinner fa-spin"></i></div></div>
+                    </div>
+                    <div class="main flex-grow-1 p-3">
+                        <div id="welcome" class="text-center mt-5 text-muted">
+                            <i class="fas fa-layer-group fa-4x mb-3 opacity-25"></i>
+                            <h4 class="fw-bold text-dark">Select a Level from Sidebar to manage questions</h4>
+                        </div>
+                        <div id="content" style="display:none; max-width:850px; margin:0 auto;">
+                            <div class="d-flex justify-content-between align-items-center mb-3 bg-white p-3 rounded-4 shadow-sm border">
+                                <h5 id="lvl-name" class="m-0 fw-bold text-primary">Level Name</h5>
+                                <button class="btn btn-sm btn-outline-danger fw-bold rounded-3" onclick="delLevel()"><i class="fas fa-trash-alt me-1"></i> Delete Level</button>
+                            </div>
+                            <div class="card-box">
+                                <h6 class="fw-bold mb-3"><i class="fas fa-plus-circle text-success me-2"></i>Add Question</h6>
+                                <input id="q-en" class="input-c mb-2" placeholder="Question (English) *">
+                                <input id="q-hi" class="input-c mb-2" placeholder="Question (Hindi)">
+                                <input id="q-mr" class="input-c mb-2" placeholder="Question (Marathi)">
+                                <div class="row g-2 mt-2">
+                                    <div class="col-6"><input id="o0-en" class="input-c" placeholder="Option A"></div>
+                                    <div class="col-6"><input id="o1-en" class="input-c" placeholder="Option B"></div>
+                                    <div class="col-6"><input id="o2-en" class="input-c" placeholder="Option C"></div>
+                                    <div class="col-6"><input id="o3-en" class="input-c" placeholder="Option D"></div>
+                                </div>
+                                <div class="mt-3">
+                                    <label class="label-c">Correct Answer</label>
+                                    <select id="ans" class="input-c">
+                                        <option value="0">Option A</option>
+                                        <option value="1">Option B</option>
+                                        <option value="2">Option C</option>
+                                        <option value="3">Option D</option>
+                                    </select>
+                                </div>
+                                <button class="btn-main mt-3" onclick="saveQ()"><i class="fas fa-save me-2"></i> SAVE QUESTION</button>
+                            </div>
+                            <div id="q-list" class="mt-4"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- UI NAVIGATION LOGIC -->
+    <script>
+        function switchApp(appId, btnElement = null) {
+            document.querySelectorAll('.app-view').forEach(el => el.classList.remove('active-view'));
+            document.getElementById('view-' + appId).classList.add('active-view');
+            if(btnElement) {
+                document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+                btnElement.classList.add('active');
+            }
+            document.querySelector('.dashboard-main').scrollTo(0,0);
+        }
+        function toggleSidebar() { document.getElementById('mainSidebar').classList.toggle('show'); document.querySelector('.sidebar-overlay').classList.toggle('show'); }
+        function toggleSidebarMobile() { if(window.innerWidth <= 992) { document.getElementById('mainSidebar').classList.remove('show'); document.querySelector('.sidebar-overlay').classList.remove('show'); } }
+
+        function handleCategoryChange() {
+            const type = document.getElementById('inpType').value;
+            const isImage = type === 'image';
+            const isCustom = type === 'custom';
+
+            document.getElementById('boxImageUpload').style.display = isImage ? 'block' : 'none';
+            document.getElementById('boxTextData').style.display = !isImage ? 'block' : 'none';
+            document.getElementById('boxCustomCategory').style.display = isCustom ? 'block' : 'none';
+        }
+
+        function handleLinkTypeChange() {
+            const type = document.getElementById('inpLinkType').value;
+            const valInput = document.getElementById('inpLinkVal');
+            if(type === 'none') { valInput.disabled = true; valInput.placeholder = "-- disabled --"; valInput.value = ""; } 
+            else if (type === 'go') { valInput.disabled = false; valInput.placeholder = "e.g. dono (Internal Page)"; } 
+            else { valInput.disabled = false; valInput.placeholder = "e.g. https://yourlink.com"; }
+        }
+
+        function selectGradient(elem, gradStr) {
+            document.querySelectorAll('.preset-gradient-chip').forEach(c => c.classList.remove('selected'));
+            elem.classList.add('selected');
+            document.getElementById('inpCustomGradient').value = gradStr;
+        }
+
+        function openGitHubSettings() {
+            const currentToken = localStorage.getItem('iskcon_gh_token') || '';
+            const currentBranch = localStorage.getItem('iskcon_gh_branch') || 'main';
+            const currentFolder = localStorage.getItem('iskcon_gh_folder') || 'assets/slides';
+
+            Swal.fire({
+                title: 'GitHub CDN Settings',
+                html: `
+                    <div class="text-start" style="font-size:0.85rem;">
+                        <label class="fw-bold mb-1">GitHub Personal Access Token (PAT):</label>
+                        <input id="swalToken" type="password" class="form-control mb-2" placeholder="ghp_..." value="${currentToken}">
+                        <label class="fw-bold mb-1">Branch Name:</label>
+                        <input id="swalBranch" type="text" class="form-control mb-2" value="${currentBranch}">
+                        <label class="fw-bold mb-1">Storage Folder:</label>
+                        <input id="swalFolder" type="text" class="form-control mb-3" value="${currentFolder}">
+                        <div class="alert alert-info py-2" style="font-size:0.75rem;">
+                            Repo: <b>bjendermisra-ops/Iskcon-Hadapsar-Admin-Pannel-</b><br>
+                            Images are delivered through <b>jsDelivr Fast Global Edge CDN</b> completely free!
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonColor: '#FF7B00',
+                confirmButtonText: 'Save Settings',
+                preConfirm: () => {
+                    const t = document.getElementById('swalToken').value.trim();
+                    const b = document.getElementById('swalBranch').value.trim() || 'main';
+                    const f = document.getElementById('swalFolder').value.trim() || 'assets/slides';
+                    if(!t) { Swal.showValidationMessage('Token is required for GitHub uploads!'); return false; }
+                    return { token: t, branch: b, folder: f };
+                }
+            }).then(r => {
+                if(r.isConfirmed) {
+                    localStorage.setItem('iskcon_gh_token', r.value.token);
+                    localStorage.setItem('iskcon_gh_branch', r.value.branch);
+                    localStorage.setItem('iskcon_gh_folder', r.value.folder);
+                    Swal.fire({icon:'success', title:'Settings Saved!', timer:1200, showConfirmButton:false});
+                }
+            });
+        }
+    </script>
+
+    <!-- ==============================================
+         POWERFUL COMPRESSION & FIREBASE ENGINE (ES MODULE)
+    =============================================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, push, onValue, remove, set, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+        // Firebase RTDB Configuration
+        const app = initializeApp({
+            apiKey: "AIzaSyDaiyXkiQgyJWAC7QsOcneHl0KU0O4kwgI", 
+            authDomain: "iskcon-slider.firebaseapp.com",
+            databaseURL: "https://iskcon-slider-default-rtdb.firebaseio.com", 
+            projectId: "iskcon-slider"
+        }, 'sliderApp'); 
+        
+        const db = getDatabase(app);
+        let rawData = {}; 
+        window.currentDateOrder = 1;
+        let compressedBlobHolder = null;
+
+        // BUMP VERSION TICK (Protects Firebase Quota by 99%)
+        async function triggerVersionBump() {
+            try {
+                await set(ref(db, 'slider_version'), {
+                    v: Date.now(),
+                    date: new Date().toISOString()
+                });
+            } catch(e) { console.error("Version tick error:", e); }
+        }
+        window.syncVersionTickManually = () => {
+            triggerVersionBump().then(() => {
+                Swal.fire({icon:'success', title:'Cache Invalidation Triggered!', text:'User devices will now refresh their local cache.', timer:1500, showConfirmButton:false});
+            });
+        };
+
+        // ==============================================
+        // 🔬 REAL MATHEMATICAL 20KB WEBP COMPRESSOR
+        // ==============================================
+        window.handleImageSelection = async (input) => {
+            const file = input.files[0];
+            if(!file) return;
+
+            Swal.fire({
+                title: 'Compressing Image...',
+                text: 'Running mathematical Canvas Loop down to strictly ~20KB...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            try {
+                const optimizedBlob = await execute20KBCompression(file);
+                compressedBlobHolder = optimizedBlob;
+
+                const origSizeKb = (file.size / 1024).toFixed(1);
+                const optSizeKb = (optimizedBlob.size / 1024).toFixed(1);
+                const ratio = (((file.size - optimizedBlob.size) / file.size) * 100).toFixed(1);
+
+                document.getElementById('compressorStats').style.display = 'block';
+                document.getElementById('imgPreviewThumb').src = URL.createObjectURL(optimizedBlob);
+                document.getElementById('compSizeText').innerText = `Optimized: ${optSizeKb} KB`;
+                document.getElementById('compRatioText').innerText = `Original: ${origSizeKb} KB (Saved ${ratio}%)`;
+
+                Swal.close();
+            } catch (err) {
+                Swal.fire('Compression Error', err.message, 'error');
+            }
+        };
+
+        function execute20KBCompression(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let canvas = document.createElement('canvas');
+                        let ctx = canvas.getContext('2d');
+                        
+                        let maxDim = 720; // Mobile banner optimal dimension
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > height && width > maxDim) {
+                            height = Math.round((height * maxDim) / width);
+                            width = maxDim;
+                        } else if (height > maxDim) {
+                            width = Math.round((width * maxDim) / height);
+                            height = maxDim;
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        let quality = 0.85;
+                        let minQuality = 0.12;
+
+                        function recursiveLoop(q, scale) {
+                            if (scale < 1.0) {
+                                canvas.width = Math.round(width * scale);
+                                canvas.height = Math.round(height * scale);
+                                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            }
+                            canvas.toBlob((blob) => {
+                                if (!blob) { reject(new Error("Canvas conversion failed")); return; }
+                                // Target size: Strictly <= 21KB (17KB - 20KB ideal)
+                                if (blob.size <= 21 * 1024 || q <= minQuality) {
+                                    resolve(blob);
+                                } else {
+                                    let nextQ = q - 0.08;
+                                    let nextScale = scale;
+                                    if (nextQ < 0.28 && blob.size > 22 * 1024) {
+                                        nextScale = scale * 0.86;
+                                        nextQ = 0.65;
+                                    }
+                                    recursiveLoop(Math.max(nextQ, minQuality), nextScale);
+                                }
+                            }, 'image/webp', q);
+                        }
+                        recursiveLoop(quality, 1.0);
+                    };
+                    img.onerror = () => reject(new Error("Unable to read image file"));
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ==============================================
+        // 🚀 GITHUB API + jsDelivr DIRECT UPLOADER
+        // ==============================================
+        window.startGitHubUpload = async () => {
+            if(!compressedBlobHolder) { Swal.fire('Error', 'Please select an image first!', 'warning'); return; }
+
+            const token = localStorage.getItem('iskcon_gh_token');
+            if(!token) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Token Required',
+                    text: 'Please configure your GitHub Token first!',
+                    confirmButtonText: 'Open Settings'
+                }).then(() => openGitHubSettings());
+                return;
+            }
+
+            const btn = document.getElementById('btnUploadGH');
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin me-1"></i> Uploading...`;
+            btn.disabled = true;
+
+            try {
+                const owner = "bjendermisra-ops";
+                const repo = "Iskcon-Hadapsar-Admin-Pannel-";
+                const branch = localStorage.getItem('iskcon_gh_branch') || 'main';
+                const folder = (localStorage.getItem('iskcon_gh_folder') || 'assets/slides').replace(/^\/+|\/+$/g, '');
+                const fileName = `slide_${Date.now()}.webp`;
+                const filePath = `${folder}/${fileName}`;
+
+                const base64Data = await new Promise((res) => {
+                    const r = new FileReader();
+                    r.onloadend = () => res(r.result.split(',')[1]);
+                    r.readAsDataURL(compressedBlobHolder);
+                });
+
+                const ghApiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
+                const response = await fetch(ghApiUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token.trim()}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/vnd.github.v3+json'
+                    },
+                    body: JSON.stringify({
+                        message: `Upload 20KB optimized asset: ${fileName}`,
+                        content: base64Data,
+                        branch: branch
+                    })
+                });
+
+                if(!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.message || "Failed to commit image to GitHub");
+                }
+
+                // Construct jsDelivr Ultra-Fast CDN URL
+                const cdnUrl = `https://cdn.jsdelivr.net/gh/${owner}/${repo}@${branch}/${filePath}`;
+                document.getElementById('inpImgUrl').value = cdnUrl;
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Asset Live on Global CDN!',
+                    text: `Size: ${(compressedBlobHolder.size / 1024).toFixed(1)} KB`,
+                    timer: 1600,
+                    showConfirmButton: false
+                });
+
+                btn.innerHTML = `<i class="fas fa-check me-1"></i> Uploaded!`;
+            } catch (err) {
+                Swal.fire('Upload Failed', err.message, 'error');
+                btn.innerHTML = `<i class="fab fa-github me-1"></i> Try Upload Again`;
+                btn.disabled = false;
+            }
+        };
+
+        // ==============================================
+        // 💾 FORM HANDLERS & SCHEMA CRUD
+        // ==============================================
+        window.resetSlideForm = () => {
+            document.getElementById('editKey').value = "";
+            document.getElementById('inpName').value = ""; 
+            document.getElementById('inpId').value = ""; 
+            document.getElementById('inpAddr').value = "";
+            document.getElementById('inpLinkVal').value = ""; 
+            document.getElementById('inpImgUrl').value = "";
+            document.getElementById('inpCustomTitle').value = "";
+            document.getElementById('inpCustomBadge').value = "";
+            document.getElementById('inpType').value = "image";
+            document.getElementById('inpDuration').value = "2.5";
+            document.getElementById('inpLinkType').value = "none";
+            document.getElementById('compressorStats').style.display = "none";
+            compressedBlobHolder = null;
+
+            handleLinkTypeChange(); 
+            handleCategoryChange();
+
+            document.getElementById('btnSubmit').innerHTML = `<i class="fas fa-cloud-arrow-up"></i> PUBLISH SLIDE TO APP`;
+            document.getElementById('btnSubmit').classList.remove('btn-update');
+            document.getElementById('btnCancel').style.display = "none";
+            document.getElementById('formTitle').innerHTML = `<i class="fas fa-plus-circle text-primary me-2"></i> Create Dynamic Slide`;
+            document.getElementById('editBadge').style.display = "none";
+        };
+
+        // Used order positions hint
+        const refreshUsedOrdersHint = () => {
+            let used = [`Clock: ${window.currentDateOrder}`];
+            if(rawData) {
+                Object.values(rawData).forEach(v => {
+                    used.push(`${v.type.toUpperCase()}: ${v.order || 10}`);
+                });
+            }
+            document.getElementById('usedOrdersHint').innerText = used.join(' | ');
+        };
+
+        window.saveDateOrder = () => {
+            let num = parseInt(document.getElementById('inpDateOrder').value) || 1;
+            set(ref(db, 'slider_settings/date_order'), num).then(() => {
+                triggerVersionBump();
+                Swal.fire({icon: 'success', title: 'Position Updated', toast: true, position: 'top-end', timer: 1200, showConfirmButton: false});
+            });
+        };
+
+        onValue(ref(db, 'slider_settings/date_order'), (s) => {
+            window.currentDateOrder = s.val() || 1;
+            document.getElementById('inpDateOrder').value = window.currentDateOrder;
+            refreshUsedOrdersHint();
+        });
+
+        // SUBMIT SLIDE ENTRY
+        window.submitSlideEntry = () => {
+            const editKey = document.getElementById('editKey').value;
+            const type = document.getElementById('inpType').value;
+            const newOrder = parseInt(document.getElementById('inpOrder').value) || 10;
+            const newDuration = parseFloat(document.getElementById('inpDuration').value) || 2.5;
+
+            // Conflict check with Clock
+            if (newOrder === window.currentDateOrder) {
+                Swal.fire('Position Occupied', `Rank ${newOrder} is reserved for Date/Time Clock capsule!`, 'error');
+                return;
+            }
+
+            const payload = {
+                type: type,
+                order: newOrder,
+                duration: newDuration,
+                linkAction: document.getElementById('inpLinkType').value,
+                linkValue: document.getElementById('inpLinkVal').value.trim(),
+                updatedAt: Date.now()
+            };
+
+            if(type === 'image') {
+                payload.imgUrl = document.getElementById('inpImgUrl').value.trim();
+                if(!payload.imgUrl) { Swal.fire('Error', 'Direct CDN Image URL is required!', 'error'); return; }
+            } else {
+                payload.eventDate = document.getElementById('inpDate').value || new Date().toISOString().split('T')[0];
+                payload.name = document.getElementById('inpName').value.trim();
+                payload.identity = document.getElementById('inpId').value.trim();
+                payload.address = document.getElementById('inpAddr').value.trim();
+                
+                if(type === 'custom') {
+                    payload.customTitle = document.getElementById('inpCustomTitle').value.trim() || 'Special Event';
+                    payload.customBadge = document.getElementById('inpCustomBadge').value.trim() || 'DIVINE';
+                    payload.customIcon = document.getElementById('inpCustomIcon').value.trim() || 'fa-hands-praying';
+                    payload.customGradient = document.getElementById('inpCustomGradient').value;
+                }
+
+                if(!payload.name) { Swal.fire('Error', 'Name / Title is required!', 'error'); return; }
+            }
+
+            const p = editKey ? update(ref(db, 'slider_items/' + editKey), payload) : push(ref(db, 'slider_items'), payload);
+
+            p.then(() => {
+                triggerVersionBump();
+                Swal.fire({icon:'success', title:'Slide Synced & Live!', toast:true, position:'top-end', showConfirmButton:false, timer:1500});
+                resetSlideForm();
+            }).catch(e => Swal.fire('Database Error', e.message, 'error'));
+        };
+
+        window.deleteSlideItem = (id) => {
+            Swal.fire({
+                title: 'Delete Slide?',
+                text: 'It will be removed immediately from all user devices.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#DC2626',
+                confirmButtonText: 'Yes, Delete'
+            }).then(r => {
+                if(r.isConfirmed) {
+                    remove(ref(db, 'slider_items/' + id)).then(() => {
+                        triggerVersionBump();
+                        if(document.getElementById('editKey').value === id) resetSlideForm();
+                    });
+                }
+            });
+        };
+
+        window.triggerSlideEdit = (key) => {
+            const item = rawData[key];
+            if(!item) return;
+
+            document.querySelector('.dashboard-main').scrollTo({ top: 0, behavior: 'smooth' });
+
+            document.getElementById('editKey').value = key;
+            document.getElementById('inpType').value = item.type;
+            document.getElementById('inpOrder').value = item.order || 10;
+            document.getElementById('inpDuration').value = item.duration || 2.5;
+            document.getElementById('inpLinkType').value = item.linkAction || "none";
+            handleLinkTypeChange();
+            document.getElementById('inpLinkVal').value = item.linkValue || "";
+            
+            handleCategoryChange();
+            if(item.type === 'image') {
+                document.getElementById('inpImgUrl').value = item.imgUrl || "";
+            } else {
+                document.getElementById('inpDate').value = item.eventDate || "";
+                document.getElementById('inpName').value = item.name || "";
+                document.getElementById('inpId').value = item.identity || "";
+                document.getElementById('inpAddr').value = item.address || "";
+
+                if(item.type === 'custom') {
+                    document.getElementById('inpCustomTitle').value = item.customTitle || "";
+                    document.getElementById('inpCustomBadge').value = item.customBadge || "";
+                    document.getElementById('inpCustomIcon').value = item.customIcon || "fa-hands-praying";
+                    document.getElementById('inpCustomGradient').value = item.customGradient || "linear-gradient(135deg, #FF6F00, #E65100)";
+                }
+            }
+
+            document.getElementById('btnSubmit').innerHTML = `<i class="fas fa-rotate me-2"></i> UPDATE SLIDE`;
+            document.getElementById('btnSubmit').classList.add('btn-update');
+            document.getElementById('btnCancel').style.display = "block";
+            document.getElementById('formTitle').innerHTML = `<i class="fas fa-edit text-success me-2"></i> Editing Slide`;
+            document.getElementById('editBadge').style.display = "inline-block";
+        };
+
+        // Realtime Render list
+        onValue(ref(db, 'slider_items'), (snap) => {
+            const list = document.getElementById('itemList');
+            rawData = snap.val() || {};
+            list.innerHTML = "";
+            refreshUsedOrdersHint();
+
+            if(Object.keys(rawData).length === 0) {
+                list.innerHTML = `<div class="text-center p-5 bg-white rounded-4 border"><p class="text-muted fw-bold m-0">No active slides in database.</p></div>`;
+                return;
+            }
+
+            let sorted = Object.entries(rawData).map(([k,v]) => ({id:k, ...v})).sort((a,b) => (a.order||10) - (b.order||10));
+
+            sorted.forEach(v => {
+                let icon = '📢';
+                let title = v.name;
+                let sub = v.identity || '';
+
+                if(v.type === 'image') {
+                    icon = '🖼️';
+                    title = 'Custom Image Banner';
+                    sub = `<img src="${v.imgUrl}" style="height:36px; border-radius:6px; margin-top:4px; border:1px solid #ddd;">`;
+                } else if(v.type === 'birthday') icon = '🎂';
+                else if(v.type === 'anniversary') icon = '💍';
+                else if(v.type === 'donation') icon = '🙏';
+                else if(v.type === 'custom') icon = '✨';
+
+                list.innerHTML += `
+                <div class="item-row">
+                    <div class="item-info">
+                        <div class="item-name">${icon} ${title}</div>
+                        <div style="font-size:0.85rem; color:#64748B;">${sub}</div>
+                        <div class="item-meta">
+                            <span class="badge bg-dark">Order: ${v.order || 10}</span>
+                            <span class="badge bg-secondary">${v.duration || 2.5}s</span>
+                            <span class="badge bg-light text-dark border">${v.type.toUpperCase()}</span>
+                        </div>
+                    </div>
+                    <div class="action-btns">
+                        <button class="btn-icon btn-edit" onclick="triggerSlideEdit('${v.id}')"><i class="fas fa-pencil"></i></button>
+                        <button class="btn-icon btn-del" onclick="deleteSlideItem('${v.id}')"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                </div>`;
+            });
+        });
+
+        // Initialize Form defaults
+        document.getElementById('inpDate').valueAsDate = new Date();
+        handleCategoryChange();
+        handleLinkTypeChange();
+    </script>
+
+    <!-- ==============================================
+         QUIZ CONTROLLER LOGIC (RETAINED)
+    =============================================== -->
+    <script>
+        (function() {
+            const quizConfig = { 
+                apiKey: "AIzaSyDxuMG5tqPshrZBs4DSwQFAEnN4ufpAoEQ", 
+                databaseURL: "https://iskcon-quize-default-rtdb.firebaseio.com"
+            };
+            const quizApp = firebase.initializeApp(quizConfig, "quizApp");
+            const qDb = quizApp.database();
+            let CUR_LVL = null;
+
+            window.toggleQuizMenu = function() {
+                document.getElementById('quiz-sidebar').classList.toggle('open');
+            };
+
+            window.loadLevels = function() {
+                const path = document.getElementById('db-path').value;
+                document.getElementById('content').style.display = 'none';
+                document.getElementById('welcome').style.display = 'block';
+                CUR_LVL = null;
+
+                qDb.ref(path).on('value', s => {
+                    const d = document.getElementById('lvl-list');
+                    d.innerHTML = "";
+                    if(!s.val()) { d.innerHTML="<div class='p-3 text-muted text-center fw-bold'>No levels found</div>"; return; }
+                    Object.entries(s.val()).forEach(([k,v]) => {
+                        let active = (k === CUR_LVL) ? 'active' : '';
+                        d.innerHTML += `<div class="lvl-item ${active}" onclick="selLvl('${k}','${v.name.en}')">
+                            <span><i class="fas fa-layer-group me-2"></i> ${v.name.en}</span>
+                            <i class="fas fa-chevron-right" style="font-size:0.75rem;"></i>
+                        </div>`;
+                    });
+                });
+            };
+
+            window.addLevel = async function() {
+                const { value: name } = await Swal.fire({
+                    title: 'New Level Name (English)',
+                    input: 'text',
+                    showCancelButton: true
+                });
+                if(name) {
+                    qDb.ref(document.getElementById('db-path').value).push({
+                        name: { en: name, hi: name, mr: name },
+                        created: Date.now()
+                    });
+                }
+            };
+
+            window.selLvl = function(k, n) {
+                CUR_LVL = k;
+                document.getElementById('welcome').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+                document.getElementById('lvl-name').innerText = n;
+
+                qDb.ref(`${document.getElementById('db-path').value}/${k}/questions`).on('value', s => {
+                    const list = document.getElementById('q-list');
+                    list.innerHTML = "";
+                    if(!s.val()) { list.innerHTML="<p class='text-muted text-center py-4'>No questions yet.</p>"; return; }
+                    Object.entries(s.val()).forEach(([qid, v]) => {
+                        list.innerHTML += `
+                        <div class="p-3 bg-white border rounded-3 mb-2 d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-bold">${v.q.en}</div>
+                                <small class="text-success fw-bold">Ans: Option ${['A','B','C','D'][v.a]}</small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-danger" onclick="delQ('${qid}')"><i class="fas fa-trash"></i></button>
+                        </div>`;
+                    });
+                });
+            };
+
+            window.saveQ = function() {
+                if(!CUR_LVL) return;
+                const en = document.getElementById('q-en').value.trim();
+                if(!en) { Swal.fire('Error', 'Question is required!', 'error'); return; }
+                const data = {
+                    q: { en, hi: document.getElementById('q-hi').value.trim() || en, mr: document.getElementById('q-mr').value.trim() || en },
+                    o: [
+                        { en: document.getElementById('o0-en').value, hi: '', mr: '' },
+                        { en: document.getElementById('o1-en').value, hi: '', mr: '' },
+                        { en: document.getElementById('o2-en').value, hi: '', mr: '' },
+                        { en: document.getElementById('o3-en').value, hi: '', mr: '' }
+                    ],
+                    a: parseInt(document.getElementById('ans').value)
+                };
+                qDb.ref(`${document.getElementById('db-path').value}/${CUR_LVL}/questions`).push(data).then(() => {
+                    document.getElementById('q-en').value = '';
+                    Swal.fire({icon:'success', title:'Question Saved!', timer:1000, showConfirmButton:false});
+                });
+            };
+
+            window.delQ = function(qid) {
+                qDb.ref(`${document.getElementById('db-path').value}/${CUR_LVL}/questions/${qid}`).remove();
+            };
+
+            window.delLevel = function() {
+                if(!CUR_LVL) return;
+                Swal.fire({title:'Delete Level?', icon:'warning', showCancelButton:true, confirmButtonColor:'#DC2626'}).then(r => {
+                    if(r.isConfirmed) {
+                        qDb.ref(`${document.getElementById('db-path').value}/${CUR_LVL}`).remove();
+                        document.getElementById('content').style.display = 'none';
+                        document.getElementById('welcome').style.display = 'block';
+                    }
+                });
+            };
+
+            loadLevels();
+        })();
+    </script>
+</body>
+</html>
