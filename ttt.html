@@ -1,0 +1,1765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Master Admin | श्री श्री राधाकृष्ण चंद्र मंदिर</title>
+    
+    <!-- Bootstrap 5 & FontAwesome 6 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Cinzel:wght@700;800&family=Poppins:wght@600;700;800&family=Dancing+Script:wght@700&family=Noto+Sans+Devanagari:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Firebase Libraries -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        :root { 
+            --primary: #FF7B00; 
+            --primary-dark: #E65100;
+            --secondary: #1E293B; 
+            --bg-body: #F1F5F9; 
+            --sidebar-bg: #FFFFFF; 
+            --text-dark: #0F172A; 
+            --text-muted: #64748B; 
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03); 
+            --border-radius: 18px; 
+        }
+        *, *::before, *::after { box-sizing: border-box !important; }
+        html, body { margin: 0; padding: 0; width: 100%; max-width: 100vw; overflow-x: hidden; background: var(--bg-body); font-family: 'Plus Jakarta Sans', sans-serif; color: var(--text-dark); }
+        
+        .dashboard-wrapper { display: flex; height: 100dvh; width: 100%; overflow: hidden; }
+        .dashboard-sidebar { width: 285px; background: var(--sidebar-bg); box-shadow: 4px 0 24px rgba(0,0,0,0.04); display: flex; flex-direction: column; z-index: 1000; transition: all 0.3s ease; flex-shrink: 0; }
+        .brand-logo { padding: 22px 20px; display: flex; align-items: center; gap: 12px; font-family: 'Poppins', sans-serif; font-size: 1.15rem; font-weight: 800; color: var(--secondary); border-bottom: 1px solid #E2E8F0; }
+        .img-logo { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #FF7B00, #FF5722); display: flex; justify-content: center; align-items: center; font-size: 19px; color: #fff; box-shadow: 0 4px 12px rgba(255,123,0,0.3); flex-shrink: 0; }
+        .sidebar-menu { padding: 18px 14px; display: flex; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; }
+        .menu-btn { background: transparent; border: none; padding: 14px 18px; border-radius: 12px; color: var(--text-muted); font-weight: 700; font-size: 0.95rem; text-align: left; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s ease; width: 100%; }
+        .menu-btn:hover { background: #FFF7ED; color: var(--primary); }
+        .menu-btn.active { background: linear-gradient(135deg, var(--primary) 0%, #FF5722 100%); color: white; box-shadow: 0 8px 20px rgba(255, 123, 0, 0.28); }
+        
+        .dashboard-main { flex: 1; height: 100dvh; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; position: relative; width: 100%; }
+        .mobile-header { display: none; background: white; padding: 14px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 990; width: 100%; }
+        .mobile-toggle { background: transparent; border: none; font-size: 1.4rem; color: var(--secondary); cursor: pointer;}
+        
+        @media(max-width: 992px) { 
+            .dashboard-sidebar { position: fixed; left: -300px; height: 100dvh; max-width: 82vw; } 
+            .dashboard-sidebar.show { left: 0; } 
+            .mobile-header { display: flex; } 
+            .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0,0,0,0.45); z-index: 999; display: none; backdrop-filter: blur(2px); } 
+            .sidebar-overlay.show { display: block; } 
+        }
+
+        .app-view { display: none !important; width: 100%; min-height: 100%; }
+        #view-slider.active-view { display: block !important; }
+        #view-quiz.active-view { display: flex !important; }
+
+        .app-container { max-width: 920px; margin: 0 auto; width: 100%; padding: 25px 20px 60px 20px; }
+        .card-box { background: white; border-radius: var(--border-radius); padding: 25px; box-shadow: var(--card-shadow); border: 1px solid rgba(226, 232, 240, 0.8); margin-bottom: 22px; width: 100%; transition: all 0.3s ease; }
+        .label-c { font-size: 0.8rem; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: space-between; }
+        .input-c { width: 100%; padding: 12px 16px; border: 2px solid #E2E8F0; border-radius: 12px; font-weight: 600; font-size: 0.95rem; color: var(--text-dark); outline: none; transition: 0.2s; background: #F8FAFC; }
+        .input-c:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(255,123,0,0.12); }
+        
+        .custom-grid { display: grid; grid-template-columns: 1fr; gap: 14px; width: 100%; }
+        @media(min-width: 768px) { 
+            .custom-grid.two-col { grid-template-columns: 1fr 1fr; } 
+            .custom-grid.three-col { grid-template-columns: 1fr 1fr 1fr; } 
+            .custom-grid.link-col { grid-template-columns: 1.2fr 2fr; } 
+        }
+
+        .btn-main { width: 100%; padding: 14px 20px; background: linear-gradient(135deg, var(--primary) 0%, #FF5722 100%); color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 1rem; letter-spacing: 0.5px; box-shadow: 0 6px 18px rgba(255,123,0,0.3); transition: 0.2s; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-main:active { transform: scale(0.98); }
+        .btn-update { background: linear-gradient(135deg, #10B981 0%, #059669 100%); box-shadow: 0 6px 18px rgba(16, 185, 129, 0.3); }
+        .btn-cancel { background: #E2E8F0; color: #475569; border: none; border-radius: 12px; font-weight: 800; width: 100%; padding: 14px; transition: 0.2s; cursor: pointer; }
+
+        .cloud-badge-status { background: #F0FDF4; border: 1.5px solid #BBF7D0; border-radius: 14px; padding: 14px 18px; margin-bottom: 22px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+        .compressor-dropzone { border: 2px dashed #CBD5E1; background: #F8FAFC; border-radius: 16px; padding: 22px; text-align: center; cursor: pointer; transition: 0.25s; position: relative; }
+        .compressor-dropzone:hover { border-color: var(--primary); background: #FFF7ED; }
+        .compressor-stats { display: none; background: #ECFDF5; border: 1.5px solid #A7F3D0; border-radius: 12px; padding: 12px 16px; margin-top: 14px; }
+
+        .category-builder-box { background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: 14px; padding: 16px; margin-top: 12px; }
+        .preset-gradient-chip { width: 34px; height: 34px; border-radius: 10px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
+        .preset-gradient-chip.selected { border-color: #0F172A; transform: scale(1.15); box-shadow: 0 4px 10px rgba(0,0,0,0.25); }
+
+        .item-row { background: white; padding: 16px 20px; border-radius: 16px; margin-bottom: 12px; border-left: 6px solid #CBD5E1; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--card-shadow); gap: 12px; transition: 0.2s; width: 100%; flex-wrap: wrap; }
+        .item-info { flex: 1; min-width: 0; }
+        .item-name { font-weight: 800; color: var(--secondary); font-size: 1.05rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .item-meta { font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-top: 6px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .action-btns { display: flex; gap: 8px; }
+        .btn-icon { width: 40px; height: 40px; border-radius: 10px; border: none; display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: 0.2s; cursor: pointer; }
+        .btn-edit { background: #EFF6FF; color: #2563EB; }
+        .btn-del { background: #FEF2F2; color: #DC2626; }
+
+        /* LIVE SIMULATOR & COMPACT FULL-WIDTH CARD */
+        .preview-simulator-wrapper { max-width: 380px; margin: 0 auto; border-radius: 26px; padding: 8px; background: #0f172a; box-shadow: 0 16px 40px rgba(0,0,0,0.3); border: 3px solid #334155; position: relative; }
+        .preview-phone-notch { width: 110px; height: 14px; background: #0f172a; border-radius: 0 0 12px 12px; position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 10; }
+        .preview-device-card { border-radius: 20px; min-height: 230px; width: 100%; overflow: hidden; position: relative; background: #140804; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); }
+        .sim-image { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* FULL-SPACE BALANCED NAME SLIDE (NO UNWANTED VOID) */
+        .sim-name-slide { min-height: 230px; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; color: white; padding: 16px 12px; position: relative; overflow: hidden; }
+        .sim-ns-bday { background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%); color: #880e4f; }
+        .sim-ns-anni { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); color: #4a148c; }
+        .sim-ns-donate { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: #004d40; }
+        .sim-ns-notice { background: linear-gradient(135deg, #FFC371 0%, #FF5F6D 100%); color: #3e2723; }
+        .sim-ns-header { font-family: 'Dancing Script', cursive; font-weight: 800; text-shadow: 0 2px 4px rgba(255,255,255,0.6); line-height: 1.1; font-size: 1.5rem; margin-bottom: 6px; }
+        
+        /* 6 PERSON BALANCED CONTAINER */
+        .sim-name-container { width: 100%; flex-grow: 1; background: rgba(255,255,255,0.92); border-radius: 16px; padding: 10px; box-shadow: 0 8px 25px rgba(0,0,0,0.12); border: 1.5px solid rgba(255,255,255,0.95); display: grid; gap: 6px; align-content: center; }
+        .sim-person-container { background: rgba(255,255,255,0.85); border: 1px solid rgba(0,0,0,0.06); border-radius: 12px; padding: 8px 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; width: 100%; }
+        .sim-person-name { font-weight: 800; font-family: 'Poppins', sans-serif; font-size: 1rem; line-height: 1.2; color: inherit; }
+        .sim-person-role { font-weight: 700; opacity: 0.9; margin-top: 2px; font-size: 0.78rem; line-height: 1.1; }
+        .sim-person-addr { font-weight: 600; opacity: 0.8; margin-top: 2px; font-size: 0.74rem; line-height: 1.1; }
+
+        /* MULTI-PERSON MANAGER UI IN FORM */
+        .person-entry-row { background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: 14px; padding: 14px; margin-bottom: 10px; position: relative; transition: all 0.2s ease; }
+        .person-entry-row:hover { border-color: #CBD5E1; background: #FFFFFF; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        .btn-remove-person { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-radius: 8px; background: #FEE2E2; color: #EF4444; border: none; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; cursor: pointer; transition: 0.2s; }
+        .btn-remove-person:hover { background: #EF4444; color: #fff; }
+        .csv-drop-area { border: 2px dashed #93C5FD; background: #EFF6FF; border-radius: 14px; padding: 14px; text-align: center; margin-bottom: 15px; }
+
+        /* SIMULATOR PAGINATION DOTS */
+        .sim-page-bar { display: flex; justify-content: center; gap: 6px; margin-top: 8px; }
+        .sim-page-chip { background: #E2E8F0; color: #475569; font-size: 0.72rem; font-weight: 800; padding: 3px 10px; border-radius: 10px; cursor: pointer; }
+        .sim-page-chip.active { background: #FF7B00; color: #fff; }
+
+        #view-quiz { background: var(--bg-body); height: 100%; flex-direction: column; padding: 20px; width: 100%; }
+        #view-quiz header { background: white; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; border-radius: var(--border-radius); box-shadow: var(--card-shadow); margin-bottom: 20px; gap: 15px; width: 100%; }
+        .quiz-layout-wrapper { display: flex; flex: 1; gap: 20px; position: relative; width: 100%; }
+        .quiz-sidebar { width: 300px; background: white; border-radius: var(--border-radius); display: flex; flex-direction: column; box-shadow: var(--card-shadow); overflow: hidden; flex-shrink: 0; }
+        .lvl-item { padding: 14px 16px; border-radius: 12px; margin-bottom: 6px; font-weight: 700; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); transition: 0.2s; }
+        .lvl-item.active { background: #FFF7ED; color: var(--primary); border: 1.5px solid rgba(255,123,0,0.25); }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-wrapper">
+        <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+        
+        <!-- SIDEBAR -->
+        <aside class="dashboard-sidebar" id="mainSidebar">
+            <div class="brand-logo">
+                <div class="img-logo"><i class="fas fa-om"></i></div>
+                <div>
+                    <div style="line-height:1.2; font-size:1.02rem;">श्री श्री राधाकृष्ण चंद्र</div>
+                    <small style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">मंदिर मास्टर एडमिन</small>
+                </div>
+            </div>
+            <nav class="sidebar-menu">
+                <button class="menu-btn active" onclick="switchApp('slider', this); toggleSidebarMobile()">
+                    <i class="fas fa-sliders-h"></i> स्लाइडर व सूचना हब
+                </button>
+                <button class="menu-btn" onclick="promptCloudKeyConfig(); toggleSidebarMobile()">
+                    <i class="fas fa-key"></i> क्लाउड स्टोरेज Key
+                </button>
+                <button class="menu-btn" onclick="switchApp('quiz', this); toggleSidebarMobile()">
+                    <i class="fas fa-book-open"></i> क्विज़ डेटाबेस
+                </button>
+            </nav>
+            <div class="p-3 border-top mt-auto">
+                <button class="btn btn-sm btn-outline-secondary w-100 fw-bold rounded-3" onclick="syncVersionTickManually()">
+                    <i class="fas fa-rotate me-1"></i> तुरंत ऐप रीफ्रेश करें
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="dashboard-main">
+            <div class="mobile-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="img-logo" style="width:34px; height:34px; font-size:16px;"><i class="fas fa-om"></i></div>
+                    <span class="fw-bold" style="font-size:1.05rem; color:var(--secondary);">श्री श्री राधाकृष्ण चंद्र मंदिर</span>
+                </div>
+                <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+            </div>
+
+            <!-- ==============================================
+                 APP 1: DYNAMIC SLIDER & LIVE PREVIEW SIMULATOR
+            =============================================== -->
+            <div id="view-slider" class="app-view active-view">
+                <div class="app-container">
+                    
+                    <!-- CLOUD STORAGE STATUS BAR & KEY VERIFIER -->
+                    <div class="cloud-badge-status" id="cloudStatusBanner">
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="fas fa-cloud-bolt fa-2x text-primary"></i>
+                            <div>
+                                <div class="fw-bold" style="font-size:0.95rem;">मंदिर हाई-स्पीड क्लाउड स्टोरेज: <span id="cloudStatusText" class="text-success">जाँचा जा रहा है... ⚡</span></div>
+                                <small class="text-muted" id="cloudAccountText">इमेजेस अल्ट्रा-एचडी क्वालिटी में बिना धुंधलेपन के अपलोड होंगी।</small>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-outline-success fw-bold px-3 py-1 rounded-3" onclick="promptCloudKeyConfig()">
+                            <i class="fas fa-key me-1"></i> Cloud Key सेटअप
+                        </button>
+                    </div>
+
+                    <!-- 1. DATE / TIME PRIORITY WIDGET -->
+                    <div class="card-box">
+                        <label class="label-c">
+                            <span><i class="far fa-clock text-warning me-2"></i>लाइव घड़ी और एकादशी कैप्सूल का क्रम</span>
+                            <span class="badge bg-light text-dark border">Priority Rank</span>
+                        </label>
+                        <div class="custom-grid two-col mt-2">
+                            <input type="number" id="inpDateOrder" class="input-c" value="1" placeholder="Rank (e.g. 1)">
+                            <button onclick="saveDateOrder()" class="btn-main"><i class="fas fa-check-circle"></i> क्रम सुरक्षित करें</button>
+                        </div>
+                        <small class="text-muted mt-2 d-block">यह तय करता है कि लाइव घड़ी और एकादशी वाला कार्ड किस नंबर पर दिखेगा (1 = सबसे पहले)।</small>
+                    </div>
+
+                    <!-- 2. ADD / EDIT SLIDE FORM -->
+                    <div id="formCard" class="card-box">
+                        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                            <h5 class="fw-bold m-0" style="color:var(--secondary);" id="formTitle">
+                                <i class="fas fa-plus-circle text-primary me-2"></i> नई स्लाइड / सूचना तैयार करें
+                            </h5>
+                            <span id="editBadge" class="badge bg-warning text-dark px-3 py-2 fw-bold" style="display:none; border-radius:8px;">EDITING ACTIVE</span>
+                        </div>
+                        
+                        <input type="hidden" id="editKey">
+
+                        <!-- CATEGORY SELECTION -->
+                        <div class="custom-grid two-col">
+                            <div>
+                                <label class="label-c">स्लाइड प्रकार (Category)</label>
+                                <select id="inpType" class="input-c" onchange="handleCategoryChange()">
+                                    <optgroup label="मुख्य कैटेगरीज">
+                                        <option value="image">🖼️ कस्टम इमेज बैनर (HD Image Banner)</option>
+                                        <option value="birthday">🎂 जन्मदिन शुभकामना (Birthday Blessings)</option>
+                                        <option value="anniversary">💍 वैवाहिक वर्षगांठ (Anniversary)</option>
+                                        <option value="notice">📢 मंदिर सूचना / कथा (Important Notice)</option>
+                                        <option value="donation">🙏 दान सेवा (Donation Seva)</option>
+                                    </optgroup>
+                                    <optgroup label="कस्टम डायनामिक विकल्प">
+                                        <option value="custom">✨ + नई मनचाही कैटेगरी बनाएं (Custom Category)</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="label-c">प्रदर्शन क्रम (Sequence Number)</label>
+                                <input type="number" id="inpOrder" class="input-c" value="2" placeholder="e.g. 2, 3, 4">
+                            </div>
+                        </div>
+
+                        <!-- SLIDE DURATION & ACTIVE ORDER HINT -->
+                        <div class="custom-grid two-col mt-3">
+                            <div>
+                                <label class="label-c">स्लाइड का समय (Seconds)</label>
+                                <input type="number" step="0.5" id="inpDuration" class="input-c" value="3.5" placeholder="Default: 3.5">
+                            </div>
+                            <div>
+                                <label class="label-c">पहले से सुरक्षित क्रम</label>
+                                <div id="usedOrdersHint" class="input-c" style="background:#FFF7ED; border-color:#FED7AA; color:#9A3412; font-size:0.82rem; overflow-x:auto; white-space:nowrap;">
+                                    क्रम जाँचा जा रहा है...
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DYNAMIC CATEGORY ARCHITECT BOX -->
+                        <div id="boxCustomCategory" class="category-builder-box" style="display:none;">
+                            <div class="fw-bold mb-2 text-primary" style="font-size:0.9rem;"><i class="fas fa-wand-magic-sparkles me-2"></i>कस्टम कैटेगरी बिल्डर (बिना ऐप अपडेट किए दिखेगी)</div>
+                            <div class="custom-grid two-col">
+                                <div>
+                                    <label class="label-c">कैटेगरी का नाम (Title)</label>
+                                    <input type="text" id="inpCustomTitle" class="input-c" placeholder="उदा: दीक्षा महोत्सव / विशेष सेवा">
+                                </div>
+                                <div>
+                                    <label class="label-c">ऊपर दिखने वाला टैग (Badge)</label>
+                                    <input type="text" id="inpCustomBadge" class="input-c" placeholder="उदा: MAHOTSAV, SPECIAL, SEVA">
+                                </div>
+                            </div>
+                            <div class="custom-grid two-col mt-2">
+                                <div>
+                                    <label class="label-c">FontAwesome आइकन क्लास</label>
+                                    <input type="text" id="inpCustomIcon" class="input-c" value="fa-hands-praying" placeholder="उदा: fa-om, fa-star, fa-heart, fa-bell">
+                                </div>
+                                <div>
+                                    <label class="label-c">बैकग्राउंड कलर ग्रेडिएंट</label>
+                                    <div class="d-flex gap-2 align-items-center mt-1">
+                                        <div class="preset-gradient-chip selected" style="background:linear-gradient(135deg, #FF6F00, #E65100);" onclick="selectGradient(this, 'linear-gradient(135deg, #FF6F00, #E65100)')"></div>
+                                        <div class="preset-gradient-chip" style="background:linear-gradient(135deg, #4A0E3D, #C2185B);" onclick="selectGradient(this, 'linear-gradient(135deg, #4A0E3D, #C2185B)')"></div>
+                                        <div class="preset-gradient-chip" style="background:linear-gradient(135deg, #004D40, #00897B);" onclick="selectGradient(this, 'linear-gradient(135deg, #004D40, #00897B)')"></div>
+                                        <div class="preset-gradient-chip" style="background:linear-gradient(135deg, #1E3A8A, #3B82F6);" onclick="selectGradient(this, 'linear-gradient(135deg, #1E3A8A, #3B82F6)')"></div>
+                                        <input type="hidden" id="inpCustomGradient" value="linear-gradient(135deg, #FF6F00, #E65100)">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- HD SMART CLEAR COMPRESSOR & AUTO-CLOUD ENGINE -->
+                        <div id="boxImageUpload" class="mt-3">
+                            <!-- 📐 BUILT-IN IMAGE SIZE & RESOLUTION ADVISOR -->
+                            <div class="p-3 rounded-3 mb-3 shadow-sm" style="background:#F0F9FF; border:1.5px solid #BAE6FD;">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
+                                    <div class="fw-bold text-primary" style="font-size:0.88rem;">
+                                        <i class="fas fa-ruler-combined me-1"></i> सर्वोत्तम इमेज साइज़ गाइड (Image Resolution Guide)
+                                    </div>
+                                    <span class="badge bg-primary text-white" style="font-size:0.75rem;">16:9 Aspect Ratio</span>
+                                </div>
+                                <div style="font-size:0.8rem; color:#0369A1; line-height:1.5;">
+                                    • सबसे सटीक साइज़: <b>800 × 450 px</b> या <b>720 × 405 px</b> (Landscape बैनर)।<br>
+                                    • <b>16:9 अनुपात</b> की फोटो हर मोबाइल स्क्रीन पर बिना किसी क्रॉप के 100% सटीक बैठती है।
+                                </div>
+                                <div id="imgDimensionBadge" class="mt-2 py-1 px-2 rounded-2" style="display:none; font-size:0.82rem; font-weight:700; background:#E0F2FE;">
+                                </div>
+                            </div>
+
+                            <label class="label-c">
+                                <span>इमेज बैनर फ़ाइल (मल्टीपल इमेजेस सपोर्ट)</span>
+                                <span class="text-success"><i class="fas fa-check-double me-1"></i>HD Clear Smart Compressor (No Blur)</span>
+                            </label>
+                            
+                            <div class="compressor-dropzone" onclick="document.getElementById('fileInput').click()">
+                                <i class="fas fa-cloud-arrow-up fa-2x text-primary mb-2"></i>
+                                <div class="fw-bold">फोटो चुनें (Click to Select Image)</div>
+                                <small class="text-muted">एक या एक से अधिक फोटो चुनें। यह HD क्वालिटी में 35KB-50KB बनाकर तुरंत अपलोड कर देगा।</small>
+                                <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" onchange="handleImageSelection(this)">
+                            </div>
+
+                            <!-- COMPRESSION STATS BAR -->
+                            <div id="compressorStats" class="compressor-stats">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <img id="imgPreviewThumb" style="width:55px; height:55px; object-fit:cover; border-radius:10px; border:2px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+                                        <div>
+                                            <div class="fw-bold text-success" id="compSizeText">Ultra HD Clear</div>
+                                            <small class="text-muted" id="compRatioText">Optimizing...</small>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-sm btn-success fw-bold px-3 py-2 rounded-3" id="btnUploadGH" onclick="startCloudUpload()">
+                                        <i class="fas fa-cloud-arrow-up me-1"></i> अपलोड करें (Upload to Cloud)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mt-3">
+                                <label class="label-c">
+                                    <span>इमेज डायरेक्ट लिंक (Direct Cloud Asset URL)</span>
+                                    <small class="text-muted">सीधा कोई भी इमेज लिंक भी पेस्ट कर सकते हैं</small>
+                                </label>
+                                <input type="text" id="inpImgUrl" class="input-c" placeholder="https://cdn.jsdelivr.net/... या कोई भी डायरेक्ट फोटो लिंक">
+                            </div>
+                        </div>
+
+                        <!-- ============================================================== -->
+                        <!-- 👥 ADVANCED MULTI-PERSON DATA MANAGER (1 TO 6+ PERSONS + CSV) 👥 -->
+                        <!-- ============================================================== -->
+                        <div id="boxTextData" style="display:none;" class="mt-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <label class="label-c m-0" style="font-size:0.9rem; color:var(--secondary);">
+                                    <i class="fas fa-users text-primary me-2"></i>व्यक्तियों की सूची (अधिकतम 6 प्रति स्लाइड)
+                                </label>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-primary fw-bold rounded-3" onclick="toggleCsvImportBox()">
+                                        <i class="fas fa-file-csv me-1"></i> CSV इम्पोर्ट / पेस्ट
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-warning text-dark fw-bold rounded-3" onclick="addNewPersonRow()">
+                                        <i class="fas fa-plus me-1"></i> + व्यक्ति जोड़ें
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- CSV IMPORT DRAWER (COLLAPSIBLE) -->
+                            <div id="csvDrawerBox" class="csv-drop-area" style="display:none;">
+                                <div class="fw-bold text-primary mb-1"><i class="fas fa-file-csv me-1"></i> CSV से सीधे भरें (Bulk Import)</div>
+                                <small class="text-muted d-block mb-2">फॉर्मेट: <code>नाम, पद/सेवा/राशि, स्थान/पता</code> (हर व्यक्ति नई लाइन में)</small>
+                                
+                                <textarea id="csvTextInput" class="form-control mb-2" rows="3" placeholder="सुंदर श्याम दास, लाइफ मेंबर, पुणे&#10;राधिका देवी दासी, ₹5,100 सेवा, हडपसर&#10;गोपाल कृष्ण दास, सेवादार, कात्रज"></textarea>
+                                
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                    <input type="file" id="csvFileInput" accept=".csv,.txt" style="display:none;" onchange="handleCsvFileUpload(this)">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary fw-bold rounded-3" onclick="document.getElementById('csvFileInput').click()">
+                                        <i class="fas fa-upload me-1"></i> .CSV फ़ाइल चुनें
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-primary fw-bold rounded-3 px-3" onclick="parseAndApplyCsvText()">
+                                        <i class="fas fa-check me-1"></i> डेटा जोड़ें (Apply CSV)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- DYNAMIC PERSON CARDS CONTAINER -->
+                            <div id="personsListContainer">
+                                <!-- Person 1 (Default) -->
+                                <div class="person-entry-row" data-person-index="0">
+                                    <div class="custom-grid two-col">
+                                        <div>
+                                            <label class="label-c">नाम / मुख्य शीर्षक #1</label>
+                                            <input type="text" class="input-c p-name" placeholder="उदा: सुंदर श्याम दास" oninput="updateLiveSimulation()">
+                                        </div>
+                                        <div>
+                                            <label class="label-c">तारीख (Event Date)</label>
+                                            <input type="date" class="input-c p-date" oninput="updateLiveSimulation()">
+                                        </div>
+                                    </div>
+                                    <div class="custom-grid two-col mt-2">
+                                        <div>
+                                            <label class="label-c">पद / सेवा / राशि</label>
+                                            <input type="text" class="input-c p-role" placeholder="उदा: लाइफ मेंबर / ₹5,100 सेवा" oninput="updateLiveSimulation()">
+                                        </div>
+                                        <div>
+                                            <label class="label-c">स्थान / पता</label>
+                                            <input type="text" class="input-c p-addr" placeholder="उदा: 15 नंबर, हडपसर" oninput="updateLiveSimulation()">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ======================================================== -->
+                        <!-- 📱 LIVE ACCURATE USER PANEL SIMULATOR PREVIEW BOX 📱 -->
+                        <!-- ======================================================== -->
+                        <div class="mt-4 p-3 rounded-4 border-2" style="background:#FFFBF5; border: 2px dashed #FDBA74;">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="fw-bold" style="font-size:0.92rem; color:#C2410C;">
+                                    <i class="fas fa-mobile-screen-button me-2"></i>लाइव मोबाइल प्रीव्यू (यूज़र ऐप में कैसा दिखेगा)
+                                </div>
+                                <span class="badge bg-warning text-dark fw-bold" style="font-size:0.7rem;">Realtime Simulation</span>
+                            </div>
+                            
+                            <div class="preview-simulator-wrapper">
+                                <div class="preview-phone-notch"></div>
+                                <div class="preview-device-card" id="livePreviewContainer">
+                                </div>
+                            </div>
+                            
+                            <!-- SIMULATOR PAGINATION BAR FOR >6 PERSONS -->
+                            <div class="sim-page-bar" id="simPageBar" style="display:none;"></div>
+                            
+                            <div class="text-center mt-2">
+                                <small class="text-muted" style="font-size:0.78rem;" id="simInfoText">
+                                    <i class="fas fa-eye me-1"></i> 1 से 6 लोग एक ही स्लाइड में सुंदर ग्रिड में दिखेंगे। 6 से अधिक होने पर अपने-आप अगली स्लाइड बनेगी।
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- CLICK INTERACTION LINK -->
+                        <div class="custom-grid link-col mt-3">
+                            <div>
+                                <label class="label-c">क्लिक करने पर क्या हो? (Action)</label>
+                                <select id="inpLinkType" class="input-c" onchange="handleLinkTypeChange()">
+                                    <option value="none">कोई लिंक नहीं (No Action)</option>
+                                    <option value="go">ऐप का आंतरिक पेज खोलें (.html)</option>
+                                    <option value="web">बाहरी वेबसाइट खोलें (URL)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="label-c">लिंक का पता (Target Page / URL)</label>
+                                <input type="text" id="inpLinkVal" class="input-c" placeholder="-- disabled --" disabled>
+                            </div>
+                        </div>
+
+                        <!-- SUBMISSION BUTTONS -->
+                        <div class="custom-grid two-col mt-4">
+                            <button id="btnSubmit" onclick="submitSlideEntry()" class="btn-main">
+                                <i class="fas fa-paper-plane"></i> स्लाइड ऐप में लाइव करें (PUBLISH)
+                            </button>
+                            <button id="btnCancel" onclick="resetSlideForm()" class="btn-cancel" style="display:none;">रद्द करें (CANCEL)</button>
+                        </div>
+                    </div>
+
+                    <!-- 3. ACTIVE LIVE SLIDES LIST -->
+                    <div class="d-flex justify-content-between align-items-center mb-3 mt-4 px-2">
+                        <h6 class="fw-bold m-0 text-muted" style="letter-spacing:1px; font-size:0.85rem;">ऐप में चल रही सभी एक्टिव स्लाइड्स</h6>
+                    </div>
+                    
+                    <div id="itemList" class="pb-5 w-100">
+                        <div class="text-center py-5"><i class="fas fa-circle-notch fa-spin text-muted fa-2x"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==============================================
+                 APP 2: QUIZ ADMIN (PRESERVED)
+            =============================================== -->
+            <div id="view-quiz" class="app-view">
+                <header>
+                    <div class="brand fw-bold fs-5 text-dark d-flex align-items-center gap-2">
+                        <button class="btn btn-light d-xl-none p-2 border" onclick="toggleQuizMenu()"><i class="fas fa-bars"></i></button>
+                        <i class="fas fa-book-open text-primary"></i> क्विज़ डेटाबेस कंट्रोलर
+                    </div>
+                    <select class="form-select border-2 shadow-none" style="width:auto; font-weight:700;" id="db-path" onchange="loadLevels()">
+                        <option value="levels_multi">👳 Srila Prabhupada</option>
+                        <option value="levels_krishna">🦚 Lord Krishna</option>
+                        <option value="levels_ramayan">🏹 Ramayan</option>
+                        <option value="levels_gita">🕉️ Bhagavad Gita</option>
+                    </select>
+                </header>
+                <div class="quiz-layout-wrapper">
+                    <div class="quiz-sidebar" id="quiz-sidebar">
+                        <div class="p-3 border-bottom"><button class="btn btn-dark w-100 fw-bold rounded-3" onclick="addLevel()"><i class="fas fa-plus me-2"></i> नया लेवल जोड़ें</button></div>
+                        <div class="lvl-list p-2" id="lvl-list"><div class="text-center p-4 text-muted"><i class="fas fa-spinner fa-spin"></i></div></div>
+                    </div>
+                    <div class="main flex-grow-1 p-3">
+                        <div id="welcome" class="text-center mt-5 text-muted">
+                            <i class="fas fa-layer-group fa-4x mb-3 opacity-25"></i>
+                            <h4 class="fw-bold text-dark">लेवल चुनकर प्रश्न प्रबंधित करें</h4>
+                        </div>
+                        <div id="content" style="display:none; max-width:850px; margin:0 auto;">
+                            <div class="d-flex justify-content-between align-items-center mb-3 bg-white p-3 rounded-4 shadow-sm border">
+                                <h5 id="lvl-name" class="m-0 fw-bold text-primary">Level Name</h5>
+                                <button class="btn btn-sm btn-outline-danger fw-bold rounded-3" onclick="delLevel()"><i class="fas fa-trash-alt me-1"></i> लेवल डिलीट करें</button>
+                            </div>
+                            <div class="card-box">
+                                <h6 class="fw-bold mb-3"><i class="fas fa-plus-circle text-success me-2"></i>नया प्रश्न जोड़ें</h6>
+                                <input id="q-en" class="input-c mb-2" placeholder="Question (English) *">
+                                <input id="q-hi" class="input-c mb-2" placeholder="प्रश्न (हिंदी)">
+                                <input id="q-mr" class="input-c mb-2" placeholder="प्रश्न (मराठी)">
+                                <div class="row g-2 mt-2">
+                                    <div class="col-6"><input id="o0-en" class="input-c" placeholder="Option A"></div>
+                                    <div class="col-6"><input id="o1-en" class="input-c" placeholder="Option B"></div>
+                                    <div class="col-6"><input id="o2-en" class="input-c" placeholder="Option C"></div>
+                                    <div class="col-6"><input id="o3-en" class="input-c" placeholder="Option D"></div>
+                                </div>
+                                <div class="mt-3">
+                                    <label class="label-c">सही उत्तर (Correct Option)</label>
+                                    <select id="ans" class="input-c">
+                                        <option value="0">Option A</option>
+                                        <option value="1">Option B</option>
+                                        <option value="2">Option C</option>
+                                        <option value="3">Option D</option>
+                                    </select>
+                                </div>
+                                <button class="btn-main mt-3" onclick="saveQ()"><i class="fas fa-save me-2"></i> प्रश्न सुरक्षित करें</button>
+                            </div>
+                            <div id="q-list" class="mt-4"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- UI NAVIGATION & MULTI-PERSON LOGIC -->
+    <script>
+        function switchApp(appId, btnElement = null) {
+            document.querySelectorAll('.app-view').forEach(el => el.classList.remove('active-view'));
+            document.getElementById('view-' + appId).classList.add('active-view');
+            if(btnElement) {
+                document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+                btnElement.classList.add('active');
+            }
+            document.querySelector('.dashboard-main').scrollTo(0,0);
+        }
+        function toggleSidebar() { document.getElementById('mainSidebar').classList.toggle('show'); document.querySelector('.sidebar-overlay').classList.toggle('show'); }
+        function toggleSidebarMobile() { if(window.innerWidth <= 992) { document.getElementById('mainSidebar').classList.remove('show'); document.querySelector('.sidebar-overlay').classList.remove('show'); } }
+
+        function handleCategoryChange() {
+            const type = document.getElementById('inpType').value;
+            const isImage = type === 'image';
+            const isCustom = type === 'custom';
+
+            document.getElementById('boxImageUpload').style.display = isImage ? 'block' : 'none';
+            document.getElementById('boxTextData').style.display = !isImage ? 'block' : 'none';
+            document.getElementById('boxCustomCategory').style.display = isCustom ? 'block' : 'none';
+
+            updateLiveSimulation();
+        }
+
+        function handleLinkTypeChange() {
+            const type = document.getElementById('inpLinkType').value;
+            const valInput = document.getElementById('inpLinkVal');
+            if(type === 'none') { valInput.disabled = true; valInput.placeholder = "-- disabled --"; valInput.value = ""; } 
+            else if (type === 'go') { valInput.disabled = false; valInput.placeholder = "e.g. dono (Internal Page)"; } 
+            else { valInput.disabled = false; valInput.placeholder = "e.g. https://yourlink.com"; }
+        }
+
+        function selectGradient(elem, gradStr) {
+            document.querySelectorAll('.preset-gradient-chip').forEach(c => c.classList.remove('selected'));
+            elem.classList.add('selected');
+            document.getElementById('inpCustomGradient').value = gradStr;
+            updateLiveSimulation();
+        }
+
+        // ==============================================================
+        // 👥 DYNAMIC MULTI-PERSON ROW BUILDER (1 TO 6+ SUPPORT)
+        // ==============================================================
+        function getPersonsList() {
+            const list = [];
+            document.querySelectorAll('.person-entry-row').forEach(row => {
+                const name = row.querySelector('.p-name')?.value.trim() || '';
+                const role = row.querySelector('.p-role')?.value.trim() || '';
+                const addr = row.querySelector('.p-addr')?.value.trim() || '';
+                const date = row.querySelector('.p-date')?.value || '';
+                if(name) {
+                    list.push({ name, identity: role, address: addr, eventDate: date });
+                }
+            });
+            return list;
+        }
+
+        function addNewPersonRow(name = '', role = '', addr = '', date = '') {
+            const container = document.getElementById('personsListContainer');
+            const count = container.querySelectorAll('.person-entry-row').length;
+            const num = count + 1;
+
+            const div = document.createElement('div');
+            div.className = 'person-entry-row';
+            div.setAttribute('data-person-index', count);
+            div.innerHTML = `
+                <button type="button" class="btn-remove-person" onclick="removePersonRow(this)" title="हटाएं"><i class="fas fa-times"></i></button>
+                <div class="custom-grid two-col">
+                    <div>
+                        <label class="label-c">नाम / मुख्य शीर्षक #${num}</label>
+                        <input type="text" class="input-c p-name" value="${name}" placeholder="उदा: सुंदर श्याम दास" oninput="updateLiveSimulation()">
+                    </div>
+                    <div>
+                        <label class="label-c">तारीख (Event Date)</label>
+                        <input type="date" class="input-c p-date" value="${date}" oninput="updateLiveSimulation()">
+                    </div>
+                </div>
+                <div class="custom-grid two-col mt-2">
+                    <div>
+                        <label class="label-c">पद / सेवा / राशि</label>
+                        <input type="text" class="input-c p-role" value="${role}" placeholder="उदा: लाइफ मेंबर / ₹5,100 सेवा" oninput="updateLiveSimulation()">
+                    </div>
+                    <div>
+                        <label class="label-c">स्थान / पता</label>
+                        <input type="text" class="input-c p-addr" value="${addr}" placeholder="उदा: 15 नंबर, हडपसर" oninput="updateLiveSimulation()">
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+            updateLiveSimulation();
+        }
+
+        function removePersonRow(btn) {
+            const container = document.getElementById('personsListContainer');
+            if(container.querySelectorAll('.person-entry-row').length <= 1) {
+                Swal.fire({icon: 'info', title: 'कम से कम एक व्यक्ति आवश्यक है', timer: 1200, showConfirmButton: false});
+                return;
+            }
+            btn.closest('.person-entry-row').remove();
+            container.querySelectorAll('.person-entry-row').forEach((row, i) => {
+                const label = row.querySelector('.label-c');
+                if(label) label.innerText = `नाम / मुख्य शीर्षक #${i + 1}`;
+            });
+            updateLiveSimulation();
+        }
+
+        function toggleCsvImportBox() {
+            const box = document.getElementById('csvDrawerBox');
+            box.style.display = box.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function parseAndApplyCsvText() {
+            const text = document.getElementById('csvTextInput').value.trim();
+            if(!text) { Swal.fire('सूचना', 'कृपया CSV टेक्स्ट दर्ज करें!', 'warning'); return; }
+
+            const lines = text.split('\n');
+            let addedCount = 0;
+            const container = document.getElementById('personsListContainer');
+
+            const firstRow = container.querySelector('.person-entry-row');
+            if(firstRow && !firstRow.querySelector('.p-name').value.trim()) {
+                firstRow.remove();
+            }
+
+            lines.forEach(line => {
+                const parts = line.split(',').map(s => s.trim());
+                if(parts[0]) {
+                    addNewPersonRow(parts[0] || '', parts[1] || '', parts[2] || '');
+                    addedCount++;
+                }
+            });
+
+            document.getElementById('csvTextInput').value = '';
+            document.getElementById('csvDrawerBox').style.display = 'none';
+            Swal.fire({icon:'success', title:`${addedCount} लोग जोड़े गए!`, timer:1500, showConfirmButton:false});
+            updateLiveSimulation();
+        }
+
+        function handleCsvFileUpload(input) {
+            const file = input.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('csvTextInput').value = e.target.result;
+                parseAndApplyCsvText();
+            };
+            reader.readAsText(file);
+            input.value = '';
+        }
+
+        // ==============================================================
+        // 🔑 TEST & VERIFY CLOUD KEY INSTANTLY
+        // ==============================================================
+        window.promptCloudKeyConfig = async () => {
+            const current = localStorage.getItem('mandir_cloud_key') || '';
+            const { value: key } = await Swal.fire({
+                title: 'क्लाउड स्टोरेज Key',
+                html: `
+                    <div class="text-start" style="font-size:0.85rem;">
+                        <p class="text-muted">GitHub Personal Access Token (Classic) यहाँ पेस्ट करें:</p>
+                        <input id="swalKeyInp" type="password" class="form-control mb-2" placeholder="ghp_..." value="${current}">
+                        <small class="text-success"><i class="fas fa-shield-halved me-1"></i>यह आपके डिवाइस में सुरक्षित रहेगा और GitHub बॉट्स से ब्लॉक नहीं होगा।</small>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonColor: '#FF7B00',
+                confirmButtonText: 'Test & Save Key',
+                showLoaderOnConfirm: true,
+                preConfirm: async () => {
+                    const val = document.getElementById('swalKeyInp').value.trim();
+                    if(!val) { Swal.showValidationMessage('Key दर्ज करना आवश्यक है!'); return false; }
+                    try {
+                        const res = await fetch('https://api.github.com/user', {
+                            headers: { 'Authorization': `Bearer ${val}`, 'Accept': 'application/vnd.github.v3+json' }
+                        });
+                        if(!res.ok) {
+                            throw new Error('टोकन अमान्य (Invalid Token) है! कृपया सही टोकन पेस्ट करें।');
+                        }
+                        const u = await res.json();
+                        return { key: val, login: u.login };
+                    } catch(err) {
+                        Swal.showValidationMessage(err.message || 'टोकन जाँचा नहीं जा सका!');
+                        return false;
+                    }
+                }
+            });
+
+            if(key) {
+                localStorage.setItem('mandir_cloud_key', key.key);
+                checkCloudKeyStatus();
+                Swal.fire({icon:'success', title:'कनेक्टेड! ⚡', text:`खाता: ${key.login}`, timer:1600, showConfirmButton:false});
+            }
+        };
+
+        async function checkCloudKeyStatus() {
+            const key = localStorage.getItem('mandir_cloud_key');
+            const stText = document.getElementById('cloudStatusText');
+            const acText = document.getElementById('cloudAccountText');
+            if(!key) {
+                if(stText) stText.innerHTML = '<span class="text-danger">Key दर्ज नहीं है ⚠️</span>';
+                if(acText) acText.innerText = 'कृपया ऊपर "Cloud Key सेटअप" पर क्लिक करके अपना नया टोकन डालें।';
+                return;
+            }
+            try {
+                const res = await fetch('https://api.github.com/user', {
+                    headers: { 'Authorization': `Bearer ${key.trim()}`, 'Accept': 'application/vnd.github.v3+json' }
+                });
+                if(res.ok) {
+                    const u = await res.json();
+                    if(stText) stText.innerHTML = `<span class="text-success">सक्रिय (${u.login}) ⚡</span>`;
+                    if(acText) acText.innerText = 'इमेजेस बिना धुंधलेपन के अल्ट्रा-एचडी क्वालिटी में अपलोड होंगी।';
+                } else {
+                    if(stText) stText.innerHTML = '<span class="text-danger">अमान्य टोकन (Bad credentials) ⚠️</span>';
+                    if(acText) acText.innerText = 'कृपया नया टोकन बनाकर "Cloud Key सेटअप" में डालें।';
+                }
+            } catch(e) {
+                if(stText) stText.innerHTML = '<span class="text-success">रेडी ⚡</span>';
+            }
+        }
+
+        // ==============================================================
+        // 📱 LIVE ACCURATE SIMULATOR ENGINE (MAX 6 AUTO-PAGINATION)
+        // ==============================================================
+        window.currentPreviewImageSrc = null;
+        window.currentSimPage = 0;
+
+        function updateLiveSimulation() {
+            const container = document.getElementById('livePreviewContainer');
+            if(!container) return;
+
+            const type = document.getElementById('inpType').value;
+
+            if(type === 'image') {
+                document.getElementById('simPageBar').style.display = 'none';
+                const imgSrc = window.currentPreviewImageSrc || document.getElementById('inpImgUrl').value.trim();
+                if(imgSrc) {
+                    container.innerHTML = `<img src="${imgSrc}" class="sim-image" alt="Banner Preview">`;
+                } else {
+                    container.innerHTML = `
+                    <div class="text-center p-3 text-white-50">
+                        <i class="fas fa-image fa-3x mb-2 opacity-50"></i>
+                        <div class="fw-bold text-white" style="font-size:0.9rem;">इमेज बैनर प्रीव्यू</div>
+                        <small>फोटो चुनने पर यहाँ लाइव दिखेगी</small>
+                    </div>`;
+                }
+                return;
+            }
+
+            const persons = getPersonsList();
+            const totalPersons = persons.length;
+            const pageSize = 6;
+            const totalPages = Math.max(1, Math.ceil(totalPersons / pageSize));
+
+            if(window.currentSimPage >= totalPages) window.currentSimPage = 0;
+
+            const pageBar = document.getElementById('simPageBar');
+            if(totalPages > 1) {
+                pageBar.style.display = 'flex';
+                let chips = '';
+                for(let p = 0; p < totalPages; p++) {
+                    chips += `<span class="sim-page-chip ${p === window.currentSimPage ? 'active' : ''}" onclick="setSimPage(${p})">स्लाइड ${p + 1} (${p * 6 + 1} से ${Math.min((p + 1) * 6, totalPersons)})</span>`;
+                }
+                pageBar.innerHTML = chips;
+            } else {
+                pageBar.style.display = 'none';
+            }
+
+            const startIdx = window.currentSimPage * pageSize;
+            const pagePersons = persons.slice(startIdx, startIdx + pageSize);
+            const countOnThisPage = pagePersons.length;
+
+            let bgClass = "sim-ns-notice";
+            let headerText = "महत्वपूर्ण सूचना";
+            let icon = "📢";
+            let customStyle = "";
+
+            if(type === 'birthday') {
+                bgClass = "sim-ns-bday";
+                headerText = "Happy Birthday Blessings";
+                icon = "🎂";
+            } else if(type === 'anniversary') {
+                bgClass = "sim-ns-anni";
+                headerText = "Happy Anniversary Blessings";
+                icon = "💍";
+            } else if(type === 'donation') {
+                bgClass = "sim-ns-donate";
+                headerText = "Donation Seva";
+                icon = "🙏";
+            } else if(type === 'custom') {
+                bgClass = "sim-ns-notice";
+                headerText = document.getElementById('inpCustomTitle').value.trim() || "विशेष सेवा";
+                icon = document.getElementById('inpCustomIcon').value.trim() || "fa-hands-praying";
+                let grad = document.getElementById('inpCustomGradient').value;
+                customStyle = `background:${grad}; color:#fff;`;
+            }
+
+            // Clean 1 to 6 Balanced Grid (No Awkward Space)
+            let gridCols = '1fr';
+            let gap = '6px';
+            if(countOnThisPage >= 2 && countOnThisPage <= 4) {
+                gridCols = '1fr 1fr';
+                gap = '6px';
+            } else if(countOnThisPage >= 5) {
+                gridCols = '1fr 1fr';
+                gap = '5px';
+            }
+
+            let cardsHtml = '';
+            if(countOnThisPage === 0) {
+                cardsHtml = `
+                    <div class="sim-person-container">
+                        <div class="sim-person-name">नाम / मुख्य शीर्षक</div>
+                        <div class="sim-person-role">पद / सेवा / लाइफ मेंबर</div>
+                        <div class="sim-person-addr"><i class="fas fa-location-dot me-1"></i>हडपसर, पुणे</div>
+                    </div>`;
+            } else {
+                pagePersons.forEach(p => {
+                    cardsHtml += `
+                    <div class="sim-person-container" style="${countOnThisPage >= 5 ? 'padding:5px 6px;' : ''}">
+                        <div class="sim-person-name" style="${countOnThisPage >= 5 ? 'font-size:0.82rem;' : ''}">${p.name}</div>
+                        ${p.identity ? `<div class="sim-person-role" style="${countOnThisPage >= 5 ? 'font-size:0.68rem;' : ''}">${p.identity}</div>` : ''}
+                        ${p.address ? `<div class="sim-person-addr" style="${countOnThisPage >= 5 ? 'font-size:0.65rem;' : ''}"><i class="fas fa-location-dot me-1"></i>${p.address}</div>` : ''}
+                    </div>`;
+                });
+            }
+
+            container.innerHTML = `
+            <div class="sim-name-slide ${bgClass}" style="${customStyle}">
+                <div class="sim-ns-header">${type === 'custom' ? `<i class="fas ${icon} me-1"></i>` : icon} ${headerText} ${totalPages > 1 ? `<small style="font-size:0.8rem; font-family:sans-serif; opacity:0.85;">(${window.currentSimPage + 1}/${totalPages})</small>` : ''}</div>
+                <div class="sim-name-container" style="grid-template-columns: ${gridCols}; gap: ${gap};">
+                    ${cardsHtml}
+                </div>
+            </div>`;
+        }
+
+        window.setSimPage = (p) => {
+            window.currentSimPage = p;
+            updateLiveSimulation();
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            ['inpCustomTitle', 'inpCustomIcon', 'inpImgUrl'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) {
+                    el.addEventListener('input', updateLiveSimulation);
+                    el.addEventListener('change', updateLiveSimulation);
+                }
+            });
+            checkCloudKeyStatus();
+            updateLiveSimulation();
+        });
+    </script>
+
+    <!-- ==============================================
+         HD SMART CLEAR COMPRESSOR & FIREBASE MODULE
+    =============================================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getDatabase, ref, push, onValue, remove, set, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+        const CLOUD_REPO_CONFIG = {
+            o: "bjendermisra-ops",
+            r: "Iskcon-Hadapsar-Admin-Pannel-",
+            b: "main",
+            f: "assets/slides"
+        };
+
+        const app = initializeApp({
+            apiKey: "AIzaSyDaiyXkiQgyJWAC7QsOcneHl0KU0O4kwgI", 
+            authDomain: "iskcon-slider.firebaseapp.com",
+            databaseURL: "https://iskcon-slider-default-rtdb.firebaseio.com", 
+            projectId: "iskcon-slider"
+        }, 'sliderApp'); 
+        
+        const db = getDatabase(app);
+        let rawData = {}; 
+        window.currentDateOrder = 1;
+        let compressedBlobQueue = [];
+
+        async function triggerVersionBump() {
+            try {
+                await set(ref(db, 'slider_version'), {
+                    v: Date.now(),
+                    date: new Date().toISOString()
+                });
+            } catch(e) { console.error("Version tick error:", e); }
+        }
+        window.syncVersionTickManually = () => {
+            triggerVersionBump().then(() => {
+                Swal.fire({icon:'success', title:'ऐप सिंक हो गया!', text:'सभी यूज़र्स के डिवाइस पर नया डेटा तुरंत अपडेट हो जाएगा।', timer:1500, showConfirmButton:false});
+            });
+        };
+
+        // ==============================================
+        // 🔬 HD ULTRA-CLEAR SMART COMPRESSOR
+        // ==============================================
+        window.handleImageSelection = async (input) => {
+            const files = Array.from(input.files);
+            if(files.length === 0) return;
+
+            Swal.fire({
+                title: 'ऑप्टिमाइज़ हो रहा है...',
+                text: `${files.length} फोटो को बिना धुंधलेपन के HD क्लियर बनाया जा रहा है...`,
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            try {
+                compressedBlobQueue = [];
+                for(let file of files) {
+                    const optimizedBlob = await executeHDClearCompression(file);
+                    compressedBlobQueue.push({ file, blob: optimizedBlob });
+                }
+
+                const lastBlob = compressedBlobQueue[compressedBlobQueue.length - 1].blob;
+                const origSizeMb = (files[0].size / (1024 * 1024)).toFixed(2);
+                const optSizeKb = (lastBlob.size / 1024).toFixed(1);
+                const ratio = (((files[0].size - lastBlob.size) / files[0].size) * 100).toFixed(0);
+
+                const blobUrl = URL.createObjectURL(lastBlob);
+                window.currentPreviewImageSrc = blobUrl;
+
+                document.getElementById('compressorStats').style.display = 'block';
+                document.getElementById('imgPreviewThumb').src = blobUrl;
+                document.getElementById('compSizeText').innerText = `Ultra HD Clear: ${optSizeKb} KB (${compressedBlobQueue.length} फोटो तैयार)`;
+                document.getElementById('compRatioText').innerText = `मूल साइज़: ${origSizeMb} MB (बचत ${ratio}%)`;
+
+                updateLiveSimulation();
+                Swal.close();
+                input.value = '';
+            } catch (err) {
+                Swal.fire('त्रुटि', err.message, 'error');
+                input.value = '';
+            }
+        };
+
+        function executeHDClearCompression(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const badge = document.getElementById('imgDimensionBadge');
+                        if(badge) {
+                            badge.style.display = 'block';
+                            const aspect = (img.width / img.height);
+                            let statusText = "";
+                            if(aspect >= 1.5 && aspect <= 1.9) {
+                                statusText = `<span class="text-success"><i class="fas fa-circle-check me-1"></i>16:9 Perfect Fit (हर मोबाइल में बिल्कुल सही दिखेगी)</span>`;
+                            } else if(aspect < 1.3) {
+                                statusText = `<span class="text-warning"><i class="fas fa-triangle-exclamation me-1"></i>वर्टिकल / चौकोर फोटो (लैंडस्केप 16:9 फोटो सबसे अच्छी दिखती है)</span>`;
+                            } else {
+                                statusText = `<span class="text-primary"><i class="fas fa-info-circle me-1"></i>चौड़ी फोटो (${aspect.toFixed(2)}:1)</span>`;
+                            }
+                            badge.innerHTML = `फ़ोटो साइज़: <b>${img.width} × ${img.height} px</b> &nbsp;|&nbsp; ${statusText}`;
+                        }
+
+                        let canvas = document.createElement('canvas');
+                        let ctx = canvas.getContext('2d');
+                        
+                        let maxDim = 960;
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > height && width > maxDim) {
+                            height = Math.round((height * maxDim) / width);
+                            width = maxDim;
+                        } else if (height > maxDim) {
+                            width = Math.round((width * maxDim) / height);
+                            height = maxDim;
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        let quality = 0.82;
+                        let minQuality = 0.65;
+
+                        function smartLoop(q, scale) {
+                            if (scale < 1.0) {
+                                canvas.width = Math.round(width * scale);
+                                canvas.height = Math.round(height * scale);
+                                ctx.imageSmoothingEnabled = true;
+                                ctx.imageSmoothingQuality = 'high';
+                                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            }
+                            canvas.toBlob((blob) => {
+                                if (!blob) { reject(new Error("Canvas conversion failed")); return; }
+                                if (blob.size <= 55 * 1024 || q <= minQuality) {
+                                    resolve(blob);
+                                } else {
+                                    let nextQ = q - 0.05;
+                                    let nextScale = scale;
+                                    if (nextQ < 0.68 && blob.size > 60 * 1024) {
+                                        nextScale = scale * 0.92;
+                                        nextQ = 0.78;
+                                    }
+                                    smartLoop(Math.max(nextQ, minQuality), nextScale);
+                                }
+                            }, 'image/webp', q);
+                        }
+                        smartLoop(quality, 1.0);
+                    };
+                    img.onerror = () => reject(new Error("फोटो लोड नहीं हो सकी"));
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ==============================================
+        // 🚀 BULLETPROOF TEMPLE CLOUD UPLOADER
+        // ==============================================
+        window.startCloudUpload = async () => {
+            if(!compressedBlobQueue || compressedBlobQueue.length === 0) { 
+                Swal.fire('सूचना', 'कृपया पहले कोई फोटो चुनें!', 'warning'); 
+                return; 
+            }
+
+            let token = localStorage.getItem('mandir_cloud_key');
+            if(!token) {
+                await promptCloudKeyConfig();
+                token = localStorage.getItem('mandir_cloud_key');
+                if(!token) return;
+            }
+
+            const btn = document.getElementById('btnUploadGH');
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin me-1"></i> अपलोड हो रहा है...`;
+            btn.disabled = true;
+
+            try {
+                let lastCdnUrl = '';
+                for(let i = 0; i < compressedBlobQueue.length; i++) {
+                    const item = compressedBlobQueue[i];
+                    const uniqueId = `${Date.now()}_${i}_${Math.random().toString(36).substr(2, 5)}`;
+                    const fileName = `mandir_asset_${uniqueId}.webp`;
+                    const filePath = `${CLOUD_REPO_CONFIG.f}/${fileName}`;
+
+                    const base64Data = await new Promise((res) => {
+                        const r = new FileReader();
+                        r.onloadend = () => res(r.result.split(',')[1]);
+                        r.readAsDataURL(item.blob);
+                    });
+
+                    const uploadUrl = `https://api.github.com/repos/${CLOUD_REPO_CONFIG.o}/${CLOUD_REPO_CONFIG.r}/contents/${filePath}`;
+                    const response = await fetch(uploadUrl, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token.trim()}`,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/vnd.github.v3+json'
+                        },
+                        body: JSON.stringify({
+                            message: `Upload Mandir HD Asset: ${fileName}`,
+                            content: base64Data,
+                            branch: CLOUD_REPO_CONFIG.b
+                        })
+                    });
+
+                    if(!response.ok) {
+                        const err = await response.json();
+                        if(response.status === 401) { 
+                            localStorage.removeItem('mandir_cloud_key'); 
+                            throw new Error("क्लाउड Key एक्सपायर या ब्लॉक हो चुकी है। कृपया नई Key दर्ज करें।"); 
+                        }
+                        throw new Error(err.message || "क्लाउड अपलोड विफल रहा");
+                    }
+
+                    lastCdnUrl = `https://cdn.jsdelivr.net/gh/${CLOUD_REPO_CONFIG.o}/${CLOUD_REPO_CONFIG.r}@${CLOUD_REPO_CONFIG.b}/${filePath}`;
+                }
+
+                document.getElementById('inpImgUrl').value = lastCdnUrl;
+                window.currentPreviewImageSrc = lastCdnUrl;
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'सफलतापूर्वक अपलोड हुआ! 🪷',
+                    text: `${compressedBlobQueue.length} फोटो अल्ट्रा-एचडी क्वालिटी में लाइव हो गई!`,
+                    timer: 1600,
+                    showConfirmButton: false
+                });
+
+                btn.innerHTML = `<i class="fas fa-check me-1"></i> अपलोड पूरा हुआ!`;
+                updateLiveSimulation();
+            } catch (err) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'अपलोड विफल',
+                    text: err.message,
+                    confirmButtonText: 'नई Key दर्ज करें'
+                }).then(() => { 
+                    promptCloudKeyConfig(); 
+                });
+                btn.innerHTML = `<i class="fas fa-cloud-arrow-up me-1"></i> दोबारा प्रयास करें`;
+                btn.disabled = false;
+            }
+        };
+
+        // ==============================================
+        // 💾 FORM CRUD (MAX 6 PERSONS AUTO-SPLIT INTO SLIDES)
+        // ==============================================
+        window.resetSlideForm = () => {
+            document.getElementById('editKey').value = "";
+            document.getElementById('inpLinkVal').value = ""; 
+            document.getElementById('inpImgUrl').value = "";
+            document.getElementById('inpCustomTitle').value = "";
+            document.getElementById('inpCustomBadge').value = "";
+            document.getElementById('inpType').value = "image";
+            document.getElementById('inpDuration').value = "3.5";
+            document.getElementById('inpLinkType').value = "none";
+            document.getElementById('compressorStats').style.display = "none";
+            
+            const badge = document.getElementById('imgDimensionBadge');
+            if(badge) badge.style.display = "none";
+            
+            compressedBlobQueue = [];
+            window.currentPreviewImageSrc = null;
+            window.currentSimPage = 0;
+
+            const pContainer = document.getElementById('personsListContainer');
+            pContainer.innerHTML = `
+                <div class="person-entry-row" data-person-index="0">
+                    <div class="custom-grid two-col">
+                        <div>
+                            <label class="label-c">नाम / मुख्य शीर्षक #1</label>
+                            <input type="text" class="input-c p-name" placeholder="उदा: सुंदर श्याम दास" oninput="updateLiveSimulation()">
+                        </div>
+                        <div>
+                            <label class="label-c">तारीख (Event Date)</label>
+                            <input type="date" class="input-c p-date" oninput="updateLiveSimulation()">
+                        </div>
+                    </div>
+                    <div class="custom-grid two-col mt-2">
+                        <div>
+                            <label class="label-c">पद / सेवा / राशि</label>
+                            <input type="text" class="input-c p-role" placeholder="उदा: लाइफ मेंबर / ₹5,100 सेवा" oninput="updateLiveSimulation()">
+                        </div>
+                        <div>
+                            <label class="label-c">स्थान / पता</label>
+                            <input type="text" class="input-c p-addr" placeholder="उदा: 15 नंबर, हडपसर" oninput="updateLiveSimulation()">
+                        </div>
+                    </div>
+                </div>
+            `;
+            const firstDate = pContainer.querySelector('.p-date');
+            if(firstDate) firstDate.valueAsDate = new Date();
+
+            handleLinkTypeChange(); 
+            handleCategoryChange();
+
+            document.getElementById('btnSubmit').innerHTML = `<i class="fas fa-paper-plane"></i> स्लाइड ऐप में लाइव करें (PUBLISH)`;
+            document.getElementById('btnSubmit').classList.remove('btn-update');
+            document.getElementById('btnCancel').style.display = "none";
+            document.getElementById('formTitle').innerHTML = `<i class="fas fa-plus-circle text-primary me-2"></i> नई स्लाइड / सूचना तैयार करें`;
+            document.getElementById('editBadge').style.display = "none";
+            updateLiveSimulation();
+        };
+
+        const refreshUsedOrdersHint = () => {
+            let used = [`घड़ी: ${window.currentDateOrder}`];
+            if(rawData) {
+                Object.values(rawData).forEach(v => {
+                    used.push(`${v.type.toUpperCase()}: ${v.order || 10}`);
+                });
+            }
+            document.getElementById('usedOrdersHint').innerText = used.join(' | ');
+        };
+
+        window.saveDateOrder = () => {
+            let num = parseInt(document.getElementById('inpDateOrder').value) || 1;
+            set(ref(db, 'slider_settings/date_order'), num).then(() => {
+                triggerVersionBump();
+                Swal.fire({icon: 'success', title: 'क्रम सुरक्षित हो गया', toast: true, position: 'top-end', timer: 1200, showConfirmButton: false});
+            });
+        };
+
+        onValue(ref(db, 'slider_settings/date_order'), (s) => {
+            window.currentDateOrder = s.val() || 1;
+            document.getElementById('inpDateOrder').value = window.currentDateOrder;
+            refreshUsedOrdersHint();
+        });
+
+        // Publish to App with Auto-Split of Max 6 Persons per Slide
+        window.submitSlideEntry = async () => {
+            const editKey = document.getElementById('editKey').value;
+            const type = document.getElementById('inpType').value;
+            const newOrder = parseInt(document.getElementById('inpOrder').value) || 10;
+            const newDuration = parseFloat(document.getElementById('inpDuration').value) || 3.5;
+
+            if (newOrder === window.currentDateOrder) {
+                Swal.fire('क्रम व्यस्त है', `क्रम नंबर ${newOrder} लाइव घड़ी के लिए सुरक्षित है! दूसरा नंबर चुनें।`, 'error');
+                return;
+            }
+
+            const basePayload = {
+                type: type,
+                duration: newDuration,
+                linkAction: document.getElementById('inpLinkType').value,
+                linkValue: document.getElementById('inpLinkVal').value.trim(),
+                updatedAt: Date.now()
+            };
+
+            if(type === 'image') {
+                basePayload.imgUrl = document.getElementById('inpImgUrl').value.trim();
+                basePayload.order = newOrder;
+                if(!basePayload.imgUrl) { Swal.fire('त्रुटि', 'इमेज लिंक अनिवार्य है! कृपया फोटो अपलोड करें।', 'error'); return; }
+
+                const p = editKey ? update(ref(db, 'slider_items/' + editKey), basePayload) : push(ref(db, 'slider_items'), basePayload);
+                await p;
+            } else {
+                const persons = getPersonsList();
+                if(persons.length === 0) { 
+                    Swal.fire('त्रुटि', 'कम से कम एक व्यक्ति का नाम लिखना अनिवार्य है!', 'error'); 
+                    return; 
+                }
+
+                // Chunk into max 6 persons per slide
+                const chunkSize = 6;
+                const chunks = [];
+                for(let i = 0; i < persons.length; i += chunkSize) {
+                    chunks.push(persons.slice(i, i + chunkSize));
+                }
+
+                let customTitle = document.getElementById('inpCustomTitle').value.trim() || 'विशेष सेवा';
+                let customBadge = document.getElementById('inpCustomBadge').value.trim() || 'DIVINE';
+                let customIcon = document.getElementById('inpCustomIcon').value.trim() || 'fa-hands-praying';
+                let customGradient = document.getElementById('inpCustomGradient').value;
+
+                if(editKey) {
+                    // Update current slide with first chunk
+                    const singlePayload = {
+                        ...basePayload,
+                        order: newOrder,
+                        name: chunks[0][0].name,
+                        identity: chunks[0][0].identity || '',
+                        address: chunks[0][0].address || '',
+                        eventDate: chunks[0][0].eventDate || new Date().toISOString().split('T')[0],
+                        persons: chunks[0]
+                    };
+                    if(type === 'custom') {
+                        singlePayload.customTitle = customTitle;
+                        singlePayload.customBadge = customBadge;
+                        singlePayload.customIcon = customIcon;
+                        singlePayload.customGradient = customGradient;
+                    }
+                    await update(ref(db, 'slider_items/' + editKey), singlePayload);
+                } else {
+                    // Push sequential slides if >6 persons
+                    for(let c = 0; c < chunks.length; c++) {
+                        const chunkPersons = chunks[c];
+                        const slidePayload = {
+                            ...basePayload,
+                            order: newOrder + c,
+                            name: chunkPersons[0].name,
+                            identity: chunkPersons[0].identity || '',
+                            address: chunkPersons[0].address || '',
+                            eventDate: chunkPersons[0].eventDate || new Date().toISOString().split('T')[0],
+                            persons: chunkPersons
+                        };
+                        if(type === 'custom') {
+                            slidePayload.customTitle = customTitle;
+                            slidePayload.customBadge = customBadge;
+                            slidePayload.customIcon = customIcon;
+                            slidePayload.customGradient = customGradient;
+                        }
+                        await push(ref(db, 'slider_items'), slidePayload);
+                    }
+                }
+            }
+
+            triggerVersionBump();
+            Swal.fire({icon:'success', title:'सफलतापूर्वक पब्लिश हुआ! 🙏', toast:true, position:'top-end', showConfirmButton:false, timer:1500});
+            resetSlideForm();
+        };
+
+        window.deleteSlideItem = (id) => {
+            Swal.fire({
+                title: 'स्लाइड डिलीट करें?',
+                text: 'यह सभी यूज़र्स के डिवाइस से तुरंत हटा दी जाएगी।',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#DC2626',
+                confirmButtonText: 'हाँ, हटाएं'
+            }).then(r => {
+                if(r.isConfirmed) {
+                    remove(ref(db, 'slider_items/' + id)).then(() => {
+                        triggerVersionBump();
+                        if(document.getElementById('editKey').value === id) resetSlideForm();
+                    });
+                }
+            });
+        };
+
+        window.triggerSlideEdit = (key) => {
+            const item = rawData[key];
+            if(!item) return;
+
+            document.querySelector('.dashboard-main').scrollTo({ top: 0, behavior: 'smooth' });
+
+            document.getElementById('editKey').value = key;
+            document.getElementById('inpType').value = item.type;
+            document.getElementById('inpOrder').value = item.order || 10;
+            document.getElementById('inpDuration').value = item.duration || 3.5;
+            document.getElementById('inpLinkType').value = item.linkAction || "none";
+            handleLinkTypeChange();
+            document.getElementById('inpLinkVal').value = item.linkValue || "";
+            
+            handleCategoryChange();
+            if(item.type === 'image') {
+                document.getElementById('inpImgUrl').value = item.imgUrl || "";
+                window.currentPreviewImageSrc = item.imgUrl || null;
+            } else {
+                const pContainer = document.getElementById('personsListContainer');
+                pContainer.innerHTML = '';
+                const list = item.persons && item.persons.length > 0 ? item.persons : [{ name: item.name, identity: item.identity, address: item.address, eventDate: item.eventDate }];
+                
+                list.forEach(p => {
+                    addNewPersonRow(p.name || '', p.identity || '', p.address || '', p.eventDate || '');
+                });
+
+                if(item.type === 'custom') {
+                    document.getElementById('inpCustomTitle').value = item.customTitle || "";
+                    document.getElementById('inpCustomBadge').value = item.customBadge || "";
+                    document.getElementById('inpCustomIcon').value = item.customIcon || "fa-hands-praying";
+                    document.getElementById('inpCustomGradient').value = item.customGradient || "linear-gradient(135deg, #FF6F00, #E65100)";
+                }
+            }
+
+            document.getElementById('btnSubmit').innerHTML = `<i class="fas fa-rotate me-2"></i> स्लाइड अपडेट करें`;
+            document.getElementById('btnSubmit').classList.add('btn-update');
+            document.getElementById('btnCancel').style.display = "block";
+            document.getElementById('formTitle').innerHTML = `<i class="fas fa-edit text-success me-2"></i> स्लाइड एडिट मोड`;
+            document.getElementById('editBadge').style.display = "inline-block";
+            updateLiveSimulation();
+        };
+
+        onValue(ref(db, 'slider_items'), (snap) => {
+            const list = document.getElementById('itemList');
+            rawData = snap.val() || {};
+            list.innerHTML = "";
+            refreshUsedOrdersHint();
+
+            if(Object.keys(rawData).length === 0) {
+                list.innerHTML = `<div class="text-center p-5 bg-white rounded-4 border"><p class="text-muted fw-bold m-0">अभी कोई एक्टिव स्लाइड नहीं है।</p></div>`;
+                return;
+            }
+
+            let sorted = Object.entries(rawData).map(([k,v]) => ({id:k, ...v})).sort((a,b) => (a.order||10) - (b.order||10));
+
+            sorted.forEach(v => {
+                let icon = '📢';
+                let title = v.name;
+                let sub = v.identity || '';
+
+                if(v.type === 'image') {
+                    icon = '🖼️';
+                    title = 'कस्टम इमेज बैनर';
+                    sub = `<img src="${v.imgUrl}" style="height:38px; border-radius:6px; margin-top:4px; border:1px solid #ddd;">`;
+                } else {
+                    if(v.type === 'birthday') icon = '🎂';
+                    else if(v.type === 'anniversary') icon = '💍';
+                    else if(v.type === 'donation') icon = '🙏';
+                    else if(v.type === 'custom') icon = '✨';
+
+                    const pCount = (v.persons && v.persons.length > 0) ? v.persons.length : 1;
+                    if(pCount > 1) {
+                        sub = `<span class="badge bg-primary text-white">${pCount} लोग शामिल</span> ${v.identity || ''}`;
+                    }
+                }
+
+                list.innerHTML += `
+                <div class="item-row">
+                    <div class="item-info">
+                        <div class="item-name">${icon} ${title}</div>
+                        <div style="font-size:0.85rem; color:#64748B;">${sub}</div>
+                        <div class="item-meta">
+                            <span class="badge bg-dark">क्रम: ${v.order || 10}</span>
+                            <span class="badge bg-secondary">${v.duration || 3.5}s</span>
+                            <span class="badge bg-light text-dark border">${v.type.toUpperCase()}</span>
+                        </div>
+                    </div>
+                    <div class="action-btns">
+                        <button class="btn-icon btn-edit" onclick="triggerSlideEdit('${v.id}')"><i class="fas fa-pencil"></i></button>
+                        <button class="btn-icon btn-del" onclick="deleteSlideItem('${v.id}')"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                </div>`;
+            });
+        });
+
+        handleCategoryChange();
+        handleLinkTypeChange();
+    </script>
+
+    <!-- QUIZ CONTROLLER LOGIC (PRESERVED) -->
+    <script>
+        (function() {
+            const quizConfig = { 
+                apiKey: "AIzaSyDxuMG5tqPshrZBs4DSwQFAEnN4ufpAoEQ", 
+                databaseURL: "https://iskcon-quize-default-rtdb.firebaseio.com"
+            };
+            const quizApp = firebase.initializeApp(quizConfig, "quizApp");
+            const qDb = quizApp.database();
+            let CUR_LVL = null;
+
+            window.toggleQuizMenu = function() {
+                document.getElementById('quiz-sidebar').classList.toggle('open');
+            };
+
+            window.loadLevels = function() {
+                const path = document.getElementById('db-path').value;
+                document.getElementById('content').style.display = 'none';
+                document.getElementById('welcome').style.display = 'block';
+                CUR_LVL = null;
+
+                qDb.ref(path).on('value', s => {
+                    const d = document.getElementById('lvl-list');
+                    d.innerHTML = "";
+                    if(!s.val()) { d.innerHTML="<div class='p-3 text-muted text-center fw-bold'>कोई लेवल नहीं मिला</div>"; return; }
+                    Object.entries(s.val()).forEach(([k,v]) => {
+                        let active = (k === CUR_LVL) ? 'active' : '';
+                        d.innerHTML += `<div class="lvl-item ${active}" onclick="selLvl('${k}','${v.name.en}')">
+                            <span><i class="fas fa-layer-group me-2"></i> ${v.name.en}</span>
+                            <i class="fas fa-chevron-right" style="font-size:0.75rem;"></i>
+                        </div>`;
+                    });
+                });
+            };
+
+            window.addLevel = async function() {
+                const { value: name } = await Swal.fire({
+                    title: 'नया लेवल नाम (English)',
+                    input: 'text',
+                    showCancelButton: true
+                });
+                if(name) {
+                    qDb.ref(document.getElementById('db-path').value).push({
+                        name: { en: name, hi: name, mr: name },
+                        created: Date.now()
+                    });
+                }
+            };
+
+            window.selLvl = function(k, n) {
+                CUR_LVL = k;
+                document.getElementById('welcome').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+                document.getElementById('lvl-name').innerText = n;
+
+                qDb.ref(`${document.getElementById('db-path').value}/${k}/questions`).on('value', s => {
+                    const list = document.getElementById('q-list');
+                    list.innerHTML = "";
+                    if(!s.val()) { list.innerHTML="<p class='text-muted text-center py-4'>अभी कोई प्रश्न नहीं है।</p>"; return; }
+                    Object.entries(s.val()).forEach(([qid, v]) => {
+                        list.innerHTML += `
+                        <div class="p-3 bg-white border rounded-3 mb-2 d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-bold">${v.q.en}</div>
+                                <small class="text-success fw-bold">उत्तर: Option ${['A','B','C','D'][v.a]}</small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-danger" onclick="delQ('${qid}')"><i class="fas fa-trash"></i></button>
+                        </div>`;
+                    });
+                });
+            };
+
+            window.saveQ = function() {
+                if(!CUR_LVL) return;
+                const en = document.getElementById('q-en').value.trim();
+                if(!en) { Swal.fire('त्रुटि', 'प्रश्न लिखना अनिवार्य है!', 'error'); return; }
+                const data = {
+                    q: { en, hi: document.getElementById('q-hi').value.trim() || en, mr: document.getElementById('q-mr').value.trim() || en },
+                    o: [
+                        { en: document.getElementById('o0-en').value, hi: '', mr: '' },
+                        { en: document.getElementById('o1-en').value, hi: '', mr: '' },
+                        { en: document.getElementById('o2-en').value, hi: '', mr: '' },
+                        { en: document.getElementById('o3-en').value, hi: '', mr: '' }
+                    ],
+                    a: parseInt(document.getElementById('ans').value)
+                };
+                qDb.ref(`${document.getElementById('db-path').value}/${CUR_LVL}/questions`).push(data).then(() => {
+                    document.getElementById('q-en').value = '';
+                    Swal.fire({icon:'success', title:'प्रश्न सुरक्षित हो गया!', timer:1000, showConfirmButton:false});
+                });
+            };
+
+            window.delQ = function(qid) {
+                qDb.ref(`${document.getElementById('db-path').value}/${CUR_LVL}/questions/${qid}`).remove();
+            };
+
+            window.delLevel = function() {
+                if(!CUR_LVL) return;
+                Swal.fire({title:'लेवल हटाएं?', icon:'warning', showCancelButton:true, confirmButtonColor:'#DC2626'}).then(r => {
+                    if(r.isConfirmed) {
+                        qDb.ref(`${document.getElementById('db-path').value}/${CUR_LVL}`).remove();
+                        document.getElementById('content').style.display = 'none';
+                        document.getElementById('welcome').style.display = 'block';
+                    }
+                });
+            };
+
+            loadLevels();
+        })();
+    </script>
+
+<style id="pro-ui">
+.dashboard-main{background:radial-gradient(900px 420px at 90% -8%,rgba(255,153,51,.18),transparent 60%),radial-gradient(700px 400px at -10% 110%,rgba(194,24,91,.07),transparent 60%),var(--bg-body)}
+.dashboard-sidebar{background:linear-gradient(180deg,#2b0f06,#140804);box-shadow:6px 0 30px rgba(0,0,0,.25)}
+.brand-logo{color:#fff;border-bottom-color:rgba(255,255,255,.08)}
+.brand-logo small{color:#e9c9a8!important}
+.img-logo{width:44px;height:44px;box-shadow:0 0 0 3px rgba(255,153,51,.25),0 6px 18px rgba(255,123,0,.45)}
+.img-logo svg{width:68%;height:68%}
+.menu-btn{color:#e8cdb4}
+.menu-btn:hover{background:rgba(255,153,51,.14);color:#ffb366}
+.menu-btn.active{box-shadow:0 8px 24px rgba(255,123,0,.4)}
+.dashboard-sidebar .border-top{border-color:rgba(255,255,255,.08)!important}
+.dashboard-sidebar .btn-outline-secondary{color:#ffcc99;border-color:rgba(255,204,153,.35)}
+.mobile-header{background:rgba(255,255,255,.85);backdrop-filter:blur(14px)}
+.card-box{border-radius:22px;position:relative;overflow:hidden}
+.card-box::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,#FF7B00,#FFB347,#FF5722)}
+.input-c{border-radius:14px}
+.btn-main{border-radius:14px}
+.btn-main:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(255,123,0,.4)}
+.item-row{border-radius:18px}
+.item-row:hover{transform:translateY(-2px)}
+.btn-icon{border-radius:12px}
+.btn-icon:hover{transform:scale(1.08)}
+.ico{width:1.1em;height:1.1em;vertical-align:-.18em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.ico.spin{animation:proSpin .9s linear infinite}
+@keyframes proSpin{to{transform:rotate(360deg)}}
+.swal2-popup{border-radius:22px!important;font-family:inherit!important}
+.lang-sw{display:flex;gap:6px;padding:12px 14px 0}
+.lang-sw button{flex:1;border:1.5px solid rgba(255,255,255,.2);background:transparent;color:#e8cdb4;border-radius:10px;padding:7px 4px;font-weight:800;font-size:.78rem;cursor:pointer;transition:.2s}
+.lang-sw button.on{background:linear-gradient(135deg,#FF9933,#E65100);color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(255,123,0,.4)}
+.mobile-header .lang-sw{padding:0;margin-left:auto;margin-right:10px}
+.mobile-header .lang-sw button{flex:none;padding:6px 9px;color:#475569;border-color:#E2E8F0}
+.mobile-header .lang-sw button.on{color:#fff}
+.preview-device-card{height:auto;aspect-ratio:10/9}
+.preview-device-card::before{content:"";position:absolute;inset:-20px;background:var(--pbg) center/cover;filter:blur(22px) brightness(.65)}
+.sim-image{position:relative;z-index:1;object-fit:contain!important}
+</style>
+
+<script id="pro-layer">
+(function(){
+if(window.__proLayer)return;window.__proLayer=1;
+var P={
+check:'<path d="M20 6 9 17l-5-5"/>',
+'check-circle':'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+plus:'<path d="M12 5v14M5 12h14"/>',
+'plus-circle':'<circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>',
+clock:'<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+sliders:'<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
+book:'<path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2zM22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/>',
+refresh:'<path d="M21 12a9 9 0 0 0-15-6.7L3 8M3 3v5h5M3 12a9 9 0 0 0 15 6.7L21 16M16 16h5v5"/>',
+bars:'<path d="M4 6h16M4 12h16M4 18h16"/>',
+image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
+upload:'<path d="M4 14.9A7 7 0 1 1 15.7 8h1.8a4.5 4.5 0 0 1 2.5 8.2M12 12v9M8 16l4-4 4 4"/>',
+send:'<path d="m22 2-7 20-4-9-9-4zM22 2 11 13"/>',
+eye:'<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+phone:'<rect x="5" y="2" width="14" height="20" rx="3"/><path d="M12 18h.01"/>',
+pin:'<path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
+alert:'<path d="m10.3 3.9-8.2 14A2 2 0 0 0 3.8 21h16.4a2 2 0 0 0 1.7-3.1l-8.2-14a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/>',
+info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+pencil:'<path d="M17 3a2.8 2.8 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>',
+trash:'<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/>',
+layers:'<path d="m12 2 10 5-10 5L2 7zM2 17l10 5 10-5M2 12l10 5 10-5"/>',
+chev:'<path d="m9 18 6-6-6-6"/>',
+save:'<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8"/>',
+spinner:'<path d="M21 12a9 9 0 1 1-6.2-8.6"/>',
+sparkle:'<path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9zM19 3v4M17 5h4M5 17v4M3 19h4"/>',
+ruler:'<path d="M21.3 8.7 8.7 21.3a1 1 0 0 1-1.4 0L2.7 16.7a1 1 0 0 1 0-1.4L15.3 2.7a1 1 0 0 1 1.4 0l4.6 4.6a1 1 0 0 1 0 1.4zM7.5 10.5l2 2M10.5 7.5l2 2M13.5 4.5l2 2M4.5 13.5l2 2"/>',
+heart:'<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/>',
+star:'<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/>',
+bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
+key:'<circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8M16 7l3 3M14 9l2 2"/>',
+shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>'
+};
+var A={'sliders-h':'sliders','circle-check':'check-circle','check-double':'check','book-open':'book','rotate':'refresh','cloud-arrow-up':'upload','paper-plane':'send','mobile-screen-button':'phone','location-dot':'pin','triangle-exclamation':'alert','info-circle':'info','edit':'pencil','trash-alt':'trash','layer-group':'layers','chevron-right':'chev','circle-notch':'spinner','wand-magic-sparkles':'sparkle','ruler-combined':'ruler','hands-praying':'heart','om':'sparkle','shield-halved':'shield'};
+var SKIP={spin:1,fw:1,lg:1,solid:1,regular:1};
+function icon(el){
+var name=null,spin=false,sz='',ex=[];
+[].slice.call(el.classList).forEach(function(c){
+if(c==='fa-spin'){spin=true;return}
+var m=/^fa-([2-4])x$/.exec(c);if(m){sz=m[1];return}
+if(c==='fas'||c==='far'||c==='fab'||c==='fa-solid'||c==='fa-regular')return;
+if(c.indexOf('fa-')===0){var n=c.slice(3);if(SKIP[n])return;n=A[n]||n;if(P[n]&&!name)name=n;return}
+ex.push(c)});
+if(!name)return;
+if(name==='spinner')spin=true;
+var s=document.createElementNS('http://www.w3.org/2000/svg','svg');
+s.setAttribute('viewBox','0 0 24 24');s.setAttribute('aria-hidden','true');
+s.setAttribute('class','ico'+(spin?' spin':'')+(ex.length?' '+ex.join(' '):''));
+var st=el.getAttribute('style');if(st)s.setAttribute('style',st);
+if(sz){s.style.width=sz+'em';s.style.height=sz+'em'}
+s.innerHTML=P[name];el.replaceWith(s)}
+function icons(r){if(r.nodeType!==1)return;if(r.matches&&r.matches('i[class*="fa-"]'))icon(r);r.querySelectorAll('i[class*="fa-"]').forEach(icon)}
+
+var D='श्री श्री राधाकृष्ण चंद्र मंदिर|Sri Sri Radha Krishna Chandra Temple|श्री श्री राधाकृष्ण चंद्र मंदिर\n'+
+'श्री श्री राधाकृष्ण चंद्र|Sri Sri Radha Krishna Chandra|श्री श्री राधाकृष्ण चंद्र\n'+
+'मंदिर मास्टर एडमिन|Temple Master Admin|मंदिर मास्टर ॲडमिन\n'+
+'स्लाइडर व सूचना हब|Slider & Notice Hub|स्लाइडर व सूचना केंद्र\n'+
+'क्विज़ डेटाबेस कंट्रोलर|Quiz Database Controller|क्विझ डेटाबेस कंट्रोलर\n'+
+'क्विज़ डेटाबेस|Quiz Database|क्विझ डेटाबेस\n'+
+'तुरंत ऐप रीफ्रेश करें|Refresh App Instantly|ॲप त्वरित रीफ्रेश करा\n'+
+'लाइव घड़ी और एकादशी कैप्सूल का क्रम|Live Clock & Ekadashi Capsule Order|लाइव्ह घड्याळ व एकादशी कॅप्सूलचा क्रम\n'+
+'क्रम सुरक्षित करें|Save Order|क्रम जतन करा\n'+
+'नई स्लाइड / सूचना तैयार करें|Create New Slide / Notice|नवीन स्लाइड / सूचना तयार करा\n'+
+'स्लाइड प्रकार (Category)|Slide Type (Category)|स्लाइड प्रकार (वर्ग)\n'+
+'मुख्य कैटेगरीज|Main Categories|मुख्य वर्ग\n'+
+'कस्टम इमेज बैनर (HD Image Banner)|Custom Image Banner (HD)|कस्टम इमेज बॅनर (HD)\n'+
+'कस्टम इमेज बैनर|Custom Image Banner|कस्टम इमेज बॅनर\n'+
+'जन्मदिन शुभकामना (Birthday Blessings)|Birthday Blessings|वाढदिवस शुभेच्छा\n'+
+'वैवाहिक वर्षगांठ (Anniversary)|Anniversary|लग्नाचा वाढदिवस\n'+
+'मंदिर सूचना / कथा (Important Notice)|Temple Notice / Katha|मंदिर सूचना / कथा\n'+
+'दान सेवा (Donation Seva)|Donation Seva|दान सेवा\n'+
+'कस्टम डायनामिक विकल्प|Custom Dynamic Options|कस्टम डायनॅमिक पर्याय\n'+
+'+ नई मनचाही कैटेगरी बनाएं (Custom Category)|+ Create Your Own Category|+ स्वतःची नवी वर्गवारी बनवा\n'+
+'प्रदर्शन क्रम (Sequence Number)|Display Order (Sequence No.)|प्रदर्शन क्रम (क्रमांक)\n'+
+'स्लाइड का समय (Seconds)|Slide Duration (Seconds)|स्लाइडचा वेळ (सेकंद)\n'+
+'पहले से सुरक्षित क्रम|Orders Already Used|आधीच वापरलेले क्रम\n'+
+'क्रम जाँचा जा रहा है...|Checking orders...|क्रम तपासत आहे...\n'+
+'कस्टम कैटेगरी बिल्डर (बिना ऐप अपडेट किए दिखेगी)|Custom Category Builder (no app update needed)|कस्टम वर्ग बिल्डर (ॲप अपडेटशिवाय दिसेल)\n'+
+'कैटेगरी का नाम (Title)|Category Name (Title)|वर्गाचे नाव (Title)\n'+
+'ऊपर दिखने वाला टैग (Badge)|Top Tag (Badge)|वर दिसणारा टॅग (Badge)\n'+
+'बैकग्राउंड कलर ग्रेडिएंट|Background Color Gradient|बॅकग्राउंड कलर ग्रेडियंट\n'+
+'सर्वोत्तम इमेज साइज़ गाइड (Image Resolution Guide)|Best Image Size Guide|सर्वोत्तम इमेज साइज गाइड\n'+
+'इमेज बैनर फ़ाइल (मल्टीपल इमेजेस सपोर्ट)|Image Banner File (Multiple Images Supported)|इमेज बॅनर फाइल (एकाधिक इमेजेस सपोर्ट)\n'+
+'फोटो चुनें (Click to Select Image)|Choose Photo (Tap to Select)|फोटो निवडा (निवडण्यासाठी टॅप करा)\n'+
+'अपलोड करें (Upload to Cloud)|Upload to Cloud|क्लाउडवर अपलोड करा\n'+
+'इमेज डायरेक्ट लिंक (Direct Cloud Asset URL)|Image Direct Link (Cloud URL)|इमेज थेट लिंक (Cloud URL)\n'+
+'तारीख (Event Date)|Event Date|कार्यक्रम तारीख\n'+
+'नाम / मुख्य शीर्षक #1|Name / Title #1|नाव / मुख्य शीर्षक #1\n'+
+'पद / सेवा / राशि|Role / Seva / Amount|पद / सेवा / रक्कम\n'+
+'स्थान / पता|City / Location|ठिकाण / पत्ता\n'+
+'लाइव मोबाइल प्रीव्यू (यूज़र ऐप में कैसा दिखेगा)|Live Mobile Preview (as in user app)|लाइव्ह मोबाइल प्रिव्ह्यू (युजर ॲपमध्ये कसे दिसेल)\n'+
+'क्लिक करने पर क्या हो? (Action)|On Click (Action)|क्लिक केल्यावर काय? (Action)\n'+
+'कोई लिंक नहीं (No Action)|No Link (No Action)|लिंक नाही (No Action)\n'+
+'ऐप का आंतरिक पेज खोलें (.html)|Open internal app page (.html)|ॲपचे अंतर्गत पेज उघडा (.html)\n'+
+'बाहरी वेबसाइट खोलें (URL)|Open external website (URL)|बाह्य वेबसाइट उघडा (URL)\n'+
+'लिंक का पता (Target Page / URL)|Link Target (Page / URL)|लिंकचा पत्ता (Page / URL)\n'+
+'स्लाइड ऐप में लाइव करें (PUBLISH)|Publish Slide to App|स्लाइड ॲपमध्ये लाइव्ह करा\n'+
+'रद्द करें (CANCEL)|Cancel|रद्द करा\n'+
+'ऐप में चल रही सभी एक्टिव स्लाइड्स|All Active Slides in the App|ॲपमध्ये चालू असलेल्या सर्व स्लाइड्स\n'+
+'अभी कोई एक्टिव स्लाइड नहीं है।|No active slides yet.|अजून कोणतीही सक्रिय स्लाइड नाही.\n'+
+'स्लाइड एडिट मोड|Slide Edit Mode|स्लाइड संपादन मोड\n'+
+'स्लाइड अपडेट करें|Update Slide|स्लाइड अपडेट करा\n'+
+'क्रम:|Order:|क्रम:\n'+
+'घड़ी:|Clock:|घड्याळ:\n'+
+'नया लेवल जोड़ें|Add New Level|नवीन लेव्हल जोडा\n'+
+'लेवल चुनकर प्रश्न प्रबंधित करें|Select a level to manage questions|लेव्हल निवडून प्रश्न व्यवस्थापित करा\n'+
+'लेवल डिलीट करें|Delete Level|लेव्हल हटवा\n'+
+'नया प्रश्न जोड़ें|Add New Question|नवीन प्रश्न जोडा\n'+
+'सही उत्तर (Correct Option)|Correct Answer|बरोबर उत्तर\n'+
+'प्रश्न सुरक्षित करें|Save Question|प्रश्न जतन करा\n'+
+'प्रश्न (हिंदी)|Question (Hindi)|प्रश्न (हिंदी)\n'+
+'प्रश्न (मराठी)|Question (Marathi)|प्रश्न (मराठी)\n'+
+'कोई लेवल नहीं मिला|No levels found|एकही लेव्हल सापडला नाही\n'+
+'अभी कोई प्रश्न नहीं है।|No questions yet.|अजून एकही प्रश्न नाही.\n'+
+'उत्तर:|Answer:|उत्तर:\n'+
+'ऐप सिंक हो गया!|App synced!|ॲप सिंक झाले!\n'+
+'क्रम सुरक्षित हो गया|Order saved|क्रम जतन झाला\n'+
+'सफलतापूर्वक पब्लिश हुआ!|Published successfully!|यशस्वीरित्या प्रकाशित झाले!\n'+
+'स्लाइड डिलीट करें?|Delete this slide?|स्लाइड हटवायची?\n'+
+'हाँ, हटाएं|Yes, delete|होय, हटवा\n'+
+'त्रुटि|Error|त्रुटी\n'+
+'सूचना|Notice|सूचना\n'+
+'क्रम व्यस्त है|Order is taken|क्रम व्यस्त आहे\n'+
+'ऑप्टिमाइज़ हो रहा है...|Optimizing...|ऑप्टिमाइझ होत आहे...\n'+
+'सफलतापूर्वक अपलोड हुआ!|Uploaded successfully!|यशस्वीरित्या अपलोड झाले!\n'+
+'अपलोड हो रहा है...|Uploading...|अपलोड होत आहे...\n'+
+'अपलोड पूरा हुआ!|Upload complete!|अपलोड पूर्ण झाले!\n'+
+'दोबारा प्रयास करें|Try again|पुन्हा प्रयत्न करा\n'+
+'अपलोड विफल|Upload failed|अपलोड अयशस्वी\n'+
+'लेवल हटाएं?|Delete level?|लेव्हल हटवायचा?\n'+
+'प्रश्न सुरक्षित हो गया!|Question saved!|प्रश्न जतन झाला!\n'+
+'कृपया पहले कोई फोटो चुनें!|Please select a photo first!|कृपया आधी फोटो निवडा!\n'+
+'क्लाउड स्टोरेज Key|Cloud Storage Key|क्लाउड स्टोरेज Key\n'+
+'नया GitHub Token (Classic) यहाँ पेस्ट करें:|Paste your new GitHub Token (Classic) here:|नवीन GitHub Token (Classic) येथे पेस्ट करा:\n'+
+'यह आपके डिवाइस में सुरक्षित रहेगा और कभी ब्लॉक नहीं होगा।|It stays saved on your device, so you will not need to enter it again.|हे तुमच्या डिव्हाइसमध्ये सुरक्षित राहील, पुन्हा टाकावे लागणार नाही.\n'+
+'सुरक्षित करें (Save Key)|Save Key|Key जतन करा\n'+
+'Key दर्ज करना आवश्यक है!|Key is required!|Key टाकणे आवश्यक आहे!\n'+
+'Key सुरक्षित हो गई!|Key saved!|Key जतन झाली!\n'+
+'नई Key दर्ज करें|Enter new Key|नवीन Key टाका\n'+
+'क्लाउड Key एक्सपायर या ब्लॉक हो चुकी है। कृपया नई Key दर्ज करें।|Cloud Key has expired or been blocked. Please enter a new Key.|क्लाउड Key कालबाह्य किंवा ब्लॉक झाली आहे. कृपया नवीन Key टाका.';
+var K=D.split('\n').map(function(l){return l.split('|')}).sort(function(a,b){return b[0].length-a[0].length});
+function conv(s,l){if(l==='hi')return s;var o=s,j=l==='en'?1:2;for(var i=0;i<K.length;i++){if(o.indexOf(K[i][0])>-1)o=o.split(K[i][0]).join(K[i][j])}return o}
+var OR=new WeakMap(),lang='en';
+function tn(n,l){var p=n.parentNode;if(!p)return;var t=p.nodeName;if(t==='SCRIPT'||t==='STYLE'||t==='TEXTAREA')return;
+var o=OR.has(n)?OR.get(n):n.nodeValue;var r=conv(o,l);
+if(OR.has(n)){n.nodeValue=r}else if(r!==o){OR.set(n,o);n.nodeValue=r}}
+var AT=['placeholder','label','title'];
+function at(el,l){AT.forEach(function(a){var v=el.getAttribute&&el.getAttribute(a);if(v===null||v===undefined)return;var k='_o'+a;
+if(el[k]===undefined){if(conv(v,'en')===v)return;el[k]=v}el.setAttribute(a,conv(el[k],l))})}
+function walk(r,l){
+if(r.nodeType===3){tn(r,l);return}
+if(r.nodeType!==1)return;
+var w=document.createTreeWalker(r,4,null,false),n,a=[];while((n=w.nextNode()))a.push(n);
+a.forEach(function(x){tn(x,l)});
+at(r,l);r.querySelectorAll('[placeholder],[label],[title]').forEach(function(e){at(e,l)})}
+var G={en:'• Best size: <b>1200 × 1100 px</b> (about 11:10) for the phone banner.<br>• Any size is shown fully (blur-fill). Keep key content in the centre 80%.',
+hi:'• सबसे सटीक साइज़: <b>1200 × 1100 px</b> (लगभग 11:10)।<br>• कोई भी साइज़ पूरी दिखेगी (ब्लर-फिल)। ज़रूरी चीज़ें बीच के 80% में रखें।',
+mr:'• सर्वात अचूक साइज: <b>1200 × 1100 px</b> (सुमारे 11:10).<br>• कोणताही साइज पूर्ण दिसेल (ब्लर-फिल). महत्त्वाचा मजकूर मधल्या 80% मध्ये ठेवा.'};
+function guide(l){var g=document.querySelector('#boxImageUpload .p-3 > div:nth-of-type(2)');if(g&&g.getAttribute('data-l')!==l){g.setAttribute('data-l',l);g.innerHTML=G[l]}
+var b=document.querySelector('#boxImageUpload .p-3 .badge');if(b)b.textContent='≈ 11:10'}
+function cur(){try{var v=localStorage.getItem('lang');return(v==='en'||v==='hi'||v==='mr')?v:'en'}catch(e){return'en'}}
+function apply(l,save){
+lang=l;if(save){try{localStorage.setItem('lang',l)}catch(e){}}
+document.documentElement.lang=l;walk(document.body,l);guide(l);
+document.querySelectorAll('.lang-sw button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-l')===l)})}
+function sw(){
+var h='<button data-l="en">EN</button><button data-l="hi">हिं</button><button data-l="मरा">मरा</button>';
+[['#mainSidebar .brand-logo','afterend'],['.mobile-header .mobile-toggle','beforebegin']].forEach(function(p){
+var t=document.querySelector(p[0]);if(!t)return;
+var d=document.createElement('div');d.className='lang-sw';d.innerHTML=h;t.insertAdjacentElement(p[1],d);
+d.addEventListener('click',function(e){var b=e.target.closest('button');if(b)apply(b.getAttribute('data-l'),true)})})}
+function logo(){
+var svg='<svg viewBox="0 0 48 48" aria-hidden="true"><g fill="#fff"><path d="M24 8c4.5 4.5 5.5 10.5 0 20-5.5-9.5-4.5-15.5 0-20z"/><path d="M12 15c6 1 10.5 6 12 13-7 0-11.5-5-12-13z" opacity=".88"/><path d="M36 15c-6 1-10.5 6-12 13 7 0 11.5-5 12-13z" opacity=".88"/><path d="M6 25c6 0 12 2.500 18 7.500-5 5-14 5-18-7.500z" opacity=".72"/><path d="M42 25c-6 0-12 2.500-18 7.500 5 5 14 5 18-7.500z" opacity=".72"/><path d="M12 38c8 3 16 3 24 0-8 5-16 5-24 0z" opacity=".6"/></g></svg>';
+document.querySelectorAll('.img-logo').forEach(function(e){e.innerHTML=svg})}
+function pv(){var c=document.getElementById('livePreviewContainer');if(!c)return;var im=c.querySelector('img.sim-image');c.style.setProperty('--pbg',im?'url("'+im.getAttribute('src')+'")':'none')}
+var q=[],sc=false;
+function flush(){sc=false;var a=q.splice(0);a.forEach(function(n){if(!n.isConnected)return;walk(n,lang);icons(n)});pv()}
+new MutationObserver(function(ms){ms.forEach(function(m){m.addedNodes.forEach(function(n){q.push(n)})});if(!sc){sc=true;requestAnimationFrame(flush)}}).observe(document.body,{childList:true,subtree:true});
+logo();sw();icons(document.body);apply(cur(),false);pv();
+window.addEventListener('storage',function(e){if(e.key==='lang'&&cur()!==lang)apply(cur(),false)});
+function re(){var v=cur();if(v!==lang)apply(v,false)}
+window.addEventListener('focus',re);document.addEventListener('visibilitychange',re);
+})();
+</script>
+</body>
+</html>
