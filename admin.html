@@ -1,1184 +1,134 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Master Admin | श्री श्री राधाकृष्ण चंद्र मंदिर</title>
-    
-    <!-- Bootstrap 5 & FontAwesome 6 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Cinzel:wght@700;800&family=Poppins:wght@600;700;800&family=Dancing+Script:wght@700&family=Noto+Sans+Devanagari:wght@400;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
-    <!-- Firebase Libraries -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-    <style>
-        :root { 
-            --primary: #FF7B00; 
-            --primary-dark: #E65100;
-            --secondary: #1E293B; 
-            --bg-body: #F1F5F9; 
-            --sidebar-bg: #FFFFFF; 
-            --text-dark: #0F172A; 
-            --text-muted: #64748B; 
-            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03); 
-            --border-radius: 18px; 
-        }
-        *, *::before, *::after { box-sizing: border-box !important; }
-        html, body { margin: 0; padding: 0; width: 100%; max-width: 100vw; overflow-x: hidden; background: var(--bg-body); font-family: 'Plus Jakarta Sans', sans-serif; color: var(--text-dark); }
-        
-        .dashboard-wrapper { display: flex; height: 100dvh; width: 100%; overflow: hidden; }
-        .dashboard-sidebar { width: 285px; background: var(--sidebar-bg); box-shadow: 4px 0 24px rgba(0,0,0,0.04); display: flex; flex-direction: column; z-index: 1000; transition: all 0.3s ease; flex-shrink: 0; }
-        .brand-logo { padding: 22px 20px; display: flex; align-items: center; gap: 12px; font-family: 'Poppins', sans-serif; font-size: 1.15rem; font-weight: 800; color: var(--secondary); border-bottom: 1px solid #E2E8F0; }
-        .img-logo { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #FF7B00, #FF5722); display: flex; justify-content: center; align-items: center; font-size: 19px; color: #fff; box-shadow: 0 4px 12px rgba(255,123,0,0.3); flex-shrink: 0; }
-        .sidebar-menu { padding: 18px 14px; display: flex; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; }
-        .menu-btn { background: transparent; border: none; padding: 14px 18px; border-radius: 12px; color: var(--text-muted); font-weight: 700; font-size: 0.95rem; text-align: left; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.2s ease; width: 100%; }
-        .menu-btn:hover { background: #FFF7ED; color: var(--primary); }
-        .menu-btn.active { background: linear-gradient(135deg, var(--primary) 0%, #FF5722 100%); color: white; box-shadow: 0 8px 20px rgba(255, 123, 0, 0.28); }
-        
-        .dashboard-main { flex: 1; height: 100dvh; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; position: relative; width: 100%; }
-        .mobile-header { display: none; background: white; padding: 14px 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 990; width: 100%; }
-        .mobile-toggle { background: transparent; border: none; font-size: 1.4rem; color: var(--secondary); cursor: pointer;}
-        
-        @media(max-width: 992px) { 
-            .dashboard-sidebar { position: fixed; left: -300px; height: 100dvh; max-width: 82vw; } 
-            .dashboard-sidebar.show { left: 0; } 
-            .mobile-header { display: flex; } 
-            .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; background: rgba(0,0,0,0.45); z-index: 999; display: none; backdrop-filter: blur(2px); } 
-            .sidebar-overlay.show { display: block; } 
-        }
-
-        /* VIEW CONTAINER */
-        .app-view { display: none !important; width: 100%; min-height: 100%; }
-        #view-slider.active-view { display: block !important; }
-        #view-quiz.active-view { display: flex !important; }
-
-        /* CARDS & INPUTS */
-        .app-container { max-width: 920px; margin: 0 auto; width: 100%; padding: 25px 20px 60px 20px; }
-        .card-box { background: white; border-radius: var(--border-radius); padding: 25px; box-shadow: var(--card-shadow); border: 1px solid rgba(226, 232, 240, 0.8); margin-bottom: 22px; width: 100%; transition: all 0.3s ease; }
-        .label-c { font-size: 0.8rem; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: space-between; }
-        .input-c { width: 100%; padding: 12px 16px; border: 2px solid #E2E8F0; border-radius: 12px; font-weight: 600; font-size: 0.95rem; color: var(--text-dark); outline: none; transition: 0.2s; background: #F8FAFC; }
-        .input-c:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(255,123,0,0.12); }
-        
-        .custom-grid { display: grid; grid-template-columns: 1fr; gap: 14px; width: 100%; }
-        @media(min-width: 768px) { 
-            .custom-grid.two-col { grid-template-columns: 1fr 1fr; } 
-            .custom-grid.three-col { grid-template-columns: 1fr 1fr 1fr; } 
-            .custom-grid.link-col { grid-template-columns: 1.2fr 2fr; } 
-        }
-
-        /* BUTTONS */
-        .btn-main { width: 100%; padding: 14px 20px; background: linear-gradient(135deg, var(--primary) 0%, #FF5722 100%); color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 1rem; letter-spacing: 0.5px; box-shadow: 0 6px 18px rgba(255,123,0,0.3); transition: 0.2s; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-main:active { transform: scale(0.98); }
-        .btn-update { background: linear-gradient(135deg, #10B981 0%, #059669 100%); box-shadow: 0 6px 18px rgba(16, 185, 129, 0.3); }
-        .btn-cancel { background: #E2E8F0; color: #475569; border: none; border-radius: 12px; font-weight: 800; width: 100%; padding: 14px; transition: 0.2s; cursor: pointer; }
-
-        /* CLOUD STORAGE STATUS (WHITELABELED) */
-        .cloud-badge-status { background: #F0FDF4; border: 1.5px solid #BBF7D0; border-radius: 14px; padding: 14px 18px; margin-bottom: 22px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
-        
-        /* HD COMPRESSOR DROPZONE */
-        .compressor-dropzone { border: 2px dashed #CBD5E1; background: #F8FAFC; border-radius: 16px; padding: 22px; text-align: center; cursor: pointer; transition: 0.25s; position: relative; }
-        .compressor-dropzone:hover { border-color: var(--primary); background: #FFF7ED; }
-        .compressor-stats { display: none; background: #ECFDF5; border: 1.5px solid #A7F3D0; border-radius: 12px; padding: 12px 16px; margin-top: 14px; }
-
-        /* DYNAMIC CATEGORY PILL SELECTOR */
-        .category-builder-box { background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: 14px; padding: 16px; margin-top: 12px; }
-        .preset-gradient-chip { width: 34px; height: 34px; border-radius: 10px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
-        .preset-gradient-chip.selected { border-color: #0F172A; transform: scale(1.15); box-shadow: 0 4px 10px rgba(0,0,0,0.25); }
-
-        /* ITEM ROWS */
-        .item-row { background: white; padding: 16px 20px; border-radius: 16px; margin-bottom: 12px; border-left: 6px solid #CBD5E1; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--card-shadow); gap: 12px; transition: 0.2s; width: 100%; flex-wrap: wrap; }
-        .item-info { flex: 1; min-width: 0; }
-        .item-name { font-weight: 800; color: var(--secondary); font-size: 1.05rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .item-meta { font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-top: 6px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-        .action-btns { display: flex; gap: 8px; }
-        .btn-icon { width: 40px; height: 40px; border-radius: 10px; border: none; display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: 0.2s; cursor: pointer; }
-        .btn-edit { background: #EFF6FF; color: #2563EB; }
-        .btn-del { background: #FEF2F2; color: #DC2626; }
-
-        /* ======================================================== */
-        /* 📱 LIVE USER PANEL ACCURATE SIMULATOR & PREVIEW BOX 📱 */
-        /* ======================================================== */
-        .preview-simulator-wrapper {
-            max-width: 380px;
-            margin: 0 auto;
-            border-radius: 26px;
-            padding: 8px;
-            background: #0f172a;
-            box-shadow: 0 16px 40px rgba(0,0,0,0.3);
-            border: 3px solid #334155;
-            position: relative;
-        }
-        .preview-phone-notch {
-            width: 110px;
-            height: 14px;
-            background: #0f172a;
-            border-radius: 0 0 12px 12px;
-            position: absolute;
-            top: 8px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
-        }
-        .preview-device-card {
-            border-radius: 20px;
-            height: 220px;
-            width: 100%;
-            overflow: hidden;
-            position: relative;
-            background: #140804;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
-        }
-        .sim-image { width: 100%; height: 100%; object-fit: cover; }
-        
-        /* Mirroring Exact User Panel Name-Slide Styles */
-        .sim-name-slide {
-            height: 100%;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            color: white;
-            padding: 10px;
-            position: relative;
-            overflow: hidden;
-        }
-        .sim-ns-bday { background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%); color: #880e4f; }
-        .sim-ns-anni { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); color: #4a148c; }
-        .sim-ns-donate { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: #004d40; }
-        .sim-ns-notice { background: linear-gradient(135deg, #FFC371 0%, #FF5F6D 100%); color: #3e2723; }
-        .sim-ns-header { font-family: 'Dancing Script', cursive; font-weight: 800; text-shadow: 0 2px 4px rgba(255,255,255,0.6); line-height: 1.1; font-size: 1.4rem; margin-bottom: 6px; }
-        .sim-name-container { width: 92%; max-height: 85%; background: rgba(255,255,255,0.85); border-radius: 14px; padding: 8px 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border: 1px solid rgba(255,255,255,0.9); }
-        .sim-person-name { font-weight: 800; font-family: 'Poppins', sans-serif; font-size: 0.95rem; line-height: 1.2; }
-        .sim-person-role { font-weight: 700; opacity: 0.85; margin-top: 2px; font-size: 0.78rem; line-height: 1.1; }
-        .sim-person-addr { font-weight: 600; opacity: 0.75; margin-top: 2px; font-size: 0.72rem; line-height: 1.1; }
-        
-        /* QUIZ STYLES (PRESERVED) */
-        #view-quiz { background: var(--bg-body); height: 100%; flex-direction: column; padding: 20px; width: 100%; }
-        #view-quiz header { background: white; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; border-radius: var(--border-radius); box-shadow: var(--card-shadow); margin-bottom: 20px; gap: 15px; width: 100%; }
-        .quiz-layout-wrapper { display: flex; flex: 1; gap: 20px; position: relative; width: 100%; }
-        .quiz-sidebar { width: 300px; background: white; border-radius: var(--border-radius); display: flex; flex-direction: column; box-shadow: var(--card-shadow); overflow: hidden; flex-shrink: 0; }
-        .lvl-item { padding: 14px 16px; border-radius: 12px; margin-bottom: 6px; font-weight: 700; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); transition: 0.2s; }
-        .lvl-item.active { background: #FFF7ED; color: var(--primary); border: 1.5px solid rgba(255,123,0,0.25); }
-    </style>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#171447">
+<title>Admin | भक्त प्रहलाद कक्षा</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f1fc;--paper:#fff;--ink:#201d49;--muted:#72718d;--line:#e6e2f2;--purple:#5140a4;--navy:#171447;--orange:#ff941f;--shadow:0 7px 28px #24205209;--head:'Noto Sans Devanagari',system-ui,sans-serif;--body:'Hind',system-ui,sans-serif;color-scheme:light}
+:root[data-theme=dark]{--bg:#14122a;--paper:#211d3d;--ink:#f2efff;--muted:#b6b0ce;--line:#393350;--purple:#b9a6ff;--shadow:0 7px 28px #0002;color-scheme:dark}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.5 var(--body);-webkit-tap-highlight-color:transparent}button,input,textarea,select{font:inherit}button,a,input,select,textarea{touch-action:manipulation}button{cursor:pointer}button:disabled{opacity:.55;cursor:wait}button,a{ -webkit-tap-highlight-color:transparent}a{color:inherit;text-decoration:none}button{color:inherit}button:focus-visible,a:focus-visible{outline:3px solid #b694ff;outline-offset:3px}h1,h2,h3,p{margin:0}h1,h2,h3,b,strong,.btn{font-family:var(--head)}h2{font-size:22px}h3{font-size:16px}svg.ic{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;vertical-align:middle}small,.muted{color:var(--muted)}.hidden,[hidden]{display:none!important}.row{display:flex;align-items:center;gap:12px}.between{justify-content:space-between}.wrap{flex-wrap:wrap}.grow{flex:1;min-width:0}.stack{display:grid;gap:16px}.btn{min-height:44px;border:1px solid var(--line);background:var(--paper);border-radius:14px;padding:10px 16px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:700;line-height:1.4;transition:transform .15s,background .15s}.btn:hover{transform:translateY(-1px)}.btn.primary{background:linear-gradient(120deg,#ff7c1b,#ffac25);border-color:transparent;color:#251b3a;box-shadow:0 5px 14px #ff941f22}.btn.purple{background:#3f3189;color:#fff;border-color:transparent}.btn.danger{color:#c5364f;border-color:#d83f5638}.btn.wa{color:#fff;background:#208b4d;border:0}.iconbtn{width:44px;height:44px;padding:0;border:1px solid var(--line);border-radius:14px;background:var(--paper);display:inline-grid;place-items:center;flex:none}.pill{border:0;display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 11px;font-size:12px;white-space:nowrap;line-height:1.5;font-weight:600}.pill.new{color:#2562c2;background:#e9f2ff}.pill.contacted{color:#7041bd;background:#f0e9ff}.pill.interested{color:#9b540e;background:#fff1d9}.pill.admitted{color:#187549;background:#dff4e8}.pill.dropped{color:#bd354c;background:#ffe8ee}.pill.warn{color:#99590b;background:#fff0d5}.pill.dup{color:#a23351;background:#ffeaf0}.card{background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:22px;box-shadow:var(--shadow)}.status-dot{width:7px;height:7px;border-radius:50%;display:inline-block;background:currentColor}.empty{text-align:center;padding:44px 20px;border:1px dashed var(--line);border-radius:20px;color:var(--muted);background:var(--paper)}.empty svg{width:38px;height:38px;margin-bottom:12px}.empty strong{display:block;color:var(--ink);margin-bottom:6px}label{display:grid;gap:7px;font-weight:600;font-size:14px}input:not([type=checkbox]),select,textarea{width:100%;min-height:48px;padding:11px 13px;background:var(--paper);border:1px solid var(--line);border-radius:13px;color:var(--ink);outline:0;min-width:0}input:focus,select:focus,textarea:focus{border-color:#9b84d8;box-shadow:0 0 0 3px #8b66ca1c}textarea{resize:vertical}input[type=checkbox]{width:19px;height:19px;accent-color:#5140a4;flex:none}select{cursor:pointer}button code,code{overflow-wrap:anywhere}hr{border:0;border-top:1px solid var(--line);margin:18px 0}
+/* Top artwork is vector: no external image assets needed. */
+.hero{position:relative;overflow:hidden;background:radial-gradient(ellipse at 88% 10%,#5a309b88,transparent 42%),radial-gradient(ellipse at 10% 100%,#5135ba88,transparent 58%),linear-gradient(120deg,#0c1235,#231350);color:white;padding:24px 24px 56px;padding-top:calc(24px + env(safe-area-inset-top,0px))}.hero-inner{max-width:1216px;margin:auto;position:relative;z-index:1}.lotus{position:absolute;right:-30px;top:-30px;width:470px;height:420px;opacity:.19;pointer-events:none;color:#ffc66e}.brand-mark{font-family:serif;color:#ffab2c;font-size:46px;line-height:1}.brand h1{font-size:22px;letter-spacing:-.5px}.brand small{color:#c0bada;font-size:13px}.profile{border-radius:50%;width:44px;height:44px;background:#e8dfff;color:#30215e;display:grid;place-items:center;border:1px solid #ffffff44}.hero-title{margin-top:30px}.hero-title h2{font-size:32px;letter-spacing:-.7px}.hero-title p{font-size:15px;color:#c9c5e5;margin-top:4px}.live{display:inline-flex;align-items:center;gap:7px;color:#80e4b7;font-size:12px;background:#ffffff0a;border:1px solid #ffffff17;border-radius:99px;padding:5px 10px;white-space:nowrap}.live.off{color:#ffcf83}.total{font-family:var(--head);font-size:55px;font-weight:800;line-height:1.2}.hero-total{margin-top:22px}.hero-total .btn{background:#ffffff08;color:#ffbd55;border:1.5px solid #ffad30;border-radius:999px}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:22px}.metric{display:flex;align-items:center;gap:12px;border:1px solid #ffffff1f;border-radius:19px;background:linear-gradient(130deg,#ffffff0d,#ffffff04);padding:16px;text-align:left;color:#fff;min-width:0}.metric-icon{display:grid;place-items:center;background:#4d8dfb26;color:#71a6ff;border-radius:14px;width:42px;height:42px;flex:none}.metric:nth-child(2) .metric-icon{background:#ffb83322;color:#ffc756}.metric:nth-child(3) .metric-icon{background:#76e5b323;color:#7ce4ba}.metric strong{font-size:24px;line-height:1.3;display:block}.metric small{color:#cbc7e7;font-size:12px}.shell{position:relative;margin:-28px auto 0;max-width:1264px;background:var(--bg);border-radius:30px 30px 0 0;z-index:2;padding:22px 24px calc(112px + env(safe-area-inset-bottom,0px));min-height:50vh}.follow-banner{width:100%;border:0;background:linear-gradient(110deg,#ff7d24,#ffa51f);color:#39223d;border-radius:20px;padding:18px 20px;display:flex;align-items:center;gap:14px;text-align:left;margin-bottom:22px;box-shadow:0 8px 24px #ff951720}.follow-banner .circle{width:45px;height:45px;display:grid;place-items:center;border-radius:50%;background:#ffffff30;border:1px solid #ffffff40}.follow-banner strong{font-size:16px;display:block}.follow-banner small{color:#56301a}.follow-banner .arrow{margin-left:auto;background:white;border-radius:50%;width:36px;height:36px;display:grid;place-items:center}.toolbar{display:flex;gap:10px;margin-bottom:22px}.search{position:relative;flex:1}.search svg{position:absolute;left:15px;top:14px;color:var(--muted)}.search input{padding-left:47px;height:50px;box-shadow:var(--shadow);border-radius:15px}.filter-button{width:50px;height:50px;background:#352573;color:white;border:0}.filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:-10px 0 20px}.section-head{margin-bottom:14px}.section-head small{font-family:var(--body);font-size:14px;font-weight:500}.seg{display:flex;border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px}.seg button{height:36px;width:42px;border:0;border-radius:9px;background:transparent;color:var(--muted)}.seg button.active{background:#3f3189;color:white}.chips{display:flex;gap:8px;overflow:auto;margin-bottom:18px;padding-bottom:4px;scrollbar-width:none}.chip{flex:none;min-height:40px;padding:7px 15px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--muted)}.chip.active{background:#3f3189;color:#fff;border-color:transparent}.chip span{display:inline-block;padding:0 6px;margin-left:5px;border-radius:99px;background:#8c7bb51a;font-size:12px}.chip.active span{background:#ffffff20}.app-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.app-card{display:flex;gap:12px;position:relative;align-items:flex-start;padding:20px 18px 18px 21px;background:var(--paper);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);min-width:0;overflow:hidden}.app-card:before{content:'';position:absolute;left:0;top:16px;bottom:16px;width:4px;border-radius:0 5px 5px 0;background:var(--accent,#4d89ee)}.app-card:hover{border-color:#ad9bce}.avatar{flex:none;background:#e9e3fc;color:#4d398e;border-radius:50%;width:46px;height:46px;display:grid;place-items:center;font-family:var(--head);font-weight:700;font-size:19px}.application-open{border:0;background:transparent;padding:0;text-align:left;display:flex;gap:12px;align-items:flex-start;min-width:0;flex:1;color:inherit}.app-name{font-family:var(--head);font-size:17px;font-weight:800;overflow-wrap:anywhere}.app-meta{color:var(--muted);font-size:14px;overflow-wrap:anywhere;margin-top:3px}.card-top{display:flex;align-items:flex-start;gap:8px;justify-content:space-between}.card-bottom{margin-top:12px;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}.card-bottom small{font-size:12px}.check-slot{padding-top:9px}.bulk{padding:12px 14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#8d70d018;border:1px solid #9e85ce55;border-radius:16px;margin-bottom:16px}.bulk select{width:auto;max-width:180px}.more{display:block;margin:20px auto}.board{display:grid;grid-auto-flow:column;grid-auto-columns:270px;gap:14px;overflow:auto;padding-bottom:16px}.board-col{padding:12px;background:#8e79ba0c;border:1px solid var(--line);border-radius:20px;min-height:240px}.board-col.over{outline:2px dashed #9b7bcf}.board-col h3{padding:5px 3px 14px;font-size:14px;display:flex;justify-content:space-between}.board-col .app-card{padding:14px;margin-bottom:10px;cursor:grab}.board-col .avatar{display:none}.board-col .card-top{display:block}.board-col .pill{margin-top:4px}.board-col .app-name{font-size:15px}.dock{position:fixed;z-index:15;left:50%;bottom:calc(12px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(540px,calc(100% - 24px));background:linear-gradient(120deg,#171443,#2d1c65);border:1px solid #ffffff20;box-shadow:0 8px 35px #15103830;border-radius:25px;padding:8px;display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.nav-item{border:0;background:transparent;color:#c6c0e0;border-radius:18px;min-height:57px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;position:relative;font-size:11px}.nav-item.active{background:linear-gradient(120deg,#eee6ff,#d5c8f5);color:#251b50}.nav-item .badge{position:absolute;top:1px;right:20%;background:#ff9c24;color:#301b35;border-radius:10px;min-width:17px;padding:0 4px;font-size:10px}.page-heading{margin:4px 0 20px}.report-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.report-grid .wide{grid-column:1/-1}.report-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}.report-kpis b{display:block;font-size:30px;margin-top:5px}.chart{height:190px;display:flex;align-items:flex-end;gap:8px;padding-top:25px}.chart-col{display:flex;flex:1;min-width:0;flex-direction:column;justify-content:flex-end;height:100%;text-align:center;gap:6px}.chart-bar{border-radius:6px 6px 2px 2px;background:linear-gradient(#a78beb,#6243a5);min-height:3px;position:relative}.chart-bar span{position:absolute;top:-22px;left:0;right:0;font-size:12px;color:var(--muted)}.chart-col small{font-size:10px}.hbar{display:grid;grid-template-columns:100px 1fr 34px;align-items:center;gap:12px;margin-top:16px;font-size:14px}.track{height:8px;border-radius:8px;background:#b39fc822}.track span{display:block;height:8px;border-radius:8px;background:#8f6ccb}.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.settings-grid .card{display:grid;gap:15px;align-content:start}.setting-line{display:flex;align-items:center;justify-content:space-between;gap:15px}.setting-line select{width:130px}.email{overflow-wrap:anywhere}.errorbar{border:1px solid #edbdc6;background:#fff0f2;color:#9a2541;padding:15px;border-radius:15px;margin-bottom:16px}.skeleton{height:132px;background:linear-gradient(90deg,var(--paper),var(--line),var(--paper));background-size:200% 100%;animation:shimmer 1.6s linear infinite;border-radius:20px}.loading-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}@keyframes shimmer{to{background-position:-200% 0}}
+/* Dialog is a full-height detail drawer on large screens, a page on small screens. */
+dialog{position:fixed;inset:0 0 0 auto;width:min(490px,100%);max-width:100%;height:100dvh;max-height:100dvh;margin:0;border:0;border-left:1px solid var(--line);border-radius:26px 0 0 26px;background:var(--bg);color:var(--ink);padding:0;box-shadow:-15px 0 65px #15103833}dialog::backdrop{background:#100d36a6;backdrop-filter:blur(3px)}.dialog-head{position:sticky;top:0;z-index:2;padding:16px 20px;padding-top:calc(16px + env(safe-area-inset-top,0px));background:var(--bg);border-bottom:1px solid var(--line)}.dialog-head h2{font-size:19px}.dialog-body{padding:20px 20px calc(30px + env(safe-area-inset-bottom,0px))}.detail-hero .avatar{width:62px;height:62px;font-size:25px}.detail-hero h3{font-size:22px;overflow-wrap:anywhere}.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}.kv{display:grid;grid-template-columns:95px 1fr;gap:13px;margin:16px 0 0;font-size:15px}.kv dt{color:var(--muted)}.kv dd{margin:0;overflow-wrap:anywhere}.note{padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--bg);margin-top:12px;white-space:pre-wrap;overflow-wrap:anywhere}.note small{display:block;margin-top:5px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.form-grid .full{grid-column:1/-1}.save-state{font-size:13px;color:var(--muted);min-height:20px}.form-error{color:#c13750;font-size:14px;min-height:21px}.menu{position:absolute;right:0;top:calc(100% + 8px);z-index:10;min-width:200px;background:var(--paper);padding:6px;border:1px solid var(--line);border-radius:15px;box-shadow:0 12px 40px #1f183322}.menu button{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;color:var(--ink);padding:12px;border-radius:10px;text-align:left;min-height:44px}.menu button:hover{background:var(--bg)}.menu-wrap{position:relative}.toast{position:fixed;z-index:100;bottom:calc(100px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:#251d48;color:white;border:1px solid #ffffff22;box-shadow:0 8px 40px #0003;border-radius:16px;padding:14px 20px;width:max-content;max-width:calc(100% - 32px);font-size:14px}.login{min-height:100dvh;display:grid;place-items:center;padding:25px;background:radial-gradient(ellipse at top right,#6341aa88,transparent 65%),#15133e}.login-box{width:min(420px,100%);padding:30px;border-radius:28px;background:var(--paper);box-shadow:0 25px 80px #0003}.login-brand{text-align:center;margin-bottom:22px}.login-brand .brand-mark{display:block;margin-bottom:14px}.login-brand h1{font-size:23px}.login-box .btn{width:100%}.login-box .stack{gap:14px}.plain-link{background:none;border:0;color:var(--purple);padding:8px;min-height:44px;font-size:14px}.password-wrap{position:relative}.password-wrap input{padding-right:52px}.password-wrap button{position:absolute;right:3px;top:3px;border:0;background:transparent;width:42px;height:42px;color:var(--muted)}.demo-strip{background:#fff0cc;color:#775013;border:1px solid #f4d891;padding:11px 15px;border-radius:14px;margin-bottom:18px;font-size:13px}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+@media(min-width:1000px){.hero-title{margin-top:23px}.hero-total{max-width:520px}.metrics{position:absolute;right:0;bottom:0;width:52%;gap:15px}.metric{flex-direction:column;align-items:flex-start}.hero{padding-bottom:65px}.hero-inner{min-height:254px}.hero-title h2{font-size:36px}.follow-banner{padding:17px 24px}.dock{left:24px;top:50%;bottom:auto;transform:translateY(-50%);width:82px;grid-template-columns:1fr;border-radius:24px}.nav-item{min-height:72px}.shell,.hero-inner{margin-left:max(100px,calc((100vw - 1216px)/2));margin-right:24px;max-width:none}.shell{margin-top:-28px}.hero-inner{margin-left:max(76px,calc((100vw - 1216px)/2 - 24px));margin-right:0}.hero .lotus{right:10%;}.app-list{grid-template-columns:repeat(2,minmax(0,1fr))}.toast{bottom:30px}}
+@media(min-width:1600px){.shell{max-width:1450px;margin-left:auto;margin-right:auto}.hero-inner{max-width:1402px;margin:auto}.app-list{grid-template-columns:repeat(3,minmax(0,1fr))}.dock{left:max(24px,calc((100vw - 1650px)/2))}}
+@media(max-width:699px){.hero{padding:20px 20px 50px;padding-top:calc(20px + env(safe-area-inset-top,0px))}.brand h1{font-size:20px}.brand-mark{font-size:40px}.hero-title{margin-top:25px}.hero-title h2{font-size:30px}.hero-title p{font-size:13px}.hero-total{margin-top:18px}.total{font-size:47px}.hero-total .btn{font-size:13px;padding:10px 14px}.metrics{gap:8px;margin-top:20px}.metric{padding:12px 10px;gap:8px;border-radius:16px}.metric-icon{width:30px;height:30px;border-radius:10px}.metric-icon svg{width:18px;height:18px}.metric strong{font-size:21px}.metric small{font-size:10px;display:block;white-space:nowrap}.shell{padding:18px 16px calc(112px + env(safe-area-inset-bottom,0px));border-radius:27px 27px 0 0}.follow-banner{padding:15px 14px;gap:10px;margin-bottom:18px;border-radius:17px}.follow-banner strong{font-size:14px}.follow-banner small{font-size:12px}.follow-banner .circle{width:36px;height:36px;flex:none}.follow-banner .arrow{width:29px;height:29px;flex:none}.toolbar{margin-bottom:18px}.app-list,.report-grid,.settings-grid,.loading-grid{grid-template-columns:1fr}.app-card{padding:17px 14px 16px 18px;gap:8px}.avatar{width:42px;height:42px;font-size:17px}.app-name{font-size:16px}.app-meta{font-size:13px}.pill{font-size:11px;padding:4px 8px}.filters{grid-template-columns:1fr 1fr}.filters label:last-child{grid-column:1/-1}.report-kpis{gap:8px}.report-kpis .card{padding:14px 10px}.report-kpis small{font-size:11px}.report-kpis b{font-size:23px}.card{padding:18px}.report-grid .wide{grid-column:auto}.chart{gap:5px}.hbar{grid-template-columns:85px 1fr 30px;gap:8px}.dialog-head{padding-left:16px;padding-right:16px}.dialog-body{padding:16px 16px 30px}dialog{border-radius:0}.page-heading h2{font-size:23px}.lotus{width:330px;right:-70px;top:30px}.card-top{gap:4px}.chip{padding:7px 13px}.section-head h2{font-size:22px}}
+@media(max-width:359px){.hero{padding-left:15px;padding-right:15px}.brand h1{font-size:17px}.metric-icon{display:none}.metric{justify-content:center;text-align:center}.shell{padding-left:12px;padding-right:12px}.app-card .avatar{display:none}.follow-banner .circle{display:none}.hero-total .btn{font-size:12px}.form-grid{grid-template-columns:1fr}.form-grid .full{grid-column:auto}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
+@media print{body{background:white;color:black}.hero,.dock,.toolbar,.filters,.chips,.follow-banner,.bulk,.no-print,dialog,.toast,.demo-strip{display:none!important}.shell{margin:0;padding:0;max-width:none}.app-list{display:block}.app-card{break-inside:avoid;margin-bottom:10px;border:1px solid #aaa;box-shadow:none}.card{box-shadow:none}.check-slot{display:none}}
+</style>
 </head>
 <body>
-
-    <div class="dashboard-wrapper">
-        <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
-        
-        <!-- SIDEBAR -->
-        <aside class="dashboard-sidebar" id="mainSidebar">
-            <div class="brand-logo">
-                <div class="img-logo"><i class="fas fa-om"></i></div>
-                <div>
-                    <div style="line-height:1.2; font-size:1.02rem;">श्री श्री राधाकृष्ण चंद्र</div>
-                    <small style="font-size:0.75rem; color:var(--text-muted); font-weight:600;">मंदिर मास्टर एडमिन</small>
-                </div>
-            </div>
-            <nav class="sidebar-menu">
-                <button class="menu-btn active" onclick="switchApp('slider', this); toggleSidebarMobile()">
-                    <i class="fas fa-sliders-h"></i> स्लाइडर व सूचना हब
-                </button>
-                <button class="menu-btn" onclick="switchApp('quiz', this); toggleSidebarMobile()">
-                    <i class="fas fa-book-open"></i> क्विज़ डेटाबेस
-                </button>
-            </nav>
-            <div class="p-3 border-top mt-auto">
-                <button class="btn btn-sm btn-outline-secondary w-100 fw-bold rounded-3" onclick="syncVersionTickManually()">
-                    <i class="fas fa-rotate me-1"></i> तुरंत ऐप रीफ्रेश करें
-                </button>
-            </div>
-        </aside>
-
-        <!-- MAIN CONTENT AREA -->
-        <main class="dashboard-main">
-            <!-- Mobile Topbar -->
-            <div class="mobile-header">
-                <div class="d-flex align-items-center gap-2">
-                    <div class="img-logo" style="width:34px; height:34px; font-size:16px;"><i class="fas fa-om"></i></div>
-                    <span class="fw-bold" style="font-size:1.05rem; color:var(--secondary);">श्री श्री राधाकृष्ण चंद्र मंदिर</span>
-                </div>
-                <button class="mobile-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
-            </div>
-
-            <!-- ==============================================
-                 APP 1: DYNAMIC SLIDER & LIVE PREVIEW SIMULATOR
-            =============================================== -->
-            <div id="view-slider" class="app-view active-view">
-                <div class="app-container">
-                    
-                    <!-- CLOUD STORAGE STATUS BAR (100% WHITELABELED) -->
-                    <div class="cloud-badge-status">
-                        <div class="d-flex align-items-center gap-3">
-                            <i class="fas fa-cloud-bolt fa-2x text-primary"></i>
-                            <div>
-                                <div class="fw-bold" style="font-size:0.95rem;">मंदिर हाई-स्पीड क्लाउड स्टोरेज: <span class="text-success">सक्रिय (Active) ⚡</span></div>
-                                <small class="text-muted">इमेजेस अल्ट्रा-एचडी क्वालिटी में ऑटो-ऑप्टिमाइज़ होकर सुपरफास्ट लोड होंगी।</small>
-                            </div>
-                        </div>
-                        <span class="badge bg-success px-3 py-2 fw-bold" style="font-size:0.78rem; border-radius:10px;">
-                            <i class="fas fa-circle-check me-1"></i> Cloud Ready
-                        </span>
-                    </div>
-
-                    <!-- 1. DATE / TIME PRIORITY WIDGET -->
-                    <div class="card-box">
-                        <label class="label-c">
-                            <span><i class="far fa-clock text-warning me-2"></i>लाइव घड़ी और एकादशी कैप्सूल का क्रम</span>
-                            <span class="badge bg-light text-dark border">Priority Rank</span>
-                        </label>
-                        <div class="custom-grid two-col mt-2">
-                            <input type="number" id="inpDateOrder" class="input-c" value="1" placeholder="Rank (e.g. 1)">
-                            <button onclick="saveDateOrder()" class="btn-main"><i class="fas fa-check-circle"></i> क्रम सुरक्षित करें</button>
-                        </div>
-                        <small class="text-muted mt-2 d-block">यह तय करता है कि लाइव घड़ी और एकादशी वाला कार्ड किस नंबर पर दिखेगा (1 = सबसे पहले)।</small>
-                    </div>
-
-                    <!-- 2. ADD / EDIT SLIDE FORM -->
-                    <div id="formCard" class="card-box">
-                        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-                            <h5 class="fw-bold m-0" style="color:var(--secondary);" id="formTitle">
-                                <i class="fas fa-plus-circle text-primary me-2"></i> नई स्लाइड / सूचना तैयार करें
-                            </h5>
-                            <span id="editBadge" class="badge bg-warning text-dark px-3 py-2 fw-bold" style="display:none; border-radius:8px;">EDITING ACTIVE</span>
-                        </div>
-                        
-                        <input type="hidden" id="editKey">
-
-                        <!-- CATEGORY SELECTION -->
-                        <div class="custom-grid two-col">
-                            <div>
-                                <label class="label-c">स्लाइड प्रकार (Category)</label>
-                                <select id="inpType" class="input-c" onchange="handleCategoryChange()">
-                                    <optgroup label="मुख्य कैटेगरीज">
-                                        <option value="image">🖼️ कस्टम इमेज बैनर (HD Image Banner)</option>
-                                        <option value="birthday">🎂 जन्मदिन शुभकामना (Birthday Blessings)</option>
-                                        <option value="anniversary">💍 वैवाहिक वर्षगांठ (Anniversary)</option>
-                                        <option value="notice">📢 मंदिर सूचना / कथा (Important Notice)</option>
-                                        <option value="donation">🙏 दान सेवा (Donation Seva)</option>
-                                    </optgroup>
-                                    <optgroup label="कस्टम डायनामिक विकल्प">
-                                        <option value="custom">✨ + नई मनचाही कैटेगरी बनाएं (Custom Category)</option>
-                                    </optgroup>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="label-c">प्रदर्शन क्रम (Sequence Number)</label>
-                                <input type="number" id="inpOrder" class="input-c" value="2" placeholder="e.g. 2, 3, 4">
-                            </div>
-                        </div>
-
-                        <!-- SLIDE DURATION & ACTIVE ORDER HINT -->
-                        <div class="custom-grid two-col mt-3">
-                            <div>
-                                <label class="label-c">स्लाइड का समय (Seconds)</label>
-                                <input type="number" step="0.5" id="inpDuration" class="input-c" value="3.0" placeholder="Default: 3.0">
-                            </div>
-                            <div>
-                                <label class="label-c">पहले से सुरक्षित क्रम</label>
-                                <div id="usedOrdersHint" class="input-c" style="background:#FFF7ED; border-color:#FED7AA; color:#9A3412; font-size:0.82rem; overflow-x:auto; white-space:nowrap;">
-                                    क्रम जाँचा जा रहा है...
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- DYNAMIC CATEGORY ARCHITECT BOX -->
-                        <div id="boxCustomCategory" class="category-builder-box" style="display:none;">
-                            <div class="fw-bold mb-2 text-primary" style="font-size:0.9rem;"><i class="fas fa-wand-magic-sparkles me-2"></i>कस्टम कैटेगरी बिल्डर (बिना ऐप अपडेट किए दिखेगी)</div>
-                            <div class="custom-grid two-col">
-                                <div>
-                                    <label class="label-c">कैटेगरी का नाम (Title)</label>
-                                    <input type="text" id="inpCustomTitle" class="input-c" placeholder="उदा: दीक्षा महोत्सव / विशेष सेवा">
-                                </div>
-                                <div>
-                                    <label class="label-c">ऊपर दिखने वाला टैग (Badge)</label>
-                                    <input type="text" id="inpCustomBadge" class="input-c" placeholder="उदा: MAHOTSAV, SPECIAL, SEVA">
-                                </div>
-                            </div>
-                            <div class="custom-grid two-col mt-2">
-                                <div>
-                                    <label class="label-c">FontAwesome आइकन क्लास</label>
-                                    <input type="text" id="inpCustomIcon" class="input-c" value="fa-hands-praying" placeholder="उदा: fa-om, fa-star, fa-heart, fa-bell">
-                                </div>
-                                <div>
-                                    <label class="label-c">बैकग्राउंड कलर ग्रेडिएंट</label>
-                                    <div class="d-flex gap-2 align-items-center mt-1">
-                                        <div class="preset-gradient-chip selected" style="background:linear-gradient(135deg, #FF6F00, #E65100);" onclick="selectGradient(this, 'linear-gradient(135deg, #FF6F00, #E65100)')"></div>
-                                        <div class="preset-gradient-chip" style="background:linear-gradient(135deg, #4A0E3D, #C2185B);" onclick="selectGradient(this, 'linear-gradient(135deg, #4A0E3D, #C2185B)')"></div>
-                                        <div class="preset-gradient-chip" style="background:linear-gradient(135deg, #004D40, #00897B);" onclick="selectGradient(this, 'linear-gradient(135deg, #004D40, #00897B)')"></div>
-                                        <div class="preset-gradient-chip" style="background:linear-gradient(135deg, #1E3A8A, #3B82F6);" onclick="selectGradient(this, 'linear-gradient(135deg, #1E3A8A, #3B82F6)')"></div>
-                                        <input type="hidden" id="inpCustomGradient" value="linear-gradient(135deg, #FF6F00, #E65100)">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- HD SMART CLEAR COMPRESSOR & AUTO-CLOUD ENGINE -->
-                        <div id="boxImageUpload" class="mt-3">
-                            <!-- 📐 BUILT-IN IMAGE SIZE & RESOLUTION ADVISOR -->
-                            <div class="p-3 rounded-3 mb-3 shadow-sm" style="background:#F0F9FF; border:1.5px solid #BAE6FD;">
-                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-1">
-                                    <div class="fw-bold text-primary" style="font-size:0.88rem;">
-                                        <i class="fas fa-ruler-combined me-1"></i> सर्वोत्तम इमेज साइज़ गाइड (Image Resolution Guide)
-                                    </div>
-                                    <span class="badge bg-primary text-white" style="font-size:0.75rem;">16:9 Aspect Ratio</span>
-                                </div>
-                                <div style="font-size:0.8rem; color:#0369A1; line-height:1.5;">
-                                    • सबसे सटीक साइज़: <b>800 × 450 px</b> या <b>720 × 405 px</b> (Landscape बैनर)।<br>
-                                    • <b>16:9 अनुपात</b> की फोटो हर मोबाइल स्क्रीन पर बिना किसी क्रॉप के 100% सटीक बैठती है।
-                                </div>
-                                <div id="imgDimensionBadge" class="mt-2 py-1 px-2 rounded-2" style="display:none; font-size:0.82rem; font-weight:700; background:#E0F2FE;">
-                                </div>
-                            </div>
-
-                            <label class="label-c">
-                                <span>इमेज बैनर फ़ाइल</span>
-                                <span class="text-success"><i class="fas fa-check-double me-1"></i>HD Clear Smart Compressor (No Blur)</span>
-                            </label>
-                            
-                            <div class="compressor-dropzone" onclick="document.getElementById('fileInput').click()">
-                                <i class="fas fa-cloud-arrow-up fa-2x text-primary mb-2"></i>
-                                <div class="fw-bold">फोटो चुनें (Click to Select Image)</div>
-                                <small class="text-muted">कोई भी 5MB-10MB की फ़ोटो चुनें। यह बिना धुंधलेपन के HD क्वालिटी में 35KB-50KB बनाकर तुरंत अपलोड कर देगा।</small>
-                                <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="handleImageSelection(this)">
-                            </div>
-
-                            <!-- COMPRESSION STATS BAR -->
-                            <div id="compressorStats" class="compressor-stats">
-                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                                    <div class="d-flex align-items-center gap-3">
-                                        <img id="imgPreviewThumb" style="width:55px; height:55px; object-fit:cover; border-radius:10px; border:2px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,0.15);">
-                                        <div>
-                                            <div class="fw-bold text-success" id="compSizeText">Ultra HD Clear</div>
-                                            <small class="text-muted" id="compRatioText">Optimizing...</small>
-                                        </div>
-                                    </div>
-                                    <button class="btn btn-sm btn-success fw-bold px-3 py-2 rounded-3" id="btnUploadGH" onclick="startCloudUpload()">
-                                        <i class="fas fa-cloud-arrow-up me-1"></i> अपलोड करें (Upload to Cloud)
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="mt-3">
-                                <label class="label-c">इमेज डायरेक्ट लिंक (Direct Cloud Asset URL)</label>
-                                <input type="text" id="inpImgUrl" class="input-c" placeholder="यहाँ लिंक अपने-आप आ जाएगा...">
-                            </div>
-                        </div>
-
-                        <!-- METADATA CONTENT FIELDS (FOR BIRTHDAY, DONATION, NOTICE, ETC.) -->
-                        <div id="boxTextData" style="display:none;" class="mt-3">
-                            <div class="custom-grid two-col">
-                                <div><label class="label-c">तारीख (Event Date)</label><input type="date" id="inpDate" class="input-c"></div>
-                                <div><label class="label-c">नाम / मुख्य शीर्षक (Name / Title)</label><input type="text" id="inpName" class="input-c" placeholder="उदा: सुंदर श्याम दास"></div>
-                            </div>
-                            <div class="custom-grid two-col mt-3">
-                                <div><label class="label-c">पद / सेवा / राशि (Role / Seva Details)</label><input type="text" id="inpId" class="input-c" placeholder="उदा: लाइफ पेट्रन मेंबर / ₹5,100 सेवा"></div>
-                                <div><label class="label-c">स्थान / पता (City / Location)</label><input type="text" id="inpAddr" class="input-c" placeholder="उदा: 15 नंबर, हडपसर"></div>
-                            </div>
-                        </div>
-
-                        <!-- ======================================================== -->
-                        <!-- 📱 LIVE ACCURATE USER PANEL SIMULATOR PREVIEW BOX 📱 -->
-                        <!-- ======================================================== -->
-                        <div class="mt-4 p-3 rounded-4 border-2" style="background:#FFFBF5; border: 2px dashed #FDBA74;">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div class="fw-bold" style="font-size:0.92rem; color:#C2410C;">
-                                    <i class="fas fa-mobile-screen-button me-2"></i>लाइव मोबाइल प्रीव्यू (यूज़र ऐप में कैसा दिखेगा)
-                                </div>
-                                <span class="badge bg-warning text-dark fw-bold" style="font-size:0.7rem;">Realtime Simulation</span>
-                            </div>
-                            
-                            <div class="preview-simulator-wrapper">
-                                <div class="preview-phone-notch"></div>
-                                <div class="preview-device-card" id="livePreviewContainer">
-                                    <!-- Dynamic content rendered live here -->
-                                </div>
-                            </div>
-                            
-                            <div class="text-center mt-2">
-                                <small class="text-muted" style="font-size:0.78rem;">
-                                    <i class="fas fa-eye me-1"></i> फॉर्म में जो भी टाइप करेंगे या इमेज चुनेंगे, वह तुरंत यहाँ लाइव दिखेगा।
-                                </small>
-                            </div>
-                        </div>
-
-                        <!-- CLICK INTERACTION LINK -->
-                        <div class="custom-grid link-col mt-3">
-                            <div>
-                                <label class="label-c">क्लिक करने पर क्या हो? (Action)</label>
-                                <select id="inpLinkType" class="input-c" onchange="handleLinkTypeChange()">
-                                    <option value="none">कोई लिंक नहीं (No Action)</option>
-                                    <option value="go">ऐप का आंतरिक पेज खोलें (.html)</option>
-                                    <option value="web">बाहरी वेबसाइट खोलें (URL)</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="label-c">लिंक का पता (Target Page / URL)</label>
-                                <input type="text" id="inpLinkVal" class="input-c" placeholder="-- disabled --" disabled>
-                            </div>
-                        </div>
-
-                        <!-- SUBMISSION BUTTONS -->
-                        <div class="custom-grid two-col mt-4">
-                            <button id="btnSubmit" onclick="submitSlideEntry()" class="btn-main">
-                                <i class="fas fa-paper-plane"></i> स्लाइड ऐप में लाइव करें (PUBLISH)
-                            </button>
-                            <button id="btnCancel" onclick="resetSlideForm()" class="btn-cancel" style="display:none;">रद्द करें (CANCEL)</button>
-                        </div>
-                    </div>
-
-                    <!-- 3. ACTIVE LIVE SLIDES LIST -->
-                    <div class="d-flex justify-content-between align-items-center mb-3 mt-4 px-2">
-                        <h6 class="fw-bold m-0 text-muted" style="letter-spacing:1px; font-size:0.85rem;">ऐप में चल रही सभी एक्टिव स्लाइड्स</h6>
-                    </div>
-                    
-                    <div id="itemList" class="pb-5 w-100">
-                        <div class="text-center py-5"><i class="fas fa-circle-notch fa-spin text-muted fa-2x"></i></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ==============================================
-                 APP 2: QUIZ ADMIN (PRESERVED)
-            =============================================== -->
-            <div id="view-quiz" class="app-view">
-                <header>
-                    <div class="brand fw-bold fs-5 text-dark d-flex align-items-center gap-2">
-                        <button class="btn btn-light d-xl-none p-2 border" onclick="toggleQuizMenu()"><i class="fas fa-bars"></i></button>
-                        <i class="fas fa-book-open text-primary"></i> क्विज़ डेटाबेस कंट्रोलर
-                    </div>
-                    <select class="form-select border-2 shadow-none" style="width:auto; font-weight:700;" id="db-path" onchange="loadLevels()">
-                        <option value="levels_multi">👳 Srila Prabhupada</option>
-                        <option value="levels_krishna">🦚 Lord Krishna</option>
-                        <option value="levels_ramayan">🏹 Ramayan</option>
-                        <option value="levels_gita">🕉️ Bhagavad Gita</option>
-                    </select>
-                </header>
-                <div class="quiz-layout-wrapper">
-                    <div class="quiz-sidebar" id="quiz-sidebar">
-                        <div class="p-3 border-bottom"><button class="btn btn-dark w-100 fw-bold rounded-3" onclick="addLevel()"><i class="fas fa-plus me-2"></i> नया लेवल जोड़ें</button></div>
-                        <div class="lvl-list p-2" id="lvl-list"><div class="text-center p-4 text-muted"><i class="fas fa-spinner fa-spin"></i></div></div>
-                    </div>
-                    <div class="main flex-grow-1 p-3">
-                        <div id="welcome" class="text-center mt-5 text-muted">
-                            <i class="fas fa-layer-group fa-4x mb-3 opacity-25"></i>
-                            <h4 class="fw-bold text-dark">लेवल चुनकर प्रश्न प्रबंधित करें</h4>
-                        </div>
-                        <div id="content" style="display:none; max-width:850px; margin:0 auto;">
-                            <div class="d-flex justify-content-between align-items-center mb-3 bg-white p-3 rounded-4 shadow-sm border">
-                                <h5 id="lvl-name" class="m-0 fw-bold text-primary">Level Name</h5>
-                                <button class="btn btn-sm btn-outline-danger fw-bold rounded-3" onclick="delLevel()"><i class="fas fa-trash-alt me-1"></i> लेवल डिलीट करें</button>
-                            </div>
-                            <div class="card-box">
-                                <h6 class="fw-bold mb-3"><i class="fas fa-plus-circle text-success me-2"></i>नया प्रश्न जोड़ें</h6>
-                                <input id="q-en" class="input-c mb-2" placeholder="Question (English) *">
-                                <input id="q-hi" class="input-c mb-2" placeholder="प्रश्न (हिंदी)">
-                                <input id="q-mr" class="input-c mb-2" placeholder="प्रश्न (मराठी)">
-                                <div class="row g-2 mt-2">
-                                    <div class="col-6"><input id="o0-en" class="input-c" placeholder="Option A"></div>
-                                    <div class="col-6"><input id="o1-en" class="input-c" placeholder="Option B"></div>
-                                    <div class="col-6"><input id="o2-en" class="input-c" placeholder="Option C"></div>
-                                    <div class="col-6"><input id="o3-en" class="input-c" placeholder="Option D"></div>
-                                </div>
-                                <div class="mt-3">
-                                    <label class="label-c">सही उत्तर (Correct Option)</label>
-                                    <select id="ans" class="input-c">
-                                        <option value="0">Option A</option>
-                                        <option value="1">Option B</option>
-                                        <option value="2">Option C</option>
-                                        <option value="3">Option D</option>
-                                    </select>
-                                </div>
-                                <button class="btn-main mt-3" onclick="saveQ()"><i class="fas fa-save me-2"></i> प्रश्न सुरक्षित करें</button>
-                            </div>
-                            <div id="q-list" class="mt-4"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <!-- UI NAVIGATION & LIVE PREVIEW ENGINE -->
-    <script>
-        function switchApp(appId, btnElement = null) {
-            document.querySelectorAll('.app-view').forEach(el => el.classList.remove('active-view'));
-            document.getElementById('view-' + appId).classList.add('active-view');
-            if(btnElement) {
-                document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
-                btnElement.classList.add('active');
-            }
-            document.querySelector('.dashboard-main').scrollTo(0,0);
-        }
-        function toggleSidebar() { document.getElementById('mainSidebar').classList.toggle('show'); document.querySelector('.sidebar-overlay').classList.toggle('show'); }
-        function toggleSidebarMobile() { if(window.innerWidth <= 992) { document.getElementById('mainSidebar').classList.remove('show'); document.querySelector('.sidebar-overlay').classList.remove('show'); } }
-
-        function handleCategoryChange() {
-            const type = document.getElementById('inpType').value;
-            const isImage = type === 'image';
-            const isCustom = type === 'custom';
-
-            document.getElementById('boxImageUpload').style.display = isImage ? 'block' : 'none';
-            document.getElementById('boxTextData').style.display = !isImage ? 'block' : 'none';
-            document.getElementById('boxCustomCategory').style.display = isCustom ? 'block' : 'none';
-
-            updateLiveSimulation();
-        }
-
-        function handleLinkTypeChange() {
-            const type = document.getElementById('inpLinkType').value;
-            const valInput = document.getElementById('inpLinkVal');
-            if(type === 'none') { valInput.disabled = true; valInput.placeholder = "-- disabled --"; valInput.value = ""; } 
-            else if (type === 'go') { valInput.disabled = false; valInput.placeholder = "e.g. dono (Internal Page)"; } 
-            else { valInput.disabled = false; valInput.placeholder = "e.g. https://yourlink.com"; }
-        }
-
-        function selectGradient(elem, gradStr) {
-            document.querySelectorAll('.preset-gradient-chip').forEach(c => c.classList.remove('selected'));
-            elem.classList.add('selected');
-            document.getElementById('inpCustomGradient').value = gradStr;
-            updateLiveSimulation();
-        }
-
-        // ==============================================================
-        // 📱 LIVE ACCURATE SIMULATOR ENGINE (USER APP REPLICA)
-        // ==============================================================
-        window.currentPreviewImageSrc = null;
-
-        function updateLiveSimulation() {
-            const container = document.getElementById('livePreviewContainer');
-            if(!container) return;
-
-            const type = document.getElementById('inpType').value;
-
-            if(type === 'image') {
-                const imgSrc = window.currentPreviewImageSrc || document.getElementById('inpImgUrl').value.trim();
-                if(imgSrc) {
-                    container.innerHTML = `<img src="${imgSrc}" class="sim-image" alt="Banner Preview">`;
-                } else {
-                    container.innerHTML = `
-                    <div class="text-center p-3 text-white-50">
-                        <i class="fas fa-image fa-3x mb-2 opacity-50"></i>
-                        <div class="fw-bold text-white" style="font-size:0.9rem;">इमेज बैनर प्रीव्यू</div>
-                        <small>फोटो चुनने पर यहाँ लाइव दिखेगी</small>
-                    </div>`;
-                }
-                return;
-            }
-
-            // Text/Dynamic Categories
-            let name = document.getElementById('inpName').value.trim() || "नाम / मुख्य शीर्षक";
-            let role = document.getElementById('inpId').value.trim() || "पद / सेवा / लाइफ मेंबर";
-            let addr = document.getElementById('inpAddr').value.trim() || "हडपसर, पुणे";
-            let date = document.getElementById('inpDate').value || "";
-
-            let bgClass = "sim-ns-notice";
-            let headerText = "महत्वपूर्ण सूचना";
-            let icon = "📢";
-            let customStyle = "";
-
-            if(type === 'birthday') {
-                bgClass = "sim-ns-bday";
-                headerText = "जन्मदिन की शुभकामनाएँ";
-                icon = "🎂";
-            } else if(type === 'anniversary') {
-                bgClass = "sim-ns-anni";
-                headerText = "विवाह वर्षगांठ की शुभकामनाएँ";
-                icon = "💍";
-            } else if(type === 'donation') {
-                bgClass = "sim-ns-donate";
-                headerText = "दान सेवा (Donation Seva)";
-                icon = "🙏";
-            } else if(type === 'custom') {
-                bgClass = "sim-ns-notice";
-                headerText = document.getElementById('inpCustomTitle').value.trim() || "विशेष सेवा";
-                icon = document.getElementById('inpCustomIcon').value.trim() || "fa-hands-praying";
-                let grad = document.getElementById('inpCustomGradient').value;
-                customStyle = `background:${grad}; color:#fff;`;
-            }
-
-            container.innerHTML = `
-            <div class="sim-name-slide ${bgClass}" style="${customStyle}">
-                <div class="sim-ns-header">${type === 'custom' ? `<i class="fas ${icon} me-1"></i>` : icon} ${headerText}</div>
-                <div class="sim-name-container">
-                    <div class="sim-person-name">${name}</div>
-                    <div class="sim-person-role">${role}</div>
-                    <div class="sim-person-addr"><i class="fas fa-location-dot me-1"></i>${addr} ${date ? `• ${date}` : ''}</div>
-                </div>
-            </div>`;
-        }
-
-        // Live input listeners for instant updating
-        document.addEventListener('DOMContentLoaded', () => {
-            ['inpName', 'inpId', 'inpAddr', 'inpDate', 'inpCustomTitle', 'inpCustomIcon', 'inpImgUrl'].forEach(id => {
-                const el = document.getElementById(id);
-                if(el) {
-                    el.addEventListener('input', updateLiveSimulation);
-                    el.addEventListener('change', updateLiveSimulation);
-                }
-            });
-            updateLiveSimulation();
-        });
-    </script>
-
-    <!-- ==============================================
-         HD SMART CLEAR COMPRESSOR & FIREBASE MODULE
-    =============================================== -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getDatabase, ref, push, onValue, remove, set, update } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
-
-        // Integrated Cloud Config (Completely Private - Whitelabeled for Temple)
-        const CLOUD_ENGINE = {
-            t: atob("Z2hwXzQzRWRsUnpjRERHRWNEYWN6YzE3YnpodWUzZkZYMTN1TVo3ag=="),
-            o: "bjendermisra-ops",
-            r: "Iskcon-Hadapsar-Admin-Pannel-",
-            b: "main",
-            f: "assets/slides"
-        };
-
-        const app = initializeApp({
-            apiKey: "AIzaSyDaiyXkiQgyJWAC7QsOcneHl0KU0O4kwgI", 
-            authDomain: "iskcon-slider.firebaseapp.com",
-            databaseURL: "https://iskcon-slider-default-rtdb.firebaseio.com", 
-            projectId: "iskcon-slider"
-        }, 'sliderApp'); 
-        
-        const db = getDatabase(app);
-        let rawData = {}; 
-        window.currentDateOrder = 1;
-        let compressedBlobHolder = null;
-
-        async function triggerVersionBump() {
-            try {
-                await set(ref(db, 'slider_version'), {
-                    v: Date.now(),
-                    date: new Date().toISOString()
-                });
-            } catch(e) { console.error("Version tick error:", e); }
-        }
-        window.syncVersionTickManually = () => {
-            triggerVersionBump().then(() => {
-                Swal.fire({icon:'success', title:'ऐप सिंक हो गया!', text:'सभी यूज़र्स के डिवाइस पर नया डेटा तुरंत अपडेट हो जाएगा।', timer:1500, showConfirmButton:false});
-            });
-        };
-
-        // ==============================================
-        // 🔬 HD ULTRA-CLEAR SMART COMPRESSOR (NO BLUR)
-        // ==============================================
-        window.handleImageSelection = async (input) => {
-            const file = input.files[0];
-            if(!file) return;
-
-            Swal.fire({
-                title: 'ऑप्टिमाइज़ हो रहा है...',
-                text: 'इमेज को बिना धुंधलेपन के HD क्लियर बनाया जा रहा है...',
-                allowOutsideClick: false,
-                didOpen: () => { Swal.showLoading(); }
-            });
-
-            try {
-                const optimizedBlob = await executeHDClearCompression(file);
-                compressedBlobHolder = optimizedBlob;
-
-                const origSizeMb = (file.size / (1024 * 1024)).toFixed(2);
-                const optSizeKb = (optimizedBlob.size / 1024).toFixed(1);
-                const ratio = (((file.size - optimizedBlob.size) / file.size) * 100).toFixed(0);
-
-                const blobUrl = URL.createObjectURL(optimizedBlob);
-                window.currentPreviewImageSrc = blobUrl;
-
-                document.getElementById('compressorStats').style.display = 'block';
-                document.getElementById('imgPreviewThumb').src = blobUrl;
-                document.getElementById('compSizeText').innerText = `Ultra HD Clear: ${optSizeKb} KB`;
-                document.getElementById('compRatioText').innerText = `मूल साइज़: ${origSizeMb} MB (बचत ${ratio}%)`;
-
-                updateLiveSimulation();
-                Swal.close();
-            } catch (err) {
-                Swal.fire('त्रुटि', err.message, 'error');
-            }
-        };
-
-        // Smart HD Compression with live aspect-ratio checking
-        function executeHDClearCompression(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        // 📐 Dimension & Fit Advisor Evaluation
-                        const badge = document.getElementById('imgDimensionBadge');
-                        if(badge) {
-                            badge.style.display = 'block';
-                            const aspect = (img.width / img.height);
-                            let statusText = "";
-                            if(aspect >= 1.5 && aspect <= 1.9) {
-                                statusText = `<span class="text-success"><i class="fas fa-circle-check me-1"></i>16:9 Perfect Fit (हर मोबाइल में बिल्कुल सही दिखेगी)</span>`;
-                            } else if(aspect < 1.3) {
-                                statusText = `<span class="text-warning"><i class="fas fa-triangle-exclamation me-1"></i>वर्टिकल / चौकोर फोटो (लैंडस्केप 16:9 फोटो सबसे अच्छी दिखती है)</span>`;
-                            } else {
-                                statusText = `<span class="text-primary"><i class="fas fa-info-circle me-1"></i>चौड़ी फोटो (${aspect.toFixed(2)}:1)</span>`;
-                            }
-                            badge.innerHTML = `फ़ोटो साइज़: <b>${img.width} × ${img.height} px</b> &nbsp;|&nbsp; ${statusText}`;
-                        }
-
-                        let canvas = document.createElement('canvas');
-                        let ctx = canvas.getContext('2d');
-                        
-                        let maxDim = 960; // Optimal HD resolution for crystal clarity
-                        let width = img.width;
-                        let height = img.height;
-                        if (width > height && width > maxDim) {
-                            height = Math.round((height * maxDim) / width);
-                            width = maxDim;
-                        } else if (height > maxDim) {
-                            width = Math.round((width * maxDim) / height);
-                            height = maxDim;
-                        }
-                        
-                        canvas.width = width;
-                        canvas.height = height;
-                        
-                        ctx.imageSmoothingEnabled = true;
-                        ctx.imageSmoothingQuality = 'high';
-                        ctx.drawImage(img, 0, 0, width, height);
-
-                        let quality = 0.82;
-                        let minQuality = 0.65; // Never drops below 0.65 to guarantee ZERO blur
-
-                        function smartLoop(q, scale) {
-                            if (scale < 1.0) {
-                                canvas.width = Math.round(width * scale);
-                                canvas.height = Math.round(height * scale);
-                                ctx.imageSmoothingEnabled = true;
-                                ctx.imageSmoothingQuality = 'high';
-                                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                            }
-                            canvas.toBlob((blob) => {
-                                if (!blob) { reject(new Error("Canvas conversion failed")); return; }
-                                if (blob.size <= 55 * 1024 || q <= minQuality) {
-                                    resolve(blob);
-                                } else {
-                                    let nextQ = q - 0.05;
-                                    let nextScale = scale;
-                                    if (nextQ < 0.68 && blob.size > 60 * 1024) {
-                                        nextScale = scale * 0.92;
-                                        nextQ = 0.78;
-                                    }
-                                    smartLoop(Math.max(nextQ, minQuality), nextScale);
-                                }
-                            }, 'image/webp', q);
-                        }
-                        smartLoop(quality, 1.0);
-                    };
-                    img.onerror = () => reject(new Error("फोटो लोड नहीं हो सकी"));
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-
-        // ==============================================
-        // 🚀 SEAMLESS TEMPLE CLOUD UPLOADER
-        // ==============================================
-        window.startCloudUpload = async () => {
-            if(!compressedBlobHolder) { Swal.fire('सूचना', 'कृपया पहले कोई फोटो चुनें!', 'warning'); return; }
-
-            const btn = document.getElementById('btnUploadGH');
-            btn.innerHTML = `<i class="fas fa-spinner fa-spin me-1"></i> अपलोड हो रहा है...`;
-            btn.disabled = true;
-
-            try {
-                const fileName = `mandir_asset_${Date.now()}.webp`;
-                const filePath = `${CLOUD_ENGINE.f}/${fileName}`;
-
-                const base64Data = await new Promise((res) => {
-                    const r = new FileReader();
-                    r.onloadend = () => res(r.result.split(',')[1]);
-                    r.readAsDataURL(compressedBlobHolder);
-                });
-
-                const uploadUrl = `https://api.github.com/repos/${CLOUD_ENGINE.o}/${CLOUD_ENGINE.r}/contents/${filePath}`;
-                const response = await fetch(uploadUrl, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${CLOUD_ENGINE.t}`,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/vnd.github.v3+json'
-                    },
-                    body: JSON.stringify({
-                        message: `Upload Mandir HD Asset: ${fileName}`,
-                        content: base64Data,
-                        branch: CLOUD_ENGINE.b
-                    })
-                });
-
-                if(!response.ok) {
-                    const err = await response.json();
-                    throw new Error(err.message || "क्लाउड अपलोड विफल रहा");
-                }
-
-                // Global Ultra-Fast CDN Link
-                const cdnUrl = `https://cdn.jsdelivr.net/gh/${CLOUD_ENGINE.o}/${CLOUD_ENGINE.r}@${CLOUD_ENGINE.b}/${filePath}`;
-                document.getElementById('inpImgUrl').value = cdnUrl;
-                window.currentPreviewImageSrc = cdnUrl;
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'सफलतापूर्वक अपलोड हुआ! 🪷',
-                    text: `HD साइज़: ${(compressedBlobHolder.size / 1024).toFixed(1)} KB (क्रिस्टल क्लियर क्वालिटी)`,
-                    timer: 1600,
-                    showConfirmButton: false
-                });
-
-                btn.innerHTML = `<i class="fas fa-check me-1"></i> अपलोड पूरा हुआ!`;
-                updateLiveSimulation();
-            } catch (err) {
-                Swal.fire('अपलोड विफल', err.message, 'error');
-                btn.innerHTML = `<i class="fas fa-cloud-arrow-up me-1"></i> दोबारा प्रयास करें`;
-                btn.disabled = false;
-            }
-        };
-
-        // ==============================================
-        // 💾 FORM CRUD & REALTIME REFRESH
-        // ==============================================
-        window.resetSlideForm = () => {
-            document.getElementById('editKey').value = "";
-            document.getElementById('inpName').value = ""; 
-            document.getElementById('inpId').value = ""; 
-            document.getElementById('inpAddr').value = "";
-            document.getElementById('inpLinkVal').value = ""; 
-            document.getElementById('inpImgUrl').value = "";
-            document.getElementById('inpCustomTitle').value = "";
-            document.getElementById('inpCustomBadge').value = "";
-            document.getElementById('inpType').value = "image";
-            document.getElementById('inpDuration').value = "3.0";
-            document.getElementById('inpLinkType').value = "none";
-            document.getElementById('compressorStats').style.display = "none";
-            const badge = document.getElementById('imgDimensionBadge');
-            if(badge) badge.style.display = "none";
-            compressedBlobHolder = null;
-            window.currentPreviewImageSrc = null;
-
-            handleLinkTypeChange(); 
-            handleCategoryChange();
-
-            document.getElementById('btnSubmit').innerHTML = `<i class="fas fa-paper-plane"></i> स्लाइड ऐप में लाइव करें (PUBLISH)`;
-            document.getElementById('btnSubmit').classList.remove('btn-update');
-            document.getElementById('btnCancel').style.display = "none";
-            document.getElementById('formTitle').innerHTML = `<i class="fas fa-plus-circle text-primary me-2"></i> नई स्लाइड / सूचना तैयार करें`;
-            document.getElementById('editBadge').style.display = "none";
-            updateLiveSimulation();
-        };
-
-        const refreshUsedOrdersHint = () => {
-            let used = [`घड़ी: ${window.currentDateOrder}`];
-            if(rawData) {
-                Object.values(rawData).forEach(v => {
-                    used.push(`${v.type.toUpperCase()}: ${v.order || 10}`);
-                });
-            }
-            document.getElementById('usedOrdersHint').innerText = used.join(' | ');
-        };
-
-        window.saveDateOrder = () => {
-            let num = parseInt(document.getElementById('inpDateOrder').value) || 1;
-            set(ref(db, 'slider_settings/date_order'), num).then(() => {
-                triggerVersionBump();
-                Swal.fire({icon: 'success', title: 'क्रम सुरक्षित हो गया', toast: true, position: 'top-end', timer: 1200, showConfirmButton: false});
-            });
-        };
-
-        onValue(ref(db, 'slider_settings/date_order'), (s) => {
-            window.currentDateOrder = s.val() || 1;
-            document.getElementById('inpDateOrder').value = window.currentDateOrder;
-            refreshUsedOrdersHint();
-        });
-
-        // Publish to App
-        window.submitSlideEntry = () => {
-            const editKey = document.getElementById('editKey').value;
-            const type = document.getElementById('inpType').value;
-            const newOrder = parseInt(document.getElementById('inpOrder').value) || 10;
-            const newDuration = parseFloat(document.getElementById('inpDuration').value) || 3.0;
-
-            if (newOrder === window.currentDateOrder) {
-                Swal.fire('क्रम व्यस्त है', `क्रम नंबर ${newOrder} लाइव घड़ी के लिए सुरक्षित है! दूसरा नंबर चुनें।`, 'error');
-                return;
-            }
-
-            const payload = {
-                type: type,
-                order: newOrder,
-                duration: newDuration,
-                linkAction: document.getElementById('inpLinkType').value,
-                linkValue: document.getElementById('inpLinkVal').value.trim(),
-                updatedAt: Date.now()
-            };
-
-            if(type === 'image') {
-                payload.imgUrl = document.getElementById('inpImgUrl').value.trim();
-                if(!payload.imgUrl) { Swal.fire('त्रुटि', 'इमेज लिंक अनिवार्य है! कृपया फोटो अपलोड करें।', 'error'); return; }
-            } else {
-                payload.eventDate = document.getElementById('inpDate').value || new Date().toISOString().split('T')[0];
-                payload.name = document.getElementById('inpName').value.trim();
-                payload.identity = document.getElementById('inpId').value.trim();
-                payload.address = document.getElementById('inpAddr').value.trim();
-                
-                if(type === 'custom') {
-                    payload.customTitle = document.getElementById('inpCustomTitle').value.trim() || 'विशेष सेवा';
-                    payload.customBadge = document.getElementById('inpCustomBadge').value.trim() || 'DIVINE';
-                    payload.customIcon = document.getElementById('inpCustomIcon').value.trim() || 'fa-hands-praying';
-                    payload.customGradient = document.getElementById('inpCustomGradient').value;
-                }
-
-                if(!payload.name) { Swal.fire('त्रुटि', 'नाम / शीर्षक लिखना अनिवार्य है!', 'error'); return; }
-            }
-
-            const p = editKey ? update(ref(db, 'slider_items/' + editKey), payload) : push(ref(db, 'slider_items'), payload);
-
-            p.then(() => {
-                triggerVersionBump();
-                Swal.fire({icon:'success', title:'सफलतापूर्वक पब्लिश हुआ! 🙏', toast:true, position:'top-end', showConfirmButton:false, timer:1500});
-                resetSlideForm();
-            }).catch(e => Swal.fire('डेटाबेस त्रुटि', e.message, 'error'));
-        };
-
-        window.deleteSlideItem = (id) => {
-            Swal.fire({
-                title: 'स्लाइड डिलीट करें?',
-                text: 'यह सभी यूज़र्स के डिवाइस से तुरंत हटा दी जाएगी।',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#DC2626',
-                confirmButtonText: 'हाँ, हटाएं'
-            }).then(r => {
-                if(r.isConfirmed) {
-                    remove(ref(db, 'slider_items/' + id)).then(() => {
-                        triggerVersionBump();
-                        if(document.getElementById('editKey').value === id) resetSlideForm();
-                    });
-                }
-            });
-        };
-
-        window.triggerSlideEdit = (key) => {
-            const item = rawData[key];
-            if(!item) return;
-
-            document.querySelector('.dashboard-main').scrollTo({ top: 0, behavior: 'smooth' });
-
-            document.getElementById('editKey').value = key;
-            document.getElementById('inpType').value = item.type;
-            document.getElementById('inpOrder').value = item.order || 10;
-            document.getElementById('inpDuration').value = item.duration || 3.0;
-            document.getElementById('inpLinkType').value = item.linkAction || "none";
-            handleLinkTypeChange();
-            document.getElementById('inpLinkVal').value = item.linkValue || "";
-            
-            handleCategoryChange();
-            if(item.type === 'image') {
-                document.getElementById('inpImgUrl').value = item.imgUrl || "";
-                window.currentPreviewImageSrc = item.imgUrl || null;
-            } else {
-                document.getElementById('inpDate').value = item.eventDate || "";
-                document.getElementById('inpName').value = item.name || "";
-                document.getElementById('inpId').value = item.identity || "";
-                document.getElementById('inpAddr').value = item.address || "";
-
-                if(item.type === 'custom') {
-                    document.getElementById('inpCustomTitle').value = item.customTitle || "";
-                    document.getElementById('inpCustomBadge').value = item.customBadge || "";
-                    document.getElementById('inpCustomIcon').value = item.customIcon || "fa-hands-praying";
-                    document.getElementById('inpCustomGradient').value = item.customGradient || "linear-gradient(135deg, #FF6F00, #E65100)";
-                }
-            }
-
-            document.getElementById('btnSubmit').innerHTML = `<i class="fas fa-rotate me-2"></i> स्लाइड अपडेट करें`;
-            document.getElementById('btnSubmit').classList.add('btn-update');
-            document.getElementById('btnCancel').style.display = "block";
-            document.getElementById('formTitle').innerHTML = `<i class="fas fa-edit text-success me-2"></i> स्लाइड एडिट मोड`;
-            document.getElementById('editBadge').style.display = "inline-block";
-            updateLiveSimulation();
-        };
-
-        // Realtime Render list
-        onValue(ref(db, 'slider_items'), (snap) => {
-            const list = document.getElementById('itemList');
-            rawData = snap.val() || {};
-            list.innerHTML = "";
-            refreshUsedOrdersHint();
-
-            if(Object.keys(rawData).length === 0) {
-                list.innerHTML = `<div class="text-center p-5 bg-white rounded-4 border"><p class="text-muted fw-bold m-0">अभी कोई एक्टिव स्लाइड नहीं है।</p></div>`;
-                return;
-            }
-
-            let sorted = Object.entries(rawData).map(([k,v]) => ({id:k, ...v})).sort((a,b) => (a.order||10) - (b.order||10));
-
-            sorted.forEach(v => {
-                let icon = '📢';
-                let title = v.name;
-                let sub = v.identity || '';
-
-                if(v.type === 'image') {
-                    icon = '🖼️';
-                    title = 'कस्टम इमेज बैनर';
-                    sub = `<img src="${v.imgUrl}" style="height:38px; border-radius:6px; margin-top:4px; border:1px solid #ddd;">`;
-                } else if(v.type === 'birthday') icon = '🎂';
-                else if(v.type === 'anniversary') icon = '💍';
-                else if(v.type === 'donation') icon = '🙏';
-                else if(v.type === 'custom') icon = '✨';
-
-                list.innerHTML += `
-                <div class="item-row">
-                    <div class="item-info">
-                        <div class="item-name">${icon} ${title}</div>
-                        <div style="font-size:0.85rem; color:#64748B;">${sub}</div>
-                        <div class="item-meta">
-                            <span class="badge bg-dark">क्रम: ${v.order || 10}</span>
-                            <span class="badge bg-secondary">${v.duration || 3.0}s</span>
-                            <span class="badge bg-light text-dark border">${v.type.toUpperCase()}</span>
-                        </div>
-                    </div>
-                    <div class="action-btns">
-                        <button class="btn-icon btn-edit" onclick="triggerSlideEdit('${v.id}')"><i class="fas fa-pencil"></i></button>
-                        <button class="btn-icon btn-del" onclick="deleteSlideItem('${v.id}')"><i class="fas fa-trash-alt"></i></button>
-                    </div>
-                </div>`;
-            });
-        });
-
-        // Initialize Form defaults
-        document.getElementById('inpDate').valueAsDate = new Date();
-        handleCategoryChange();
-        handleLinkTypeChange();
-    </script>
-
-    <!-- ==============================================
-         QUIZ CONTROLLER LOGIC (PRESERVED)
-    =============================================== -->
-    <script>
-        (function() {
-            const quizConfig = { 
-                apiKey: "AIzaSyDxuMG5tqPshrZBs4DSwQFAEnN4ufpAoEQ", 
-                databaseURL: "https://iskcon-quize-default-rtdb.firebaseio.com"
-            };
-            const quizApp = firebase.initializeApp(quizConfig, "quizApp");
-            const qDb = quizApp.database();
-            let CUR_LVL = null;
-
-            window.toggleQuizMenu = function() {
-                document.getElementById('quiz-sidebar').classList.toggle('open');
-            };
-
-            window.loadLevels = function() {
-                const path = document.getElementById('db-path').value;
-                document.getElementById('content').style.display = 'none';
-                document.getElementById('welcome').style.display = 'block';
-                CUR_LVL = null;
-
-                qDb.ref(path).on('value', s => {
-                    const d = document.getElementById('lvl-list');
-                    d.innerHTML = "";
-                    if(!s.val()) { d.innerHTML="<div class='p-3 text-muted text-center fw-bold'>कोई लेवल नहीं मिला</div>"; return; }
-                    Object.entries(s.val()).forEach(([k,v]) => {
-                        let active = (k === CUR_LVL) ? 'active' : '';
-                        d.innerHTML += `<div class="lvl-item ${active}" onclick="selLvl('${k}','${v.name.en}')">
-                            <span><i class="fas fa-layer-group me-2"></i> ${v.name.en}</span>
-                            <i class="fas fa-chevron-right" style="font-size:0.75rem;"></i>
-                        </div>`;
-                    });
-                });
-            };
-
-            window.addLevel = async function() {
-                const { value: name } = await Swal.fire({
-                    title: 'नया लेवल नाम (English)',
-                    input: 'text',
-                    showCancelButton: true
-                });
-                if(name) {
-                    qDb.ref(document.getElementById('db-path').value).push({
-                        name: { en: name, hi: name, mr: name },
-                        created: Date.now()
-                    });
-                }
-            };
-
-            window.selLvl = function(k, n) {
-                CUR_LVL = k;
-                document.getElementById('welcome').style.display = 'none';
-                document.getElementById('content').style.display = 'block';
-                document.getElementById('lvl-name').innerText = n;
-
-                qDb.ref(`${document.getElementById('db-path').value}/${k}/questions`).on('value', s => {
-                    const list = document.getElementById('q-list');
-                    list.innerHTML = "";
-                    if(!s.val()) { list.innerHTML="<p class='text-muted text-center py-4'>अभी कोई प्रश्न नहीं है।</p>"; return; }
-                    Object.entries(s.val()).forEach(([qid, v]) => {
-                        list.innerHTML += `
-                        <div class="p-3 bg-white border rounded-3 mb-2 d-flex justify-content-between align-items-center">
-                            <div>
-                                <div class="fw-bold">${v.q.en}</div>
-                                <small class="text-success fw-bold">उत्तर: Option ${['A','B','C','D'][v.a]}</small>
-                            </div>
-                            <button class="btn btn-sm btn-outline-danger" onclick="delQ('${qid}')"><i class="fas fa-trash"></i></button>
-                        </div>`;
-                    });
-                });
-            };
-
-            window.saveQ = function() {
-                if(!CUR_LVL) return;
-                const en = document.getElementById('q-en').value.trim();
-                if(!en) { Swal.fire('त्रुटि', 'प्रश्न लिखना अनिवार्य है!', 'error'); return; }
-                const data = {
-                    q: { en, hi: document.getElementById('q-hi').value.trim() || en, mr: document.getElementById('q-mr').value.trim() || en },
-                    o: [
-                        { en: document.getElementById('o0-en').value, hi: '', mr: '' },
-                        { en: document.getElementById('o1-en').value, hi: '', mr: '' },
-                        { en: document.getElementById('o2-en').value, hi: '', mr: '' },
-                        { en: document.getElementById('o3-en').value, hi: '', mr: '' }
-                    ],
-                    a: parseInt(document.getElementById('ans').value)
-                };
-                qDb.ref(`${document.getElementById('db-path').value}/${CUR_LVL}/questions`).push(data).then(() => {
-                    document.getElementById('q-en').value = '';
-                    Swal.fire({icon:'success', title:'प्रश्न सुरक्षित हो गया!', timer:1000, showConfirmButton:false});
-                });
-            };
-
-            window.delQ = function(qid) {
-                qDb.ref(`${document.getElementById('db-path').value}/${CUR_LVL}/questions/${qid}`).remove();
-            };
-
-            window.delLevel = function() {
-                if(!CUR_LVL) return;
-                Swal.fire({title:'लेवल हटाएं?', icon:'warning', showCancelButton:true, confirmButtonColor:'#DC2626'}).then(r => {
-                    if(r.isConfirmed) {
-                        qDb.ref(`${document.getElementById('db-path').value}/${CUR_LVL}`).remove();
-                        document.getElementById('content').style.display = 'none';
-                        document.getElementById('welcome').style.display = 'block';
-                    }
-                });
-            };
-
-            loadLevels();
-        })();
-    </script>
+<section class="login" id="login">
+<form class="login-box" id="loginForm">
+<div class="login-brand"><span class="brand-mark" aria-hidden="true">ॐ</span><h1>भक्त प्रहलाद कक्षा</h1><p class="muted">एडमिन पैनल में आपका स्वागत है</p></div>
+<div class="stack"><label>Email<input id="email" type="email" autocomplete="username" required placeholder="admin@example.com"></label><label>Password<span class="password-wrap"><input id="password" type="password" autocomplete="current-password" required placeholder="अपना पासवर्ड लिखें"><button type="button" id="showPassword" aria-label="पासवर्ड दिखाएं"></button></span></label><label class="row"><input type="checkbox" id="remember"> इस डिवाइस पर लॉगिन रखें</label><p class="form-error" id="loginError" role="alert"></p><button class="btn primary" id="loginSubmit" disabled>कनेक्ट हो रहा है…</button><button type="button" class="plain-link" id="resetPassword">पासवर्ड भूल गए?</button><p class="muted" style="text-align:center;font-size:12px" id="loginHint">केवल अधिकृत एडमिन के लिए</p></div>
+</form></section>
+<div id="app" hidden>
+<header class="hero"><svg class="lotus" viewBox="0 0 400 400" fill="none" stroke="currentColor" stroke-width="1"><path d="M200 335C95 250 100 130 200 40C300 130 305 250 200 335ZM200 335C95 310 25 200 50 110C150 130 210 220 200 335ZM200 335C305 310 375 200 350 110C250 130 190 220 200 335ZM200 335C95 350 5 290 5 210C115 200 180 260 200 335ZM200 335C305 350 395 290 395 210C285 200 220 260 200 335ZM200 40V335M200 335V400"/><circle cx="200" cy="20" r="3"/></svg><div class="hero-inner"><div class="row between"><div class="brand row"><span class="brand-mark" aria-hidden="true">ॐ</span><div><h1>भक्त प्रहलाद कक्षा</h1><small>एडमिशन प्रबंधन</small></div></div><button class="profile" data-nav="settings" aria-label="प्रोफाइल और सेटिंग्स" id="profile">अ</button></div><div class="hero-title row between"><div><h2>हरे कृष्ण!</h2><p>आज के आवेदन एक नज़र में</p></div><span class="live off" id="connection" role="status">कनेक्ट हो रहा है</span></div><div class="hero-total row between"><div><div class="total" id="total">—</div><div style="color:#d8d3ee;font-size:14px">कुल आवेदन</div></div><button class="btn" data-action="add"><span data-icon="plus"></span> नया आवेदन</button></div><div class="metrics" id="metrics"></div></div></header>
+<main class="shell"><div id="demoStrip" class="demo-strip" hidden>डेमो प्रीव्यू • यह sample data है। कोई बदलाव Firebase पर नहीं जाएगा।</div><div id="dataError" class="errorbar" role="alert" hidden></div>
+<section id="page-applications"><button class="follow-banner" id="followBanner" data-nav="followups"><span class="circle" data-icon="phone"></span><span class="grow"><strong id="followTitle">फॉलो-अप लोड हो रहे हैं</strong><small>फॉलो-अप देखें</small></span><span class="arrow" data-icon="right"></span></button><div id="followHeading" class="page-heading" hidden><h2>परिवारों से संपर्क</h2><p class="muted">आज के और बाकी फॉलो-अप एक जगह</p></div>
+<div class="toolbar"><label class="search"><span class="sr-only">आवेदन खोजें</span><span data-icon="search"></span><input type="search" id="search" placeholder="नाम, मोबाइल या इलाका खोजें" autocomplete="off"></label><button class="iconbtn filter-button" id="filterToggle" aria-label="फिल्टर खोलें" aria-expanded="false" aria-controls="filters" data-icon="filter"></button></div>
+<div class="filters" id="filters" hidden><label>उम्र<select id="ageFilter"><option value="">सभी उम्र</option></select></label><label>क्रम<select id="sort"><option value="new">नए पहले</option><option value="old">पुराने पहले</option><option value="name">नाम A–Z</option><option value="age">उम्र</option><option value="follow">फॉलो-अप तारीख</option></select></label><label>अतिरिक्त फिल्टर<select id="extra"><option value="">सभी आवेदन</option><option value="star">खास / Starred</option><option value="dup">एक ही मोबाइल वाले</option><option value="today">आज मिले आवेदन</option></select></label></div>
+<div class="section-head row between"><h2 id="listTitle">आवेदन <small id="resultCount"></small></h2><div class="row" style="gap:7px"><div class="seg" role="group" aria-label="लिस्ट या बोर्ड"><button data-view="list" class="active" aria-label="लिस्ट" aria-pressed="true" data-icon="list"></button><button data-view="board" aria-label="बोर्ड" aria-pressed="false" data-icon="board"></button></div><div class="menu-wrap"><button class="iconbtn" id="menuToggle" aria-label="आवेदन विकल्प" aria-expanded="false" data-icon="more"></button><div class="menu" id="menu" hidden><button data-action="select"><span data-icon="check"></span> आवेदन चुनें</button><button data-action="csv"><span data-icon="download"></span> CSV एक्सपोर्ट</button><button data-action="backup"><span data-icon="save"></span> पूरा JSON Backup</button><button data-action="print"><span data-icon="print"></span> प्रिंट</button></div></div></div></div>
+<div class="chips" id="chips" aria-label="आवेदन फिल्टर"></div><div class="bulk" id="bulk" hidden></div><div id="results" aria-live="polite"></div></section>
+<section id="page-reports" hidden></section><section id="page-settings" hidden></section>
+</main><nav class="dock" aria-label="मुख्य नेविगेशन"><button class="nav-item active" data-nav="applications" aria-current="page"><span data-icon="file"></span>आवेदन</button><button class="nav-item" data-nav="followups"><span data-icon="clock"></span><span class="badge" id="followBadge" hidden></span>फॉलो-अप</button><button class="nav-item" data-nav="reports"><span data-icon="chart"></span>रिपोर्ट</button><button class="nav-item" data-nav="settings"><span data-icon="settings"></span>सेटिंग्स</button></nav></div>
+<dialog id="drawer" aria-labelledby="dialogTitle"><div class="dialog-head row"><button class="iconbtn" id="closeDrawer" aria-label="वापस जाएं" data-icon="left"></button><h2 id="dialogTitle" class="grow">आवेदन विवरण</h2><span id="dialogExtra"></span></div><div class="dialog-body" id="dialogBody"></div></dialog>
+<div id="toast" class="toast" role="status" hidden></div>
+<script>
+'use strict';
+/* DEPLOYMENT
+   1. Host this single file as admin.html on HTTPS (do not use file:// for live Auth).
+   2. Existing Firebase config and collection are retained below.
+   3. Enable Email/Password in Firebase Authentication, create your admin account.
+   4. IMPORTANT: request.auth != null alone allows EVERY signed-in user, not only admins.
+      Restrict /admissions read/update/delete in Firestore Rules to your admin UID(s),
+      or an admin custom claim. See the setup note in Settings. UI is not access control.
+   5. ?demo=1 explicitly enables isolated local demo data for design testing only.
+      Demo does not import Firebase, read live data, or bypass live authentication.
+   6. No persistent Firestore cache is enabled. Notes use atomic arrayUnion updates.
+   SDK version is pinned to match the supplied existing app; upgrade deliberately.
+*/
+const CFG={apiKey:'AIzaSyBirHGMdmqFbwtzgp_pepm7VHEqq-eOSUs',authDomain:'radha-krishna-chandra.firebaseapp.com',databaseURL:'https://radha-krishna-chandra-default-rtdb.asia-southeast1.firebasedatabase.app',projectId:'radha-krishna-chandra',storageBucket:'radha-krishna-chandra.firebasestorage.app',messagingSenderId:'467048553836',appId:'1:467048553836:web:a20960abad5df5027fa749',measurementId:'G-RLF5FVXC2Y'};
+const COLLECTION='admissions',SDK='https://www.gstatic.com/firebasejs/10.12.2/',TZ='Asia/Kolkata';
+const DEMO=new URLSearchParams(location.search).get('demo')==='1';
+const ST=[{k:'new',l:'नया',c:'#4285ef'},{k:'contacted',l:'संपर्क किया',c:'#9667cd'},{k:'interested',l:'इच्छुक',c:'#ec9a28'},{k:'admitted',l:'एडमिशन हुआ',c:'#39ac78'},{k:'dropped',l:'नहीं आएंगे',c:'#d85873'}];
+const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const paths={plus:'M12 5v14M5 12h14',left:'M15 5l-7 7 7 7',right:'M9 5l7 7-7 7',search:'M21 21l-5-5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0',filter:'M4 6h16M4 12h16M4 18h16M8 3v6M16 9v6M10 15v6',file:'M14 2H5v20h14V7zM14 2v6h5M8 12h8M8 16h6',list:'M8 6h12M8 12h12M8 18h12M3 6h1M3 12h1M3 18h1',board:'M3 4h18v16H3zM10 4v16',more:'M12 4h.01M12 12h.01M12 20h.01',clock:'M12 7v5l3 2M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0',chart:'M4 20V10h3v10M11 20V4h3v16M18 20v-7h3v7',settings:'M9 3h6l1 3 3 1 2 5-2 5-3 1-1 3H9l-1-3-3-1-2-5 2-5 3-1zM15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0',check:'M5 12l4 4L19 6',users:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0M17 4a4 4 0 0 1 0 8M19 15a4 4 0 0 1 3 4v2',phone:'M22 17v3a2 2 0 0 1-2 2A20 20 0 0 1 2 4a2 2 0 0 1 2-2h3l2 5-2 2a16 16 0 0 0 8 8l2-2z',download:'M12 3v12M7 10l5 5 5-5M4 16v5h16v-5',save:'M3 3h15l3 3v15H3zM7 3v6h10V3M7 21v-8h10v8',print:'M6 9V3h12v6M6 17H3V9h18v8h-3M6 14h12v7H6z',star:'M12 2l3 6 7 1-5 5 1 8-6-4-6 4 1-8-5-5 7-1z',eye:'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0',logout:'M9 4H3v16h6M10 12h12M17 7l5 5-5 5',copy:'M8 8h13v13H8zM16 8V3H3v13h5',trash:'M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7',edit:'M15 4l5 5M4 16l12-12a3 3 0 0 1 4 4L8 20H4z',chat:'M21 11a9 9 0 0 1-9 9H4l-3 2 1-7a9 9 0 1 1 19-4',refresh:'M20 7V2l-4 4M4 17v5l4-4M20 7a9 9 0 0 0-15-3M4 17a9 9 0 0 0 15 3',calendar:'M3 5h18v16H3zM7 2v6M17 2v6M3 11h18'};
+const icon=n=>`<svg class="ic" aria-hidden="true" viewBox="0 0 24 24"><path d="${paths[n]||paths.file}"/></svg>`;
+function icons(root=document){root.querySelectorAll('[data-icon]').forEach(e=>e.innerHTML=icon(e.dataset.icon))}
+const storage={get(k,f=''){try{return localStorage.getItem(k)??f}catch{return f}},set(k,v){try{localStorage.setItem(k,v)}catch{}}};
+const state={rows:[],page:'applications',filter:'all',view:'list',limit:30,selection:new Set(),selecting:false,loaded:false,error:'',connected:false,user:null,openId:null,editing:false,dup:new Map()};
+let api=null,unsub=null,generation=0,lastFocus=null,lastDay='',dragId=null,pending=0;
+const st=k=>ST.find(x=>x.k===k)||ST[0];
+const day=t=>{const d=new Date(t);if(!Number.isFinite(+d))return '';const p=new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);return ['year','month','day'].map(k=>p.find(x=>x.type===k).value).join('-')};
+const today=()=>day(Date.now());
+const fmt=t=>t?new Intl.DateTimeFormat('hi-IN',{timeZone:TZ,day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}).format(t):'तारीख उपलब्ध नहीं';
+function dateLabel(d){if(!d)return 'तारीख नहीं';return new Intl.DateTimeFormat('hi-IN',{timeZone:TZ,day:'numeric',month:'short',year:'numeric'}).format(new Date(d+'T12:00:00+05:30'))}
+function millis(v){if(v?.toMillis)return v.toMillis();if(v&&typeof v==='object'&&Number.isFinite(v.seconds))return v.seconds*1000;if(v==null)return 0;const n=typeof v==='number'?v:+new Date(v);return Number.isFinite(n)?n:0}
+function mobile(v){let n=String(v??'').replace(/\D/g,'');if(n.length===12&&n.startsWith('91'))n=n.slice(2);if(n.length===11&&n[0]==='0')n=n.slice(1);return n}
+function norm(id,d){return {id,childName:String(d.childName??''),childAge:Number(d.childAge)||0,parentName:String(d.parentName??''),mobile:mobile(d.mobile),area:String(d.area??''),note:String(d.note??''),lang:String(d.lang??''),status:st(d.status).k,starred:!!d.starred,followUp:/^\d{4}-\d{2}-\d{2}$/.test(d.followUp)?d.followUp:'',createdAt:millis(d.createdAt),source:String(d.source??''),notes:Array.isArray(d.notes)?d.notes.filter(n=>n&&typeof n==='object').map(n=>({t:String(n.t??''),ts:millis(n.ts)})):[]}}
+const active=r=>!['admitted','dropped'].includes(r.status),due=r=>active(r)&&r.followUp&&r.followUp<=today();
+const initials=r=>[...r.childName.trim()][0]||'अ';
+function toast(s){$('toast').textContent=s;$('toast').hidden=false;clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('toast').hidden=true,4500)}
+function errorText(e){const c=e?.code||'';if(c.includes('permission-denied'))return 'इस अकाउंट को डेटा का अधिकार नहीं है। Firebase में एडमिन UID और Firestore Rules जांचें।';if(c.includes('unavailable')||c.includes('network'))return 'नेटवर्क उपलब्ध नहीं है। इंटरनेट जांचकर दोबारा कोशिश करें।';if(c.includes('too-many'))return 'बहुत अधिक प्रयास हुए हैं। थोड़ी देर बाद कोशिश करें।';if(c.includes('unauthorized-domain'))return 'इस वेबसाइट का डोमेन Firebase Authentication में अधिकृत नहीं है।';if(c.includes('user-disabled'))return 'यह अकाउंट बंद किया गया है।';if(c.startsWith('auth/'))return 'लॉगिन नहीं हुआ। Email, password और Firebase Auth सेटअप जांचें।';return e?.message||'कुछ गड़बड़ हुई। दोबारा कोशिश करें।'}
+async function run(fn,button){if(button?.disabled)return;try{if(button)button.disabled=true;await fn()}catch(e){console.error(e);toast(errorText(e));if($('saveState'))$('saveState').textContent='सेव नहीं हुआ — दोबारा कोशिश करें'}finally{if(button?.isConnected)button.disabled=false}}
+function requireWrite(){if(!DEMO&&(!navigator.onLine||!state.connected))throw new Error('डेटा का लाइव कनेक्शन मिलने के बाद बदलाव करें।')}
+async function write(fn){requireWrite();pending++;try{if($('saveState'))$('saveState').textContent='सेव हो रहा है…';await fn();if($('saveState'))$('saveState').textContent='✓ बदलाव सेव हैं'}finally{pending--}}
+const chipStatus=r=>`<span class="pill ${st(r.status).k}"><span class="status-dot"></span>${st(r.status).l}</span>`;
+function duplicate(r){return r.mobile.length===10&&(state.dup.get(r.mobile)||0)>1}
+function baseRows(){return state.rows.filter(r=>{if(state.page==='followups'&&!active(r))return false;const q=$('search').value.trim().toLocaleLowerCase();if(q&&!`${r.childName} ${r.parentName} ${r.mobile} ${r.area} ${r.note}`.toLocaleLowerCase().includes(q))return false;if($('ageFilter').value&&String(r.childAge)!==$ ('ageFilter').value)return false;const ex=$('extra').value;if(ex==='star'&&!r.starred||ex==='dup'&&!duplicate(r)||ex==='today'&&day(r.createdAt)!==today())return false;return true})}
+function matches(r,f){if(state.page==='followups'){if(f==='all')return !!r.followUp;if(f==='due')return due(r);if(f==='upcoming')return r.followUp>today();if(f==='none')return !r.followUp;return true}return f==='all'||f==='today'&&day(r.createdAt)===today()||f==='star'&&r.starred||f==='dup'&&duplicate(r)||r.status===f}
+function filtered(){const order={new:(a,b)=>b.createdAt-a.createdAt,old:(a,b)=>a.createdAt-b.createdAt,name:(a,b)=>a.childName.localeCompare(b.childName,'hi'),age:(a,b)=>a.childAge-b.childAge,follow:(a,b)=>(a.followUp||'9999').localeCompare(b.followUp||'9999')};return baseRows().filter(r=>matches(r,state.filter)).sort(order[$('sort').value]||order.new)}
+function renderHeader(){const n=k=>state.rows.filter(r=>r.status===k).length,fu=state.rows.filter(due).length;$('total').textContent=state.loaded?state.rows.length:'—';$('metrics').innerHTML=[['users',n('new'),'नए आवेदन','new'],['clock',fu,'फॉलो-अप','due'],['check',n('admitted'),'एडमिशन हुए','admitted']].map(([ic,v,label,f])=>`<button class="metric" data-metric="${f}"><span class="metric-icon">${icon(ic)}</span><span><strong>${state.loaded?String(v).padStart(2,'0'):'—'}</strong><small>${label}</small></span></button>`).join('');$('followTitle').textContent=fu?`आज ${fu} आवेदनों का फॉलो-अप बाकी है`:'आज के सभी फॉलो-अप पूरे हैं';$('followBadge').textContent=fu;$('followBadge').hidden=!fu;setConnection();}
+function setConnection(){const el=$('connection');el.classList.toggle('off',!state.connected||DEMO);el.innerHTML=`<span class="status-dot"></span>${DEMO?'डेमो':!navigator.onLine?'ऑफलाइन':state.error?'कनेक्शन त्रुटि':state.connected?'लाइव':'कनेक्ट हो रहा है'}`}
+function renderChips(){const list=state.page==='followups'?[['due','आज / बाकी'],['upcoming','आने वाले'],['all','सभी तय'],['none','तारीख नहीं']]:[['all','सभी'],...ST.map(x=>[x.k,x.l]),['today','आज'],['star','खास'],['dup','एक ही मोबाइल']];const base=baseRows();$('chips').innerHTML=list.map(([k,l])=>`<button class="chip ${state.filter===k?'active':''}" data-filter="${k}" aria-pressed="${state.filter===k}">${l}<span>${base.filter(r=>matches(r,k)).length}</span></button>`).join('')}
+function card(r,board=false){return `<article class="app-card" ${board?'draggable="true"':''} data-id="${esc(r.id)}" style="--accent:${st(r.status).c}">${state.selecting?`<label class="check-slot"><input type="checkbox" data-select="${esc(r.id)}" ${state.selection.has(r.id)?'checked':''} aria-label="${esc(r.childName)} चुनें"></label>`:''}<button class="application-open" data-open="${esc(r.id)}" aria-label="${esc(r.childName)} का विवरण"><span class="avatar">${esc(initials(r))}</span><span class="grow"><span class="card-top"><span class="app-name">${r.starred?'★ ':''}${esc(r.childName)||'नाम उपलब्ध नहीं'}</span>${chipStatus(r)}</span><span class="app-meta" style="display:block">${r.childAge||'—'} साल${r.area?' · '+esc(r.area):''}</span><span class="app-meta" style="display:block">${esc(r.parentName)||'अभिभावक नहीं भरा'}</span><span class="card-bottom">${due(r)?`<span class="pill warn">${r.followUp<today()?'बाकी: '+esc(dateLabel(r.followUp)):'आज फॉलो-अप'}</span>`:`<small>${esc(r.followUp?'फॉलो-अप: '+dateLabel(r.followUp):fmt(r.createdAt))}</small>`}${duplicate(r)?'<span class="pill dup">एक ही मोबाइल</span>':''}${icon('right')}</span></span></button></article>`}
+function renderBulk(){const n=state.selection.size;$('bulk').hidden=!state.selecting;$('bulk').innerHTML=state.selecting?`<b>${n} चुने</b><button class="btn" data-action="selectAll">सभी नतीजे चुनें</button><select id="bulkStatus" aria-label="चुने आवेदनों का स्टेटस"><option value="">स्टेटस चुनें</option>${ST.map(s=>`<option value="${s.k}">${s.l}</option>`).join('')}</select><button class="btn" data-action="bulkStatus">लागू करें</button><button class="btn" data-action="copySelected">${icon('copy')} नंबर</button><button class="btn" data-action="csvSelected">CSV</button><button class="btn danger" data-action="deleteSelected">${icon('trash')} डिलीट</button><button class="btn" data-action="clearSelect">रद्द</button>`:''}
+function renderList(){renderChips();renderBulk();const r=filtered();$('resultCount').textContent=state.loaded?`(${r.length})`:'';if(!state.loaded){$('results').innerHTML=state.error?'<div class="empty"><strong>डेटा लोड नहीं हुआ</strong>ऊपर दिया गया संदेश देखें।</div>':'<div class="loading-grid">'+('<div class="skeleton"></div>'.repeat(4))+'</div>';return}if(!r.length){$('results').innerHTML=`<div class="empty">${icon('file')}<strong>कोई आवेदन नहीं मिला</strong>${state.rows.length?'फिल्टर बदलकर देखें।':'नया आवेदन जोड़ें या पब्लिक फॉर्म से आने वाले आवेदन का इंतज़ार करें।'}</div>`;return}if(state.view==='board'){$('results').innerHTML='<div class="board">'+ST.map(s=>`<section class="board-col" data-drop="${s.k}"><h3>${s.l}<span>${r.filter(x=>x.status===s.k).length}</span></h3>${r.filter(x=>x.status===s.k).map(x=>card(x,true)).join('')}</section>`).join('')+'</div><p class="muted" style="font-size:12px;margin-top:8px">Desktop पर कार्ड खींचें; मोबाइल पर कार्ड खोलकर स्टेटस बदलें।</p>'}else{$('results').innerHTML='<div class="app-list">'+r.slice(0,state.limit).map(x=>card(x)).join('')+'</div>'+(r.length>state.limit?`<button class="btn more" data-action="more">और दिखाएं (${r.length-state.limit} बाकी)</button>`:'')}}
+function ageOptions(){const old=$('ageFilter').value,ages=[...new Set(state.rows.map(r=>r.childAge))].sort((a,b)=>a-b);$('ageFilter').innerHTML='<option value="">सभी उम्र</option>'+ages.map(a=>`<option value="${a}">${a||'अज्ञात'} साल</option>`).join('');if(ages.includes(+old)&&old)$('ageFilter').value=old}
+function renderReports(){if(!state.loaded){$('page-reports').innerHTML='<div class="empty">डेटा मिलने के बाद रिपोर्ट दिखेगी।</div>';return}const rows=state.rows,total=rows.length,admitted=rows.filter(r=>r.status==='admitted').length;const anchor=new Date(today()+'T12:00:00+05:30');const days=Array.from({length:14},(_,i)=>day(+anchor-(13-i)*86400000));const counts=days.map(d=>rows.filter(r=>day(r.createdAt)===d).length),max=Math.max(1,...counts);const group=k=>{const m=new Map();rows.forEach(r=>{let v=String(r[k]||'नहीं भरा').trim();if(v)m.set(v,(m.get(v)||0)+1)});return [...m].sort((a,b)=>b[1]-a[1])};const bars=(items)=>{const max=Math.max(1,...items.map(x=>x[1]));return items.map(([label,n])=>`<div class="hbar"><span>${esc(label)}</span><span class="track"><span style="width:${n/max*100}%"></span></span><b>${n}</b></div>`).join('')||'<p class="muted">अभी डेटा नहीं है</p>'};$('page-reports').innerHTML=`<div class="page-heading row between"><div><h2>एडमिशन रिपोर्ट</h2><p class="muted">सभी आवेदनों का सारांश · समय: भारत</p></div><button class="iconbtn no-print" data-action="print" aria-label="रिपोर्ट प्रिंट">${icon('print')}</button></div><div class="report-kpis"><div class="card"><small>आज के आवेदन</small><b>${rows.filter(r=>day(r.createdAt)===today()).length}</b></div><div class="card"><small>पिछले 7 दिन</small><b>${counts.slice(-7).reduce((a,b)=>a+b,0)}</b></div><div class="card"><small>एडमिशन दर</small><b>${total?Math.round(admitted/total*100):0}%</b></div></div><div class="report-grid"><div class="card wide"><h3>पिछले 14 दिन के आवेदन</h3><div class="chart" role="img" aria-label="${esc(days.map((d,i)=>d+': '+counts[i]).join(', '))}">${days.map((d,i)=>`<div class="chart-col"><div class="chart-bar" style="height:${Math.max(2,counts[i]/max*130)}px"><span>${counts[i]}</span></div><small>${d.slice(8)}/${d.slice(5,7)}</small></div>`).join('')}</div></div><div class="card"><h3>वर्तमान स्टेटस</h3><p class="muted" style="font-size:12px">हर आवेदन का अभी का स्टेटस</p>${bars(ST.map(s=>[s.l,rows.filter(r=>r.status===s.k).length]))}</div><div class="card"><h3>उम्र के हिसाब से</h3>${bars(group('childAge').sort((a,b)=>+a[0]-+b[0]).map(([a,n])=>[a+' साल',n]))}</div><div class="card"><h3>टॉप 5 इलाके</h3>${bars(group('area').filter(x=>x[0]!=='नहीं भरा').slice(0,5))}</div><div class="card"><h3>फॉलो-अप स्थिति</h3>${bars([['बाकी',rows.filter(r=>due(r)&&r.followUp<today()).length],['आज',rows.filter(r=>active(r)&&r.followUp===today()).length],['आने वाले',rows.filter(r=>active(r)&&r.followUp>today()).length]])}</div></div>`}
+function renderSettings(){const theme=storage.get('prahlad-theme','light');$('page-settings').innerHTML=`<div class="page-heading"><h2>सेटिंग्स</h2><p class="muted">अकाउंट, डिस्प्ले और डेटा</p></div><div class="settings-grid"><div class="card"><h3>एडमिन अकाउंट</h3><p class="email">${esc(state.user?.email||'डेमो प्रीव्यू')}</p><small>UID: <span class="email">${esc(state.user?.uid||'demo')}</span></small><div class="row wrap"><button class="btn" data-action="copyUid">${icon('copy')} UID कॉपी</button><button class="btn danger" data-action="logout">${icon('logout')} लॉगआउट</button></div></div><div class="card"><h3>डिस्प्ले</h3><label class="setting-line"><span>रंग / Theme</span><select id="themeSetting"><option value="light" ${theme==='light'?'selected':''}>Light</option><option value="dark" ${theme==='dark'?'selected':''}>Dark</option><option value="system" ${theme==='system'?'selected':''}>System</option></select></label><label class="setting-line"><span>नए आवेदन की आवाज़</span><input type="checkbox" id="soundSetting" ${storage.get('prahlad-sound')==='1'?'checked':''}></label><button class="btn" data-action="fullscreen">${icon('board')} फुल स्क्रीन</button><small>फुल स्क्रीन ब्राउज़र सपोर्ट पर निर्भर है।</small></div><div class="card"><h3>एक्सपोर्ट और बैकअप</h3><div class="row wrap"><button class="btn" data-action="csvAll">${icon('download')} सभी का CSV</button><button class="btn" data-action="backup">${icon('save')} JSON Backup</button></div><small>CSV / JSON में व्यक्तिगत जानकारी होती है। अपने सुरक्षित डिवाइस पर रखें। Backup डाउनलोड होता है; ऑटो-रिस्टोर शामिल नहीं है।</small></div><div class="card"><h3>कनेक्शन</h3><p>${DEMO?'डेमो • अलग local data':'Cloud Firestore · admissions'}</p><p class="muted">${esc(state.error|| (state.connected?'डेटा कनेक्शन उपलब्ध है':'लाइव डेटा का इंतज़ार है'))}</p><button class="btn" data-action="retry">${icon('refresh')} फिर कनेक्ट करें</button><small>बड़ी सूची में सभी रिकॉर्ड का realtime listener चलता है। बहुत अधिक डेटा होने पर server pagination और aggregate reports अपनाएं।</small></div><div class="card" style="grid-column:1/-1"><details><summary style="cursor:pointer;font-weight:700">पहली बार Firebase सेटअप</summary><ol style="padding-left:22px;line-height:1.9"><li>इस फाइल को HTTPS वेबसाइट पर <code>admin.html</code> नाम से रखें।</li><li>Firebase Authentication में Email/Password चालू करें और अपना admin user बनाएं। जरूरत हो तो वेबसाइट डोमेन Authorized domains में जोड़ें।</li><li>डेटा <b>Cloud Firestore → admissions</b> में होना चाहिए। Realtime Database का डेटा इस panel में नहीं आता।</li><li>Firestore Rules में केवल admin UID को read/update/delete दें। केवल <code>request.auth != null</code> लिखना admin restriction नहीं है।</li><li>पब्लिक admission form के create rules और field validation अलग बनाए रखें। सारे database rules को इस उदाहरण से overwrite न करें।</li></ol><p class="muted">अपने admissions rule के लिए UID आधारित उदाहरण (नीचे placeholder बदलें):</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;padding:12px;background:var(--bg);border-radius:12px">match /admissions/{id} {
+  allow read, update, delete: if request.auth != null
+    &amp;&amp; request.auth.uid in ['PASTE_ADMIN_UID_HERE'];
+  // Admin manual entry. Keep your validated public-form create rule too.
+  allow create: if request.auth != null
+    &amp;&amp; request.auth.uid in ['PASTE_ADMIN_UID_HERE'];
+}</pre><p class="muted">सिर्फ यह snippet लगाने से public form create बंद हो जाएगा; public form का validated create rule भी साथ चाहिए। मौजूदा security rules देखे बिना उसे बदलें नहीं।</p></details></div></div>`}
+function render(){renderHeader();if(['applications','followups'].includes(state.page))renderList();if(state.page==='reports')renderReports();if(state.page==='settings')renderSettings()}
+function nav(page){if(!['applications','followups','reports','settings'].includes(page))return;const changed=state.page!==page;state.page=page;if(changed){state.selection.clear();state.selecting=false;state.limit=30;state.filter=page==='followups'?'due':'all';$('search').value='';$('extra').value='';$('ageFilter').value='';$('sort').value=page==='followups'?'follow':'new'}$('page-applications').hidden=!['applications','followups'].includes(page);$('page-reports').hidden=page!=='reports';$('page-settings').hidden=page!=='settings';$('followBanner').hidden=page==='followups';$('followHeading').hidden=page!=='followups';document.querySelectorAll('.nav-item').forEach(b=>{b.classList.toggle('active',b.dataset.nav===page);b.setAttribute('aria-current',b.dataset.nav===page?'page':'false')});render();if(changed)window.scrollTo({top:0,behavior:'auto'})}
+function showDialog(title,html){lastFocus=document.activeElement;$('dialogTitle').textContent=title;$('dialogBody').innerHTML=html;$('dialogExtra').innerHTML='';if(!$('drawer').open)$('drawer').showModal();document.body.style.overflow='hidden';$('drawer').scrollTop=0;$('closeDrawer').focus()}
+function closeDrawer(){if(pending){toast('बदलाव सेव होने दें।');return}if(state.editing&&$('entryForm')?.dataset.dirty==='1'&&!confirm('बिना सेव किए बंद करें?'))return;$('drawer').close()}
+$('drawer').addEventListener('close',()=>{document.body.style.overflow='';state.openId=null;state.editing=false;$('dialogBody').innerHTML='';lastFocus?.isConnected&&lastFocus.focus()});
+$('drawer').addEventListener('cancel',e=>{e.preventDefault();closeDrawer()});$('closeDrawer').onclick=closeDrawer;
+function detail(id){const r=state.rows.find(x=>x.id===id);if(!r)return;state.openId=id;state.editing=false;showDialog('आवेदन विवरण',`<div class="stack"><div class="card detail-hero"><div class="row"><div class="avatar">${esc(initials(r))}</div><div class="grow"><h3 id="detailName">${esc(r.childName)}</h3><p class="muted">${r.childAge} साल · ${esc(r.area)||'इलाका नहीं भरा'}</p><span id="detailStatus">${chipStatus(r)}</span></div><button class="iconbtn" data-action="star" aria-label="खास आवेदन" aria-pressed="${r.starred}" id="starBtn" style="color:${r.starred?'#e99c25':'var(--muted)'}">${icon('star')}</button></div><div class="actions">${/^[6-9]\d{9}$/.test(r.mobile)?`<a class="btn" href="tel:+91${r.mobile}">${icon('phone')} कॉल करें</a><a class="btn wa" target="_blank" rel="noopener noreferrer" href="${esc(waLink(r))}">${icon('chat')} WhatsApp</a>`:'<p class="muted" style="grid-column:1/-1">कॉल के लिए सही मोबाइल नंबर जोड़ें।</p>'}</div></div><div class="card"><div class="row between"><h3>परिवार की जानकारी</h3><button class="iconbtn" data-action="edit" aria-label="जानकारी बदलें">${icon('edit')}</button></div><dl class="kv"><dt>अभिभावक</dt><dd>${esc(r.parentName)}</dd><dt>मोबाइल</dt><dd>${esc(r.mobile)||'—'}</dd><dt>इलाका</dt><dd>${esc(r.area)||'—'}</dd><dt>सवाल</dt><dd>${esc(r.note)||'—'}</dd><dt>आवेदन</dt><dd>${esc(fmt(r.createdAt))}</dd><dt>भाषा</dt><dd>${({hi:'हिंदी',mr:'मराठी',en:'English'})[r.lang]||'—'}</dd></dl><button class="btn" data-action="copyDetail" style="margin-top:15px">${icon('copy')} जानकारी कॉपी</button></div><div class="card stack"><label>आवेदन का स्टेटस<select id="detailStatusSelect">${ST.map(s=>`<option value="${s.k}" ${s.k===r.status?'selected':''}>${s.l}</option>`).join('')}</select></label><label>अगला फॉलो-अप<div class="row"><input type="date" id="detailFollow" value="${esc(r.followUp)}"><button class="iconbtn" data-action="clearFollow" aria-label="फॉलो-अप तारीख हटाएं">${icon('trash')}</button></div></label><div id="saveState" class="save-state" role="status">बदलाव अपने-आप सेव होंगे</div></div><div class="card"><h3>प्राइवेट नोट्स</h3><p class="muted" style="font-size:12px;margin:4px 0 12px">केवल अधिकृत एडमिन के लिए</p><form id="noteForm" class="stack"><label><span class="sr-only">नया प्राइवेट नोट</span><textarea id="noteInput" rows="3" maxlength="2000" required placeholder="नया नोट लिखें…"></textarea></label><button class="btn primary" type="submit">${icon('plus')} नोट जोड़ें</button></form><div id="notesList"></div></div><div class="row wrap"><button class="btn danger" data-action="delete">${icon('trash')} आवेदन डिलीट करें</button></div></div>`);renderNotes(r);$('noteForm').onsubmit=e=>{e.preventDefault();const button=e.submitter;run(async()=>{const t=$('noteInput').value.trim();if(!t)return;const input=$('noteInput');await write(()=>api.note(id,{t,ts:Date.now()}));if(input.isConnected)input.value='';toast('नोट जुड़ गया')},button)};}
+function renderNotes(r){if($('notesList'))$('notesList').innerHTML=[...r.notes].sort((a,b)=>b.ts-a.ts).map(n=>`<div class="note">${esc(n.t)}<small>${esc(fmt(n.ts))}</small></div>`).join('')||'<p class="muted" style="margin-top:14px;font-size:13px">अभी कोई नोट नहीं है।</p>'}
+function syncDetail(){if(!state.openId||state.editing)return;const r=state.rows.find(x=>x.id===state.openId);if(!r){$('drawer').close();return}if($('detailStatus'))$('detailStatus').innerHTML=chipStatus(r);if($('starBtn')){$('starBtn').style.color=r.starred?'#e99c25':'var(--muted)';$('starBtn').setAttribute('aria-pressed',String(r.starred))}if($('detailStatusSelect')&&document.activeElement!==$('detailStatusSelect'))$('detailStatusSelect').value=r.status;if($('detailFollow')&&document.activeElement!==$('detailFollow'))$('detailFollow').value=r.followUp;renderNotes(r)}
+function entry(id=null){const r=state.rows.find(x=>x.id===id)||{},edit=!!id;state.openId=id;state.editing=true;showDialog(edit?'आवेदन की जानकारी बदलें':'नया आवेदन',`<form id="entryForm" class="stack" data-dirty="0"><p class="muted">${edit?'नाम, नंबर या परिवार की जानकारी अपडेट करें।':'फोन या मंदिर में मिले आवेदन को यहां जोड़ें।'} * ज़रूरी जानकारी</p><div class="form-grid"><label class="full">बच्चे का नाम *<input name="childName" required minlength="2" maxlength="60" value="${esc(r.childName)}" autocomplete="off"></label><label>उम्र (साल) *<input name="childAge" type="number" min="5" max="12" step="1" required value="${esc(r.childAge)}" inputmode="numeric"></label><label>भाषा<select name="lang"><option value="">चुनें</option>${[['hi','हिंदी'],['mr','मराठी'],['en','English']].map(([k,l])=>`<option value="${k}" ${r.lang===k?'selected':''}>${l}</option>`).join('')}</select></label><label class="full">माता / पिता का नाम *<input name="parentName" required minlength="2" maxlength="60" value="${esc(r.parentName)}"></label><label class="full">मोबाइल नंबर *<input name="mobile" type="tel" inputmode="tel" required maxlength="18" placeholder="10 अंकों का मोबाइल नंबर" value="${esc(r.mobile)}"></label><label class="full">इलाका<input name="area" maxlength="80" value="${esc(r.area)}"></label><label class="full">सवाल / आवेदन नोट<textarea name="note" maxlength="300" rows="3">${esc(r.note)}</textarea></label></div><p id="entryError" role="alert" class="form-error"></p><button type="submit" class="btn primary">${icon('save')} ${edit?'बदलाव सेव करें':'आवेदन सेव करें'}</button></form>`);$('entryForm').oninput=()=>{$('entryForm').dataset.dirty='1'};$('entryForm').onsubmit=e=>{e.preventDefault();run(async()=>{const f=Object.fromEntries(new FormData(e.target));const data={childName:f.childName.trim(),childAge:Number(f.childAge),parentName:f.parentName.trim(),mobile:mobile(f.mobile),area:f.area.trim(),note:f.note.trim(),lang:f.lang};const err=data.childName.length<2?'बच्चे का नाम लिखें':!Number.isInteger(data.childAge)||data.childAge<5||data.childAge>12?'उम्र 5 से 12 साल होनी चाहिए':data.parentName.length<2?'माता / पिता का नाम लिखें':!/^[6-9]\d{9}$/.test(data.mobile)?'सही 10 अंकों का भारतीय मोबाइल नंबर लिखें':'';if(err){$('entryError').textContent=err;return}if(!edit&&state.rows.some(x=>x.mobile===data.mobile)&&!confirm('इस नंबर से आवेदन मौजूद है। क्या एक और आवेदन जोड़ना है?'))return;await write(()=>edit?api.update(id,data):api.add({...data,status:'new',starred:false,followUp:'',notes:[],source:'admin'}));state.editing=false;$('drawer').close();toast(edit?'जानकारी अपडेट हुई':'नया आवेदन सेव हुआ')},e.submitter)}}
+function waLink(r){return 'https://wa.me/91'+r.mobile+'?text='+encodeURIComponent(`हरे कृष्ण ${r.parentName}! भक्त प्रहलाद कक्षा से बोल रहे हैं। ${r.childName} के एडमिशन के बारे में बात करनी थी। कक्षा हर रविवार शाम 5 से 8 बजे, श्री श्री राधा कृष्ण चंद्र मंदिर, हडपसर में होती है।`)}
+async function copy(text){if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(text)}else{const a=document.createElement('textarea');a.value=text;a.style.cssText='position:fixed;top:0;left:0;opacity:0';($('drawer').open?$('drawer'):document.body).append(a);a.select();const ok=document.execCommand('copy');a.remove();if(!ok)throw new Error('कॉपी नहीं हुआ। HTTPS ब्राउज़र में खोलें।')}toast('कॉपी हो गया')}
+function download(name,text,type){const url=URL.createObjectURL(new Blob([text],{type})),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000)}
+function csv(rows){const cell=v=>{let s=String(v??'');if(/^[\s]*[=+@\-]/.test(s)||/^[\t\r]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'};const h=['बच्चे का नाम','उम्र','माता/पिता','मोबाइल','इलाका','सवाल','स्टेटस','फॉलो-अप','नोट्स','आवेदन तारीख'];const lines=rows.map(r=>[r.childName,r.childAge,r.parentName,r.mobile,r.area,r.note,st(r.status).l,r.followUp,r.notes.map(n=>n.t).join(' | '),r.createdAt?new Date(r.createdAt).toISOString():'']);download('admissions-'+today()+'.csv','\uFEFF'+[h,...lines].map(row=>row.map(cell).join(',')).join('\r\n'),'text/csv;charset=utf-8');toast(`${rows.length} आवेदनों की CSV तैयार है`)}
+async function bulkChange(remove=false){const ids=[...state.selection].filter(id=>state.rows.some(r=>r.id===id));if(!ids.length){toast('पहले आवेदन चुनें');return}const value=$('bulkStatus')?.value;if(!remove&&!value){toast('पहले स्टेटस चुनें');return}if(remove&&!confirm(`${ids.length} आवेदन हमेशा के लिए डिलीट करें? पहले Backup ले सकते हैं।`))return;let completed=0;try{for(let i=0;i<ids.length;i+=400){const chunk=ids.slice(i,i+400);await write(()=>api.batch(chunk,remove?null:{status:value}));chunk.forEach(id=>state.selection.delete(id));completed+=chunk.length}toast(`${completed} आवेदन ${remove?'डिलीट':'अपडेट'} हुए`)}catch(e){toast(`${completed} पूरे हुए। बाकी: ${errorText(e)}`)}finally{renderList()}}
+function applyTheme(){const v=storage.get('prahlad-theme','light');document.documentElement.dataset.theme=(v==='system'?matchMedia('(prefers-color-scheme:dark)').matches:v==='dark')?'dark':'light'}
+function beep(){if(storage.get('prahlad-sound')!=='1')return;try{const a=new(window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=720;g.gain.setValueAtTime(.08,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+.25);o.start();o.stop(a.currentTime+.25);o.onended=()=>a.close()}catch{}}
+async function action(name,button){const r=state.rows.find(x=>x.id===state.openId);switch(name){case 'add':entry();break;case 'edit':entry(state.openId);break;case 'star':if(r)await write(()=>api.update(r.id,{starred:!r.starred}));break;case 'clearFollow':if(r){await write(()=>api.update(r.id,{followUp:''}));if($('detailFollow'))$('detailFollow').value=''}break;case 'copyDetail':if(r)await copy(`${r.childName} (${r.childAge} साल) — ${r.parentName} — ${r.mobile} — ${r.area}`);break;case 'delete':if(r&&confirm(`${r.childName} का आवेदन हमेशा के लिए डिलीट करें?`)){await write(()=>api.remove(r.id));$('drawer').close();toast('आवेदन डिलीट हुआ')}break;case 'more':state.limit+=30;renderList();break;case 'select':state.selecting=!state.selecting;if(!state.selecting)state.selection.clear();renderList();break;case 'selectAll':filtered().forEach(r=>state.selection.add(r.id));renderList();break;case 'clearSelect':state.selection.clear();state.selecting=false;renderList();break;case 'copySelected':if(!state.selection.size){toast('पहले आवेदन चुनें');break}await copy([...new Set(state.rows.filter(r=>state.selection.has(r.id)).map(r=>r.mobile).filter(Boolean))].join('\n'));break;case 'csvSelected':if(!state.selection.size){toast('पहले आवेदन चुनें');break}csv(state.rows.filter(r=>state.selection.has(r.id)));break;case 'bulkStatus':await bulkChange();break;case 'deleteSelected':await bulkChange(true);break;case 'csv':csv(filtered());break;case 'csvAll':csv(state.rows);break;case 'backup':download('admissions-backup-'+today()+'.json',JSON.stringify({version:1,exportedAt:new Date().toISOString(),project:DEMO?'DEMO':CFG.projectId,collection:COLLECTION,rows:state.rows},null,2),'application/json');toast('JSON Backup तैयार है');break;case 'print':window.print();break;case 'retry':watch();break;case 'copyUid':await copy(state.user?.uid||'demo');break;case 'logout':if(pending){toast('पहले सेव पूरा होने दें');break}await api.logout();break;case 'fullscreen':if(document.fullscreenElement)await document.exitFullscreen();else if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen();else toast('इस ब्राउज़र में फुल स्क्रीन उपलब्ध नहीं है');break;}}
+document.addEventListener('click',e=>{const t=e.target.closest('button,[data-open]');if(!e.target.closest('.menu-wrap')){$('menu').hidden=true;$('menuToggle').setAttribute('aria-expanded','false')}if(!t)return;if(t.dataset.nav){nav(t.dataset.nav);return}if(t.dataset.metric){nav(t.dataset.metric==='due'?'followups':'applications');state.filter=t.dataset.metric;renderList();return}if(t.dataset.filter){state.filter=t.dataset.filter;state.limit=30;state.selection.clear();renderList();return}if(t.dataset.view){state.view=t.dataset.view;document.querySelectorAll('[data-view]').forEach(b=>{b.classList.toggle('active',b.dataset.view===state.view);b.setAttribute('aria-pressed',String(b.dataset.view===state.view))});renderList();return}if(t.dataset.open){detail(t.dataset.open);return}if(t.dataset.action){$('menu').hidden=true;$('menuToggle').setAttribute('aria-expanded','false');run(()=>action(t.dataset.action,t),t)}});
+document.addEventListener('change',e=>{const t=e.target;if(t.dataset.select){t.checked?state.selection.add(t.dataset.select):state.selection.delete(t.dataset.select);renderBulk();return}if(['ageFilter','sort','extra'].includes(t.id)){state.limit=30;state.selection.clear();renderList()}if(t.id==='themeSetting'){storage.set('prahlad-theme',t.value);applyTheme()}if(t.id==='soundSetting')storage.set('prahlad-sound',t.checked?'1':'0');if(t.id==='detailStatusSelect'||t.id==='detailFollow'){const r=state.rows.find(x=>x.id===state.openId);if(!r)return;const key=t.id==='detailFollow'?'followUp':'status',old=r[key],value=t.value;run(async()=>{try{await write(()=>api.update(r.id,{[key]:value}))}catch(e){t.value=old;throw e}},t)}});
+$('search').oninput=()=>{state.limit=30;state.selection.clear();renderList()};$('filterToggle').onclick=()=>{$('filters').hidden=!$('filters').hidden;$('filterToggle').setAttribute('aria-expanded',String(!$('filters').hidden))};$('menuToggle').onclick=()=>{$('menu').hidden=!$('menu').hidden;$('menuToggle').setAttribute('aria-expanded',String(!$('menu').hidden))};
+document.addEventListener('keydown',e=>{if(e.key==='/'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)&&!$('app').hidden&&!$('drawer').open){e.preventDefault();nav('applications');$('search').focus()}if(e.key==='Escape'){$('menu').hidden=true;$('menuToggle').setAttribute('aria-expanded','false')}});
+document.addEventListener('dragstart',e=>{const card=e.target.closest('.app-card[draggable]');if(card){dragId=card.dataset.id;e.dataTransfer.setData('text/plain',dragId);e.dataTransfer.effectAllowed='move'}});document.addEventListener('dragover',e=>{const c=e.target.closest('[data-drop]');if(c&&dragId){e.preventDefault();c.classList.add('over')}});document.addEventListener('dragleave',e=>{e.target.closest('[data-drop]')?.classList.remove('over')});document.addEventListener('dragend',()=>{dragId=null;document.querySelectorAll('.over').forEach(e=>e.classList.remove('over'))});document.addEventListener('drop',e=>{const c=e.target.closest('[data-drop]'),id=dragId;if(c&&id){e.preventDefault();c.classList.remove('over');dragId=null;run(()=>write(()=>api.update(id,{status:c.dataset.drop})))}});
+function receive(list,meta){const oldIds=new Set(state.rows.map(r=>r.id)),oldLoaded=state.loaded;state.rows=list;state.loaded=true;state.error='';state.connected=!meta.fromCache;state.dup=new Map();list.forEach(r=>{if(r.mobile.length===10)state.dup.set(r.mobile,(state.dup.get(r.mobile)||0)+1)});for(const id of state.selection)if(!list.some(r=>r.id===id))state.selection.delete(id);$('dataError').hidden=true;ageOptions();render();syncDetail();if(oldLoaded&&!meta.fromCache&&!meta.pending&&list.some(r=>!oldIds.has(r.id))){toast('नया एडमिशन आवेदन आया है');beep()}}
+function watch(){unsub?.();const g=++generation;state.error='';state.connected=false;state.loaded=false;render();unsub=api.watch((list,meta)=>{if(g===generation)receive(list,meta)},e=>{if(g!==generation)return;state.connected=false;state.error=errorText(e);$('dataError').textContent=state.error;$('dataError').hidden=false;render()})}
+function loggedIn(user){unsub?.();unsub=null;generation++;state.rows=[];state.dup.clear();state.selection.clear();state.selecting=false;state.loaded=false;state.connected=false;state.error='';state.user=user;$('dataError').hidden=true;$('password').value='';if($('drawer').open)$('drawer').close();$('app').hidden=!user;$('login').hidden=!!user;if(user){$('profile').textContent=(user.email||'अ')[0].toUpperCase();$('demoStrip').hidden=!DEMO;nav('applications');watch()}else{$('results').innerHTML='';$('page-reports').innerHTML='';$('page-settings').innerHTML='';$('search').value='';$('loginSubmit').disabled=false;$('loginSubmit').textContent='लॉगिन करें'}}
+async function init(){if(DEMO){const key='prahlad-admin-preview-v2';let cb=null;let data;try{data=JSON.parse(storage.get(key,'null'))}catch{}if(!Array.isArray(data)){data=[{id:'demo-1',childName:'आरव शर्मा',childAge:8,parentName:'राजेश शर्मा',mobile:'',area:'हडपसर',status:'new',createdAt:Date.now()-3600000,notes:[],followUp:today()},{id:'demo-2',childName:'अनन्या पाटील',childAge:7,parentName:'सीमा पाटील',mobile:'',area:'मगरपट्टा',status:'contacted',createdAt:Date.now()-86400000,notes:[],followUp:today()},{id:'demo-3',childName:'विहान देशमुख',childAge:10,parentName:'अमित देशमुख',mobile:'',area:'हडपसर',status:'admitted',createdAt:Date.now()-3*86400000,notes:[]}]}const push=()=>{storage.set(key,JSON.stringify(data));cb?.(data.map(r=>norm(r.id,r)),{fromCache:false,pending:false})};api={watch(f){cb=f;push();return()=>{cb=null}},async add(d){data.push({...d,id:crypto.randomUUID(),createdAt:Date.now()});push()},async update(id,p){data=data.map(r=>r.id===id?{...r,...p}:r);push()},async note(id,n){data=data.map(r=>r.id===id?{...r,notes:[...(r.notes||[]),n]}:r);push()},async remove(id){data=data.filter(r=>r.id!==id);push()},async batch(ids,p){data=p?data.map(r=>ids.includes(r.id)?{...r,...p}:r):data.filter(r=>!ids.includes(r.id));push()},async login(){loggedIn({email:'demo@preview.local',uid:'demo-only'})},async logout(){loggedIn(null)}};$('loginHint').textContent='डेमो • कोई Email/Password दर्ज करें; लाइव डेटा नहीं जुड़ा है';$('email').required=false;$('password').required=false;loggedIn({email:'demo@preview.local',uid:'demo-only'});return}
+const [A,F,U]=await Promise.all([import(SDK+'firebase-app.js'),import(SDK+'firebase-firestore.js'),import(SDK+'firebase-auth.js')]);const app=A.initializeApp(CFG),db=F.initializeFirestore(app,{experimentalAutoDetectLongPolling:true}),auth=U.getAuth(app);const ref=id=>F.doc(db,COLLECTION,id);api={watch(cb,err){return F.onSnapshot(F.collection(db,COLLECTION),{includeMetadataChanges:true},s=>cb(s.docs.map(d=>norm(d.id,d.data())),{fromCache:s.metadata.fromCache,pending:s.metadata.hasPendingWrites}),err)},add:d=>F.addDoc(F.collection(db,COLLECTION),{...d,createdAt:F.serverTimestamp()}),update:(id,p)=>F.updateDoc(ref(id),p),note:(id,n)=>F.updateDoc(ref(id),{notes:F.arrayUnion(n)}),remove:id=>F.deleteDoc(ref(id)),async batch(ids,p){const batch=F.writeBatch(db);ids.forEach(id=>p?batch.update(ref(id),p):batch.delete(ref(id)));await batch.commit()},async login(email,pass,remember){await U.setPersistence(auth,remember?U.browserLocalPersistence:U.browserSessionPersistence);await U.signInWithEmailAndPassword(auth,email,pass)},logout:()=>U.signOut(auth),reset:e=>U.sendPasswordResetEmail(auth,e)};U.onAuthStateChanged(auth,loggedIn);$('loginSubmit').disabled=false;$('loginSubmit').textContent='लॉगिन करें'}
+$('loginForm').onsubmit=e=>{e.preventDefault();$('loginError').textContent='';run(async()=>{try{await api.login($('email').value.trim(),$('password').value,$('remember').checked)}catch(err){$('loginError').textContent=errorText(err)}},$('loginSubmit'))};$('showPassword').innerHTML=icon('eye');$('showPassword').onclick=()=>{const hidden=$('password').type==='password';$('password').type=hidden?'text':'password';$('showPassword').setAttribute('aria-label',hidden?'पासवर्ड छिपाएं':'पासवर्ड दिखाएं')};$('resetPassword').onclick=()=>run(async()=>{if(DEMO){toast('डेमो में पासवर्ड रीसेट नहीं होता');return}if(!api)throw new Error('पहले Firebase कनेक्शन पूरा होने दें');const email=$('email').value.trim();if(!email||!$('email').checkValidity()){toast('पहले सही Email लिखें');$('email').focus();return}await api.reset(email);toast('यदि अकाउंट मौजूद है तो password reset email आएगा।')},$('resetPassword'));
+window.addEventListener('online',()=>{setConnection();if(state.user&&!DEMO)watch()});window.addEventListener('offline',()=>{state.connected=false;setConnection();toast('ऑफलाइन हैं। डेटा पुराना हो सकता है; बदलाव अभी बंद हैं।')});window.addEventListener('beforeunload',e=>{if(pending){e.preventDefault();e.returnValue=''}});document.addEventListener('visibilitychange',()=>{if(!document.hidden&&state.user&&lastDay!==today()){lastDay=today();render()}});setInterval(()=>{if(state.user&&lastDay!==today()){lastDay=today();render()}},60000);matchMedia('(prefers-color-scheme:dark)').addEventListener('change',applyTheme);applyTheme();icons();lastDay=today();init().catch(e=>{$('loginError').textContent='Firebase लोड नहीं हुआ। इंटरनेट और HTTPS hosting जांचें। '+errorText(e);$('loginSubmit').textContent='पेज रीलोड करें';$('loginSubmit').disabled=false;$('loginForm').onsubmit=e=>{e.preventDefault();location.reload()}});
+</script>
 </body>
 </html>
