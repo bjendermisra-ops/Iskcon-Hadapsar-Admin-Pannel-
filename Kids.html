@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Admin | भक्त प्रहलाद कक्षा</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Hind:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#fffdf3;--card:#fff;--ink:#2b2f4a;--muted:#6b7090;--line:#ece8d4;--navy:#1d2a6b;--saf:#ff8a1f;--pur:#8e5cf0;--grn:#2fb36d;--red:#e63946;--blu:#2e9cf0;--soft:#fff6e0;
+--head:"Baloo 2","Noto Sans Devanagari",system-ui,sans-serif;--body:"Hind","Noto Sans Devanagari",system-ui,sans-serif;box-sizing:border-box}
+:root[data-t=dark]{--bg:#12142a;--card:#1b1e3a;--ink:#e8eaff;--muted:#9aa0c8;--line:#2c3058;--navy:#cdd4ff;--soft:#262a4e}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;font:500 1rem/1.5 var(--body);background:var(--bg);color:var(--ink);padding-bottom:env(safe-area-inset-bottom,0)}
+h1,h2,h3,.btn,.stat b,.chip{font-family:var(--head)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--pur);outline-offset:2px}
+.hide{display:none!important}
+.btn{border:0;border-radius:12px;padding:8px 14px 6px;font-weight:800;cursor:pointer;background:var(--soft);color:var(--navy);text-decoration:none;display:inline-flex;gap:6px;align-items:center}
+.btn.p{background:var(--saf);color:#fff}.btn.g{background:var(--grn);color:#fff}.btn.r{background:var(--red);color:#fff}.btn.sm{padding:5px 10px 3px;font-size:.9rem}
+.btn:active{transform:translateY(2px)}
+input,select,textarea{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:9px 12px;max-width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--pur)}
+
+/* login */
+#login{min-height:100vh;display:grid;place-items:center;padding:20px;background:linear-gradient(160deg,#ffe9c2,#e3d6ff)}
+.lbox{width:min(380px,100%);background:var(--card);padding:28px 22px;border-radius:24px;box-shadow:0 20px 50px rgba(40,30,100,.25);text-align:center}
+.lbox h1{margin:0 0 4px;color:var(--navy)}.lbox input{width:100%;margin:6px 0}.lbox p{color:var(--muted);font-size:.9rem}
+.lerr{color:var(--red);min-height:1.3em;font-size:.9rem}
+
+/* layout */
+header.top{position:sticky;top:0;z-index:20;display:flex;gap:10px;align-items:center;padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top,0));background:var(--card);border-bottom:2px solid var(--line)}
+header.top h2{margin:0;font-size:1.15rem;color:var(--navy);flex:1;line-height:1.2}
+header.top small{display:block;font:500 .78rem var(--body);color:var(--muted)}
+.mode{padding:2px 10px;border-radius:99px;font:800 .75rem var(--head);background:#fff0c9;color:#8a5a00}
+.mode.live{background:#d8f5e5;color:#12703f}
+main{max-width:1200px;margin:0 auto;padding:14px}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.stat{background:var(--card);border-radius:18px;padding:12px 14px;border-left:6px solid var(--c);box-shadow:0 4px 14px rgba(40,50,120,.07)}
+.stat b{display:block;font-size:1.9rem;line-height:1.1;color:var(--navy)}.stat span{color:var(--muted);font-size:.88rem}
+.panels{display:grid;gap:12px;margin:14px 0}
+.panel{background:var(--card);border-radius:18px;padding:14px;box-shadow:0 4px 14px rgba(40,50,120,.07)}
+.panel h3{margin:0 0 10px;font-size:1rem;color:var(--navy)}
+.bars{display:flex;align-items:flex-end;gap:4px;height:110px}
+.bars div{flex:1;background:linear-gradient(0deg,var(--saf),#ffc16a);border-radius:5px 5px 0 0;min-height:3px;position:relative}
+.bars div i{position:absolute;top:-17px;left:0;right:0;text-align:center;font:600 .7rem var(--body);font-style:normal;color:var(--muted)}
+.axis{display:flex;gap:4px;font-size:.66rem;color:var(--muted);text-align:center;margin-top:3px}.axis span{flex:1}
+.hb{display:grid;grid-template-columns:70px 1fr 28px;gap:8px;align-items:center;font-size:.88rem;margin:4px 0}
+.hb u{height:9px;border-radius:9px;background:var(--pur);display:block;text-decoration:none}
+.funnel .hb{grid-template-columns:96px 1fr 28px}
+
+/* toolbar */
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.bar input[type=search]{flex:1 1 180px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px}
+.chip{flex:none;border:2px solid var(--line);background:var(--card);border-radius:99px;padding:3px 12px 1px;cursor:pointer;font-weight:600;font-size:.92rem}
+.chip.on{background:var(--navy);color:var(--bg);border-color:var(--navy)}
+.bulk{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 12px;margin-bottom:10px;border-radius:14px;background:#efe6ff;color:#3b2a78}
+
+/* list */
+.list{display:grid;gap:8px}
+.row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;background:var(--card);padding:10px 12px;border-radius:16px;border-left:6px solid var(--c);cursor:pointer;box-shadow:0 2px 8px rgba(40,50,120,.06)}
+.row:hover{transform:translateY(-1px)}
+.row .n{font:800 1.05rem var(--head);color:var(--navy);line-height:1.2}
+.row .m{color:var(--muted);font-size:.86rem}
+.tag{display:inline-block;padding:0 9px;border-radius:99px;font:700 .76rem var(--head);background:color-mix(in srgb,var(--c) 18%,transparent);color:var(--c);padding-top:2px}
+.tag.dup{--c:var(--red)}.tag.fu{--c:var(--pur)}.tag.new{--c:var(--blu)}
+.age{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--soft);font:800 1.15rem var(--head);color:var(--navy)}
+.empty{text-align:center;padding:36px 10px;color:var(--muted)}
+
+/* board */
+.board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(250px,1fr);gap:10px;overflow-x:auto;padding-bottom:10px}
+.col{background:var(--soft);border-radius:16px;padding:8px;min-height:160px}
+.col.over{outline:3px dashed var(--pur)}
+.col h3{margin:2px 4px 8px;font-size:1rem;color:var(--c)}
+.kc{background:var(--card);border-radius:12px;padding:8px 10px;margin-bottom:8px;cursor:grab;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.kc .n{font:800 1rem var(--head);color:var(--navy)}.kc .m{font-size:.82rem;color:var(--muted)}
+
+/* drawer */
+#veil{position:fixed;inset:0;background:rgba(10,10,40,.5);z-index:40}
+#drawer{position:fixed;z-index:41;right:0;top:0;bottom:0;width:min(460px,100%);background:var(--bg);overflow:auto;padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0));padding-bottom:calc(24px + env(safe-area-inset-bottom,0));box-shadow:-10px 0 40px rgba(0,0,0,.3);animation:slide .25s ease}
+@keyframes slide{from{transform:translateX(40px);opacity:0}}
+#drawer h2{margin:0;color:var(--navy)}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:4px 10px;margin:12px 0;font-size:.95rem}.kv dt{color:var(--muted)}.kv dd{margin:0;word-break:break-word}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.note{background:var(--card);border-radius:12px;padding:8px 12px;margin:6px 0;font-size:.93rem}.note small{display:block;color:var(--muted)}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0));transform:translateX(-50%);background:var(--navy);color:var(--bg);padding:10px 18px;border-radius:99px;z-index:60;font-weight:600;max-width:90vw}
+
+@media(min-width:760px){.stats{grid-template-columns:repeat(6,1fr)}.panels{grid-template-columns:1.5fr 1fr 1fr}}
+@media print{header.top,.bar,.chips,.bulk,#drawer,#veil,.panels{display:none!important}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="login">
+  <form class="lbox" id="lform">
+    <h1>🙏 एडमिन पैनल</h1>
+    <p>भक्त प्रहलाद कक्षा</p>
+    <input type="email" id="lemail" placeholder="Email" autocomplete="username" required>
+    <input type="password" id="lpass" placeholder="Password" autocomplete="current-password" required>
+    <div class="lerr" id="lerr"></div>
+    <button class="btn p" style="width:100%;justify-content:center" type="submit">लॉगिन करें</button>
+    <p id="lhint"></p>
+  </form>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app" class="hide">
+<header class="top">
+  <h2>भक्त प्रहलाद कक्षा <small>एडमिशन एडमिन</small></h2>
+  <span class="mode" id="mode"></span>
+  <button class="btn sm" id="theme" aria-label="Dark mode">🌓</button>
+  <button class="btn sm" id="logout">लॉगआउट</button>
+</header>
+
+<main>
+  <div id="demoNote" class="bulk hide" style="background:#fff0c9;color:#6b4700">DEMO mode: यहां सिर्फ वही डेटा दिखेगा जो इसी ब्राउज़र में सेव हुआ है। असली सबमिशन देखने के लिए Firebase config भरें।</div>
+  <section class="stats" id="stats"></section>
+
+  <section class="panels">
+    <div class="panel"><h3>पिछले 14 दिन के एडमिशन आवेदन</h3><div class="bars" id="trend"></div><div class="axis" id="trendAx"></div></div>
+    <div class="panel"><h3>उम्र के हिसाब से</h3><div id="ages"></div></div>
+    <div class="panel funnel"><h3>एडमिशन फनल</h3><div id="funnel"></div><h3 style="margin-top:12px">टॉप इलाके</h3><div id="areas"></div></div>
+  </section>
+
+  <div class="bar">
+    <input type="search" id="q" placeholder="नाम / मोबाइल / इलाका खोजें   ( / दबाएं )" aria-label="खोजें">
+    <select id="fAge" aria-label="उम्र"><option value="">सभी उम्र</option></select>
+    <select id="sort" aria-label="क्रम"><option value="new">नए पहले</option><option value="old">पुराने पहले</option><option value="name">नाम A-Z</option><option value="age">उम्र</option></select>
+    <button class="btn p" id="addBtn">➕ नया जोड़ें</button>
+    <button class="btn" id="vToggle">🗂 बोर्ड</button>
+    <button class="btn g" id="exp">⬇ CSV</button>
+    <button class="btn" id="bak">💾 Backup</button>
+    <button class="btn" onclick="print()">🖨</button>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div class="bulk hide" id="bulk"></div>
+  <div id="view"></div>
+</main>
+</div>
+
+<div id="veil" class="hide"></div>
+<aside id="drawer" class="hide" aria-label="विवरण"></aside>
+<div id="toast" class="hide" role="status"></div>
+
+<script>
+/* ==========================================================================
+   FIREBASE CONFIG — apni asli values yahan daalein. Jab tak "YOUR_API_KEY" hai,
+   panel DEMO mode me chalega (localStorage "admissions_demo" + sample data).
+   Firestore rules (zaroori):
+     match /admissions/{id} {
+       allow create: if true;                       // public form
+       allow read, update, delete: if request.auth != null;   // sirf admin
+     }
+   Firebase Auth me Email/Password chalu karke admin user banayein.
+   ========================================================================== */
+const CFG={apiKey:"AIzaSyBirHGMdmqFbwtzgp_pepm7VHEqq-eOSUs",authDomain:"radha-krishna-chandra.firebaseapp.com",databaseURL:"https://radha-krishna-chandra-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"radha-krishna-chandra",storageBucket:"radha-krishna-chandra.firebasestorage.app",messagingSenderId:"467048553836",appId:"1:467048553836:web:a20960abad5df5027fa749",measurementId:"G-RLF5FVXC2Y"};
+const LIVE=CFG.apiKey!=="YOUR_API_KEY", DEMO_PASS="admin123", WA_PREFIX="91";
+const COLL="admissions", FB="https://www.gstatic.com/firebasejs/10.12.2/";
+
+const ST=[{k:"new",l:"नया",c:"#2e9cf0"},{k:"contacted",l:"संपर्क किया",c:"#8e5cf0"},{k:"interested",l:"इच्छुक",c:"#ff8a1f"},{k:"admitted",l:"एडमिशन हुआ",c:"#2fb36d"},{k:"dropped",l:"नहीं आएंगे",c:"#e63946"}];
+const stOf=k=>ST.find(s=>s.k===k)||ST[0];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const DAY=864e5, startOfDay=t=>{const d=new Date(t);d.setHours(0,0,0,0);return +d};
+const fmt=t=>t?new Date(t).toLocaleString("hi-IN",{day:"numeric",month:"short",hour:"numeric",minute:"2-digit"}):"—";
+const dkey=t=>new Date(t).toISOString().slice(0,10);
+
+let rows=[], sel=new Set(), view="list", quick="all", openId=null, first=true;
+let store, auth;
+
+/* ---------------- Data layer ---------------- */
+function norm(id,d){
+  let c=d.createdAt; c=c&&c.toMillis?c.toMillis():(c?+new Date(c):Date.now());
+  return {id,childName:d.childName||"",childAge:+d.childAge||0,parentName:d.parentName||"",mobile:d.mobile||"",area:d.area||"",note:d.note||"",
+    lang:d.lang||"",status:d.status||"new",starred:!!d.starred,followUp:d.followUp||"",notes:d.notes||[],createdAt:c};
+}
+async function initStore(){
+  if(LIVE){
+    const A=await import(FB+"firebase-app.js"), F=await import(FB+"firebase-firestore.js"), U=await import(FB+"firebase-auth.js");
+    const app=A.initializeApp(CFG), db=F.getFirestore(app), au=U.getAuth(app);
+    auth={login:(e,p)=>U.signInWithEmailAndPassword(au,e,p),out:()=>U.signOut(au),onChange:cb=>U.onAuthStateChanged(au,cb)};
+    store={
+      watch(cb){return F.onSnapshot(F.query(F.collection(db,COLL),F.orderBy("createdAt","desc")),s=>cb(s.docs.map(d=>norm(d.id,d.data())),s.docChanges().filter(c=>c.type==="added").length))},
+      add:d=>F.addDoc(F.collection(db,COLL),{...d,createdAt:F.serverTimestamp()}),
+      update:(id,p)=>F.updateDoc(F.doc(db,COLL,id),p),
+      remove:id=>F.deleteDoc(F.doc(db,COLL,id))
+    };
+  }else{
+    let sess=sessionStorage.getItem("adm")==="1", cbs=[];
+    auth={login:async(e,p)=>{if(p!==DEMO_PASS)throw{code:"bad"};sessionStorage.setItem("adm","1");cbs.forEach(f=>f(true))},
+      out:async()=>{sessionStorage.removeItem("adm");cbs.forEach(f=>f(null))},onChange:cb=>{cbs.push(cb);cb(sess?{}:null)}};
+    const rd=()=>{try{return JSON.parse(localStorage.getItem("admissions_demo")||"[]")}catch(_){return[]}};
+    const wr=a=>localStorage.setItem("admissions_demo",JSON.stringify(a));
+    let wcb;
+    const push=n=>{const a=rd();a.forEach((x,i)=>{if(!x.id)x.id="d"+Date.now()+i});wr(a);wcb&&wcb(a.map(x=>norm(x.id,x)).sort((a,b)=>b.createdAt-a.createdAt),n||0)};
+    store={
+      watch(cb){wcb=cb;push();return()=>{}},
+      async add(d){wr([...rd(),{...d,id:"d"+Date.now(),createdAt:new Date().toISOString()}]);push()},
+      async update(id,p){wr(rd().map(x=>x.id===id?{...x,...p}:x));push()},
+      async remove(id){wr(rd().filter(x=>x.id!==id));push()}
+    };
+  }
+}
+
+/* ---------------- Helpers ---------------- */
+function toast(t){const e=$("toast");e.textContent=t;e.classList.remove("hide");clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.add("hide"),2400)}
+function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.setValueAtTime(.15,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.4);o.start();o.stop(c.currentTime+.4)}catch(_){}}
+const waLink=(r,txt)=>"https://wa.me/"+WA_PREFIX+r.mobile+"?text="+encodeURIComponent(txt||`हरे कृष्ण ${r.parentName}! भक्त प्रहलाद कक्षा से बोल रहे हैं। ${r.childName} के एडमिशन के बारे में बात करनी थी। कक्षा हर रविवार शाम 5 से 8 बजे, श्री श्री राधा कृष्ण चंद्र मंदिर, हडपसर में होती है।`);
+const dupCount=m=>rows.filter(r=>r.mobile===m).length;
+const today=()=>dkey(Date.now());
+const dl=(name,text,type)=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),999)};
+function guard(fn){return async(...a)=>{try{await fn(...a)}catch(e){console.error(e);toast("गड़बड़: "+(e.code||e.message))}}}
+
+/* ---------------- Filtering ---------------- */
+function filtered(){
+  const q=$("q").value.trim().toLowerCase(), age=$("fAge").value, s=$("sort").value, t=today();
+  let r=rows.filter(x=>{
+    if(quick==="star"&&!x.starred)return false;
+    if(quick==="fu"&&!(x.followUp&&x.followUp<=t&&!["admitted","dropped"].includes(x.status)))return false;
+    if(quick==="dup"&&dupCount(x.mobile)<2)return false;
+    if(quick==="td"&&dkey(x.createdAt)!==t)return false;
+    if(ST.some(z=>z.k===quick)&&x.status!==quick)return false;
+    if(age&&String(x.childAge)!==age)return false;
+    return !q||(x.childName+x.parentName+x.mobile+x.area+x.note).toLowerCase().includes(q);
+  });
+  const by={new:(a,b)=>b.createdAt-a.createdAt,old:(a,b)=>a.createdAt-b.createdAt,name:(a,b)=>a.childName.localeCompare(b.childName,"hi"),age:(a,b)=>a.childAge-b.childAge};
+  return r.sort(by[s]);
+}
+
+/* ---------------- Render ---------------- */
+function renderStats(){
+  const t=startOfDay(Date.now()), wk=t-6*DAY, n=k=>rows.filter(r=>r.status===k).length;
+  const fu=rows.filter(r=>r.followUp&&r.followUp<=today()&&!["admitted","dropped"].includes(r.status)).length;
+  const conv=rows.length?Math.round(n("admitted")/rows.length*100):0;
+  const S=[["कुल आवेदन",rows.length,"#1d2a6b"],["आज",rows.filter(r=>r.createdAt>=t).length,"#2e9cf0"],["इस हफ्ते",rows.filter(r=>r.createdAt>=wk).length,"#8e5cf0"],["नए (बाकी)",n("new"),"#ff8a1f"],["आज फॉलो-अप",fu,"#e63946"],["कन्वर्ज़न",conv+"%","#2fb36d"]];
+  $("stats").innerHTML=S.map(s=>`<div class="stat" style="--c:${s[2]}"><b>${s[1]}</b><span>${s[0]}</span></div>`).join("");
+}
+function renderCharts(){
+  const t=startOfDay(Date.now()), days=[...Array(14)].map((_,i)=>t-(13-i)*DAY);
+  const cnt=days.map(d=>rows.filter(r=>r.createdAt>=d&&r.createdAt<d+DAY).length), mx=Math.max(1,...cnt);
+  $("trend").innerHTML=cnt.map(c=>`<div style="height:${c/mx*100}%"><i>${c||""}</i></div>`).join("");
+  $("trendAx").innerHTML=days.map(d=>`<span>${new Date(d).getDate()}</span>`).join("");
+  const hb=(l,v,m,c)=>`<div class="hb"><span>${esc(l)}</span><u style="width:${v/Math.max(1,m)*100}%;${c?"background:"+c:""}"></u><b>${v}</b></div>`;
+  const ac={};rows.forEach(r=>ac[r.childAge]=(ac[r.childAge]||0)+1);
+  const am=Math.max(1,...Object.values(ac));
+  $("ages").innerHTML=Object.keys(ac).sort((a,b)=>a-b).map(a=>hb(a+" साल",ac[a],am)).join("")||'<div class="empty">डेटा नहीं</div>';
+  $("funnel").innerHTML=ST.map(s=>hb(s.l,rows.filter(r=>r.status===s.k).length,rows.length,s.c)).join("");
+  const ar={};rows.forEach(r=>{const k=r.area.trim();if(k)ar[k]=(ar[k]||0)+1});
+  const top=Object.entries(ar).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  $("areas").innerHTML=top.map(a=>hb(a[0],a[1],top[0][1],"#14a3a3")).join("")||'<div class="empty">इलाका नहीं भरा</div>';
+}
+function renderChips(){
+  const t=today(), c=k=>rows.filter(r=>r.status===k).length;
+  const L=[["all","सभी",rows.length],["td","आज",rows.filter(r=>dkey(r.createdAt)===t).length],["star","⭐ खास",rows.filter(r=>r.starred).length],
+    ["fu","📞 फॉलो-अप",rows.filter(r=>r.followUp&&r.followUp<=t&&!["admitted","dropped"].includes(r.status)).length],["dup","डुप्लीकेट",rows.filter(r=>dupCount(r.mobile)>1).length],
+    ...ST.map(s=>[s.k,s.l,c(s.k)])];
+  $("chips").innerHTML=L.map(x=>`<button class="chip ${quick===x[0]?"on":""}" data-q="${x[0]}">${x[1]} ${x[2]}</button>`).join("");
+}
+function tags(r){
+  let h=`<span class="tag" style="--c:${stOf(r.status).c}">${stOf(r.status).l}</span> `;
+  if(dupCount(r.mobile)>1)h+='<span class="tag dup">डुप्लीकेट</span> ';
+  if(r.followUp)h+=`<span class="tag fu">📞 ${esc(r.followUp.slice(5).split("-").reverse().join("/"))}</span> `;
+  return h;
+}
+function renderList(){
+  const r=filtered();
+  if(view==="board"){
+    $("view").innerHTML='<div class="board">'+ST.map(s=>`<div class="col" data-s="${s.k}" style="--c:${s.c}"><h3>${s.l} (${r.filter(x=>x.status===s.k).length})</h3>`+
+      r.filter(x=>x.status===s.k).map(x=>`<div class="kc" draggable="true" data-id="${x.id}"><div class="n">${x.starred?"⭐ ":""}${esc(x.childName)} · ${x.childAge}</div><div class="m">${esc(x.parentName)} · ${esc(x.mobile)}</div><div class="m">${tags(x).replace(/<span class="tag" style[^>]*>.*?<\/span>/,"")}</div></div>`).join("")+"</div>").join("")+"</div>";
+    return;
+  }
+  $("view").innerHTML=r.length?'<div class="list">'+r.map(x=>`<div class="row" data-id="${x.id}" style="--c:${stOf(x.status).c}">
+    <input type="checkbox" data-sel="${x.id}" ${sel.has(x.id)?"checked":""} aria-label="चुनें" style="width:20px;height:20px">
+    <div><div class="n">${x.starred?"⭐ ":""}${esc(x.childName)} ${x.createdAt>Date.now()-DAY&&x.status==="new"?'<span class="tag new">NEW</span>':""}</div>
+    <div class="m">${esc(x.parentName)} · ${esc(x.mobile)}${x.area?" · "+esc(x.area):""} · ${fmt(x.createdAt)}</div><div>${tags(x)}</div></div>
+    <div class="age">${x.childAge}</div></div>`).join("")+"</div>":'<div class="empty">कोई आवेदन नहीं मिला 🙏</div>';
+  renderBulk();
+}
+function renderBulk(){
+  const b=$("bulk"), n=sel.size;
+  b.classList.toggle("hide",!n);
+  b.innerHTML=n?`<b>${n} चुने</b><select id="bSt"><option value="">स्टेटस बदलें…</option>${ST.map(s=>`<option value="${s.k}">${s.l}</option>`).join("")}</select>
+    <button class="btn sm" id="bCopy">नंबर कॉपी</button><button class="btn sm g" id="bCsv">CSV</button><button class="btn sm r" id="bDel">डिलीट</button><button class="btn sm" id="bClr">✕</button>`:"";
+}
+function renderAll(){
+  renderStats();renderCharts();renderChips();renderList();
+  const ages=[...new Set(rows.map(r=>r.childAge))].sort((a,b)=>a-b), cur=$("fAge").value;
+  $("fAge").innerHTML='<option value="">सभी उम्र</option>'+ages.map(a=>`<option ${String(a)===cur?"selected":""} value="${a}">${a} साल</option>`).join("");
+  if(openId)drawer(openId,true);
+}
+
+/* ---------------- Drawer ---------------- */
+function drawer(id,keep){
+  const r=rows.find(x=>x.id===id); if(!r){closeDrawer();return}
+  openId=id; const d=$("drawer");
+  const scroll=d.scrollTop;
+  d.innerHTML=`<div style="display:flex;gap:8px;align-items:center"><h2 style="flex:1">${esc(r.childName)}</h2>
+    <button class="btn sm" id="dStar">${r.starred?"⭐":"☆"}</button><button class="btn sm" id="dClose">✕</button></div>
+    <div style="margin-top:6px">${tags(r)}</div>
+    <div class="acts"><a class="btn g" href="tel:+${WA_PREFIX}${esc(r.mobile)}">📞 कॉल</a><a class="btn g" target="_blank" rel="noopener" href="${waLink(r)}" style="background:#25d366;color:#06361b">💬 WhatsApp</a><button class="btn" id="dCopy">कॉपी</button></div>
+    <dl class="kv"><dt>उम्र</dt><dd>${r.childAge} साल</dd><dt>माता/पिता</dt><dd>${esc(r.parentName)}</dd><dt>मोबाइल</dt><dd>${esc(r.mobile)}</dd><dt>इलाका</dt><dd>${esc(r.area)||"—"}</dd>
+    <dt>सवाल</dt><dd>${esc(r.note)||"—"}</dd><dt>आवेदन</dt><dd>${fmt(r.createdAt)}</dd><dt>भाषा</dt><dd>${({hi:"हिंदी",en:"English",mr:"मराठी"})[r.lang]||"—"}</dd></dl>
+    <h3>स्टेटस</h3><div class="chips" style="flex-wrap:wrap">${ST.map(s=>`<button class="chip ${r.status===s.k?"on":""}" data-set="${s.k}">${s.l}</button>`).join("")}</div>
+    <h3>फॉलो-अप की तारीख</h3><input type="date" id="dFu" value="${esc(r.followUp)}"> <button class="btn sm" id="dFuClr">हटाएं</button>
+    <h3 style="margin-top:14px">प्राइवेट नोट्स</h3>
+    <div style="display:flex;gap:8px"><textarea id="dNote" rows="2" style="flex:1" placeholder="जैसे: पापा ने कहा अगले रविवार आएंगे"></textarea><button class="btn p" id="dAdd">जोड़ें</button></div>
+    ${[...r.notes].reverse().map(n=>`<div class="note">${esc(n.t)}<small>${fmt(n.ts)}</small></div>`).join("")}
+    <div class="acts" style="margin-top:18px"><button class="btn r" id="dDel">🗑 डिलीट करें</button></div>`;
+  d.classList.remove("hide");$("veil").classList.remove("hide");
+  if(keep)d.scrollTop=scroll;
+}
+function closeDrawer(){openId=null;$("drawer").classList.add("hide");$("veil").classList.add("hide")}
+
+/* ---------------- Events ---------------- */
+const upd=guard((id,p)=>store.update(id,p));
+document.addEventListener("click",guard(async e=>{
+  const t=e.target, g=s=>t.closest(s);
+  if(g("#dClose")||t.id==="veil")return closeDrawer();
+  if(g("[data-q]")){quick=g("[data-q]").dataset.q;renderChips();renderList();return}
+  if(g("[data-set]")){return upd(openId,{status:g("[data-set]").dataset.set})}
+  if(g("#dStar")){const r=rows.find(x=>x.id===openId);return upd(openId,{starred:!r.starred})}
+  if(g("#dFuClr"))return upd(openId,{followUp:""});
+  if(g("#dCopy")){const r=rows.find(x=>x.id===openId);await navigator.clipboard.writeText(`${r.childName} (${r.childAge}) - ${r.parentName} - ${r.mobile}`);return toast("कॉपी हो गया")}
+  if(g("#dAdd")){const v=$("dNote").value.trim();if(!v)return;const r=rows.find(x=>x.id===openId);return upd(openId,{notes:[...r.notes,{t:v,ts:Date.now()}]})}
+  if(g("#dDel")){if(confirm("पक्का डिलीट करें? वापस नहीं आएगा।")){const id=openId;closeDrawer();await store.remove(id);toast("डिलीट हुआ")}return}
+  if(g("[data-sel]"))return;
+  if(g(".row")&&!g("[data-sel]"))return drawer(g(".row").dataset.id);
+  if(g(".kc"))return drawer(g(".kc").dataset.id);
+  if(g("#bClr")){sel.clear();return renderList()}
+  if(g("#bCopy")){await navigator.clipboard.writeText(rows.filter(r=>sel.has(r.id)).map(r=>r.mobile).join("\n"));return toast("नंबर कॉपी हुए")}
+  if(g("#bCsv"))return csv(rows.filter(r=>sel.has(r.id)));
+  if(g("#bDel")){if(confirm(sel.size+" आवेदन डिलीट करें?")){for(const id of sel)await store.remove(id);sel.clear();toast("डिलीट हुए")}return}
+}));
+document.addEventListener("change",guard(async e=>{
+  const t=e.target;
+  if(t.dataset.sel){t.checked?sel.add(t.dataset.sel):sel.delete(t.dataset.sel);return renderBulk()}
+  if(t.id==="bSt"&&t.value){for(const id of sel)await store.update(id,{status:t.value});toast("स्टेटस बदला");sel.clear();return}
+  if(t.id==="dFu")return upd(openId,{followUp:t.value});
+  if(t.id==="fAge"||t.id==="sort")renderList();
+}));
+$("q").addEventListener("input",()=>renderList());
+document.addEventListener("keydown",e=>{
+  if(e.key==="/"&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){e.preventDefault();$("q").focus()}
+  if(e.key==="Escape")closeDrawer();
+});
+$("vToggle").onclick=()=>{view=view==="list"?"board":"list";$("vToggle").textContent=view==="list"?"🗂 बोर्ड":"☰ लिस्ट";renderList()};
+$("theme").onclick=()=>{const d=document.documentElement,n=d.dataset.t==="dark"?"":"dark";n?d.dataset.t=n:delete d.dataset.t;localStorage.setItem("admT",n)};
+if(localStorage.getItem("admT"))document.documentElement.dataset.t="dark";
+$("logout").onclick=()=>auth.out();
+
+
+/* Manual entry (phone / walk-in enquiry) */
+function addForm(){
+  openId=null; const d=$("drawer");
+  d.innerHTML=`<div style="display:flex;gap:8px;align-items:center"><h2 style="flex:1">नया आवेदन जोड़ें</h2><button class="btn sm" id="dClose">✕</button></div>
+  <form id="addF" novalidate style="display:grid;gap:10px;margin-top:12px">
+    <input name="childName" placeholder="बच्चे का नाम *" maxlength="60">
+    <select name="childAge"><option value="">उम्र (साल) *</option>${[5,6,7,8,9,10,11,12].map(a=>`<option>${a}</option>`).join("")}</select>
+    <input name="parentName" placeholder="माता / पिता का नाम *" maxlength="60">
+    <input name="mobile" type="tel" inputmode="numeric" placeholder="मोबाइल नंबर (10 अंक) *" maxlength="14">
+    <input name="area" placeholder="इलाका (वैकल्पिक)" maxlength="80">
+    <textarea name="note" rows="2" placeholder="नोट (वैकल्पिक)" maxlength="300"></textarea>
+    <div class="lerr" id="addErr"></div>
+    <button class="btn p" type="submit" style="justify-content:center">सेव करें</button>
+  </form>`;
+  d.classList.remove("hide");$("veil").classList.remove("hide");
+  $("addF").addEventListener("submit",guard(async e=>{
+    e.preventDefault(); const f=Object.fromEntries(new FormData(e.target));
+    let m=String(f.mobile).replace(/\D/g,""); if(m.length===12&&m.startsWith("91"))m=m.slice(2); if(m.length===11&&m[0]==="0")m=m.slice(1);
+    const er=f.childName.trim().length<2?"बच्चे का नाम लिखें":!f.childAge?"उम्र चुनें":f.parentName.trim().length<2?"माता/पिता का नाम लिखें":!/^[6-9]\d{9}$/.test(m)?"सही 10 अंकों का मोबाइल नंबर लिखें":"";
+    if(er){$("addErr").textContent=er;return}
+    await store.add({childName:f.childName.trim(),childAge:f.childAge,parentName:f.parentName.trim(),mobile:m,area:f.area.trim(),note:f.note.trim(),status:"new",source:"admin"});
+    closeDrawer();toast("आवेदन जुड़ गया");
+  }));
+}
+$("addBtn").onclick=addForm;
+
+/* Kanban drag & drop */
+let dragId=null;
+document.addEventListener("dragstart",e=>{const k=e.target.closest&&e.target.closest(".kc");if(k)dragId=k.dataset.id});
+document.addEventListener("dragover",e=>{const c=e.target.closest&&e.target.closest(".col");if(c&&dragId){e.preventDefault();c.classList.add("over")}});
+document.addEventListener("dragleave",e=>{const c=e.target.closest&&e.target.closest(".col");if(c)c.classList.remove("over")});
+document.addEventListener("drop",guard(async e=>{const c=e.target.closest&&e.target.closest(".col");if(c&&dragId){e.preventDefault();c.classList.remove("over");await store.update(dragId,{status:c.dataset.s});dragId=null}}));
+
+/* Export */
+function csv(list){
+  const H=["बच्चे का नाम","उम्र","माता/पिता","मोबाइल","इलाका","सवाल","स्टेटस","फॉलो-अप","नोट्स","आवेदन तारीख"];
+  const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
+  const body=list.map(r=>[r.childName,r.childAge,r.parentName,r.mobile,r.area,r.note,stOf(r.status).l,r.followUp,r.notes.map(n=>n.t).join(" | "),new Date(r.createdAt).toLocaleString("en-IN")].map(q).join(","));
+  dl("admissions-"+today()+".csv","\ufeff"+[H.map(q).join(","),...body].join("\n"),"text/csv;charset=utf-8");
+}
+$("exp").onclick=()=>csv(filtered());
+$("bak").onclick=()=>dl("backup-"+today()+".json",JSON.stringify(rows,null,1),"application/json");
+
+/* ---------------- Boot ---------------- */
+let unsub=null;
+function startApp(){
+  $("login").classList.add("hide");$("app").classList.remove("hide");
+  $("mode").textContent=LIVE?"● LIVE":"DEMO";$("mode").classList.toggle("live",LIVE);$("demoNote").classList.toggle("hide",LIVE);
+  unsub=store.watch((list,added)=>{
+    const was=rows.length; rows=list;
+    if(!first&&added>0&&list.length>was){toast("🔔 नया एडमिशन आवेदन आया!");beep()}
+    first=false;renderAll();
+  });
+}
+(async()=>{
+  $("lhint").textContent=LIVE?"":"DEMO mode · कोई भी email, password: "+DEMO_PASS;
+  try{await initStore()}catch(e){$("lerr").textContent="Firebase नहीं चला: "+e.message;return}
+  auth.onChange(u=>{
+    if(u){if(!unsub)startApp()}
+    else{unsub&&unsub();unsub=null;rows=[];first=true;closeDrawer();$("app").classList.add("hide");$("login").classList.remove("hide")}
+  });
+  $("lform").addEventListener("submit",async e=>{
+    e.preventDefault();$("lerr").textContent="";
+    try{await auth.login($("lemail").value.trim(),$("lpass").value)}
+    catch(err){$("lerr").textContent="Email या password गलत है।"}
+  });
+})();
+</script>
+</body>
+</html>
