@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ISKCON Hadapsar - Supreme God-Eye Command Console</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Pro Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet Interactive Maps (Free, High Precision, Zero Key Required) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace']
+                    },
+                    colors: { 
+                        cyber: { 950: '#030712', 900: '#090d16', 800: '#111827', 700: '#1f2937' },
+                        neon: { orange: '#ff5500', cyan: '#00f2fe', green: '#10b981', red: '#ef4444' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; }
+        body { background-color: #030712; color: #f3f4f6; overflow-x: hidden; }
+        
+        .radar-grid {
+            background-image: linear-gradient(rgba(0, 242, 254, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 242, 254, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        .glass-dark {
+            background: rgba(9, 13, 22, 0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            min-height: 480px;
+            border-radius: 1.5rem;
+            z-index: 10;
+        }
+
+        .leaflet-container {
+            background: #090d16 !important;
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+        }
+
+        /* Pulsing Marker Animation */
+        .blinking-dot {
+            width: 18px;
+            height: 18px;
+            background: #10b981;
+            border-radius: 50%;
+            border: 3px solid #ffffff;
+            box-shadow: 0 0 15px #10b981;
+            animation: pulse-ring 1.8s infinite;
+        }
+        .blinking-dot.banned {
+            background: #ef4444;
+            box-shadow: 0 0 15px #ef4444;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 12px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 10px; }
+    </style>
+</head>
+<body class="radar-grid min-h-screen flex flex-col font-sans antialiased text-slate-100">
+
+    <!-- 🔒 PAPA AUTHENTICATION OVERLAY -->
+    <div id="auth-guard" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-2xl p-4">
+        <div class="glass-dark w-full max-w-md rounded-3xl p-8 border border-neon-cyan/20 shadow-2xl relative text-center">
+            <div class="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-cyan-600 to-emerald-500 flex items-center justify-center text-white text-3xl shadow-[0_0_30px_rgba(0,242,254,0.4)] mb-5">
+                <i class="fa-solid fa-eye animate-pulse"></i>
+            </div>
+            <h1 class="text-2xl font-black tracking-tight text-white uppercase">God-Eye Supreme Access</h1>
+            <p class="text-xs font-mono text-cyan-400 mt-1 uppercase tracking-widest">Master Authority Terminal</p>
+            
+            <form id="papaLoginForm" class="space-y-4 mt-6 text-left">
+                <div id="loginError" class="hidden p-3 rounded-xl bg-red-950/80 border border-red-800 text-red-300 text-xs font-bold font-mono">
+                    INVALID CREDENTIALS OR UNAUTHORIZED UID
+                </div>
+                <div>
+                    <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider pl-1">Supreme Master Email</label>
+                    <input type="email" id="papaEmail" required class="w-full mt-1 px-4 py-3 bg-cyber-900 border border-slate-700 rounded-xl text-sm text-white focus:border-cyan-400 outline-none font-mono" placeholder="admin@iskcon.com">
+                </div>
+                <div>
+                    <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider pl-1">Master Key (Password)</label>
+                    <input type="password" id="papaPass" required class="w-full mt-1 px-4 py-3 bg-cyber-900 border border-slate-700 rounded-xl text-sm text-white focus:border-cyan-400 outline-none font-mono" placeholder="••••••••••••">
+                </div>
+                <button type="submit" id="loginBtn" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-black font-black text-sm tracking-wide transition-all shadow-[0_0_20px_rgba(0,242,254,0.3)] active:scale-95">
+                    INITIALIZE SURVEILLANCE RADAR
+                </button>
+            </form>
+            <p class="text-[10px] font-mono text-slate-500 mt-5">Only UID: rJ4xdMH3a2Yobut7Wsm5IpWvg7f2 authorized.</p>
+        </div>
+    </div>
+
+    <!-- 🌐 MAIN COMMAND CENTER -->
+    <div id="command-center" class="flex-1 flex flex-col h-screen overflow-hidden">
+        
+        <!-- TOP STATUS BAR -->
+        <header class="glass-dark border-b border-slate-800 px-5 py-3.5 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-3.5">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-emerald-500 flex items-center justify-center text-black font-black text-xl shadow-[0_0_15px_rgba(0,242,254,0.4)]">
+                    <i class="fa-solid fa-satellite"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-base font-black tracking-wide text-white uppercase">ISKCON Hadapsar</h1>
+                        <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-mono font-bold flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> RADAR LIVE
+                        </span>
+                    </div>
+                    <p class="text-[10px] font-mono text-slate-400">Singapore RTDB Server Connected (asia-southeast1)</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden sm:block">
+                    <p class="text-xs font-black text-cyan-400 font-mono">SUPREME COMMANDER</p>
+                    <p class="text-[10px] font-mono text-slate-400">UID: rJ4xdMH3a...vg7f2</p>
+                </div>
+                <button id="logoutBtn" title="Lock Console" class="w-9 h-9 rounded-xl bg-red-950/40 border border-red-800 text-red-400 hover:bg-red-600 hover:text-white transition-all flex items-center justify-center">
+                    <i class="fa-solid fa-power-off text-xs"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- DASHBOARD BODY: LEFT LIST + RIGHT MAP -->
+        <div class="flex-1 flex flex-col lg:flex-row overflow-hidden p-4 gap-4">
+            
+            <!-- LEFT PANEL: ADMIN DIRECTORY & 24H ROUTE PLAYBACK -->
+            <div class="w-full lg:w-96 flex flex-col gap-4 shrink-0 overflow-hidden">
+                
+                <!-- 24-HOUR TRAIL SELECTOR -->
+                <div class="glass-dark rounded-2xl p-4 border border-slate-800 shrink-0">
+                    <h3 class="text-xs font-black uppercase text-cyan-400 tracking-wider flex items-center gap-2 mb-3">
+                        <i class="fa-solid fa-route"></i> 24-Hour Route Playback
+                    </h3>
+                    <div class="space-y-2.5">
+                        <div>
+                            <label class="text-[10px] font-mono text-slate-400 uppercase">Select Sub-Admin</label>
+                            <select id="trailAdminSelect" class="w-full mt-1 bg-cyber-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400 font-mono">
+                                <option value="" disabled selected>Choose Sub-Admin</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-mono text-slate-400 uppercase">Select Date</label>
+                            <input type="date" id="trailDateInput" class="w-full mt-1 bg-cyber-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400 font-mono">
+                        </div>
+                        <button id="loadTrailBtn" class="w-full py-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500 hover:text-black border border-cyan-500/30 text-cyan-400 font-bold text-xs transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-play"></i> Draw Day Journey on Map
+                        </button>
+                        <button id="clearTrailBtn" class="w-full py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold text-[11px] transition-all">
+                            Clear Trail
+                        </button>
+                    </div>
+                </div>
+
+                <!-- LIVE SUB-ADMIN RADAR LIST -->
+                <div class="glass-dark rounded-2xl p-4 border border-slate-800 flex-1 flex flex-col overflow-hidden">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+                        <h3 class="text-xs font-black uppercase text-slate-300 tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-users-gear text-emerald-400"></i> Active Sub-Admins (<span id="adminCount">0</span>)
+                        </h3>
+                        <span class="text-[10px] font-mono text-slate-500">Auto-Refreshes</span>
+                    </div>
+
+                    <div id="subAdminList" class="flex-1 overflow-y-auto space-y-3 pt-3 pr-1">
+                        <!-- Populated by JavaScript -->
+                        <div class="text-center py-10 text-slate-500 text-xs font-mono">
+                            <i class="fa-solid fa-radar fa-spin text-2xl mb-2 text-slate-600"></i><br>
+                            Scanning Live Telemetry...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL: INTERACTIVE HIGH PRECISION MAP -->
+            <div class="flex-1 glass-dark rounded-3xl p-3 border border-slate-800 flex flex-col relative overflow-hidden">
+                
+                <!-- MAP CONTROLS OVERLAY -->
+                <div class="absolute top-6 right-6 z-20 flex items-center gap-2">
+                    <button onclick="centerMapOnHadapsar()" class="px-3.5 py-2 rounded-xl bg-cyber-900/90 border border-slate-700 text-slate-300 hover:text-cyan-400 text-xs font-mono font-bold backdrop-blur-md shadow-lg transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-gopuram text-orange-400"></i> Focus Hadapsar
+                    </button>
+                </div>
+
+                <div id="map"></div>
+
+                <!-- ROUTE STATS HUD (Shows when a trail is active) -->
+                <div id="trailStatsHud" class="hidden absolute bottom-6 left-6 right-6 z-20 glass-dark rounded-2xl p-4 border border-cyan-500/30 flex flex-wrap items-center justify-between gap-4 font-mono text-xs shadow-2xl">
+                    <div class="flex items-center gap-3">
+                        <span class="w-3 h-3 rounded-full bg-cyan-400 animate-ping"></span>
+                        <div>
+                            <span class="text-slate-400">Trail Owner:</span> <strong id="hudEmail" class="text-white">Admin</strong>
+                        </div>
+                    </div>
+                    <div><span class="text-slate-400">Total Checkpoints:</span> <strong id="hudPoints" class="text-cyan-400">0</strong></div>
+                    <div><span class="text-slate-400">Estimated Distance:</span> <strong id="hudDistance" class="text-emerald-400">0.0 km</strong></div>
+                    <div><span class="text-slate-400">Status:</span> <span class="text-yellow-400 font-bold">100% Verified Trail</span></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // MASTER PAPA UID VERIFICATION GUARD
+        const MASTER_PAPA_UID = "rJ4xdMH3a2Yobut7Wsm5IpWvg7f2";
+
+        // Firebase Configuration (New Singapore Database)
+        const firebaseConfig = {
+  apiKey: "AIzaSyDf3lUv3k6kWCE0rxGfMfkwy2uARiXVFaY",
+  authDomain: "iskcon-master-hub.firebaseapp.com",
+  databaseURL: "https://iskcon-master-hub-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "iskcon-master-hub",
+  storageBucket: "iskcon-master-hub.firebasestorage.app",
+  messagingSenderId: "678769736356",
+  appId: "1:678769736356:web:17e68b347e36f131b68431"
+};
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // Leaflet Map Initialization (Default Centered on ISKCON Hadapsar, Pune)
+        const HADAPSAR_COORDS = [18.5089, 73.9259];
+        const map = L.map('map', { zoomControl: false }).setView(HADAPSAR_COORDS, 13);
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        // High-Tech Cyber Map Tiles (CartoDB Dark Matter)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap & ISKCON Hadapsar',
+            maxZoom: 19
+        }).addTo(map);
+
+        function centerMapOnHadapsar() {
+            map.flyTo(HADAPSAR_COORDS, 14, { duration: 1.5 });
+        }
+
+        // State Containers
+        let liveMarkers = {};
+        let activeTrailPolyline = null;
+        let trailWaypoints = [];
+        let allLiveSubAdmins = {};
+        let allBlockedUsers = {};
+        let allDeviceBindings = {};
+
+        // LOGIN ENGINE FOR PAPA
+        const authGuard = document.getElementById('auth-guard');
+        const papaLoginForm = document.getElementById('papaLoginForm');
+        const loginError = document.getElementById('loginError');
+
+        papaLoginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('papaEmail').value.trim();
+            const pass = document.getElementById('papaPass').value;
+            const btn = document.getElementById('loginBtn');
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Verifying Supreme Authority...`;
+
+            auth.signInWithEmailAndPassword(email, pass)
+                .then((cred) => {
+                    if (cred.user.uid !== MASTER_PAPA_UID) {
+                        auth.signOut();
+                        loginError.textContent = "ACCESS DENIED! You are not the Supreme Commander.";
+                        loginError.classList.remove('hidden');
+                        btn.disabled = false;
+                        btn.innerHTML = `INITIALIZE SURVEILLANCE RADAR`;
+                        return;
+                    }
+                    authGuard.classList.add('hidden');
+                    initializeRadarSystem();
+                })
+                .catch((err) => {
+                    loginError.textContent = "Invalid Email or Password.";
+                    loginError.classList.remove('hidden');
+                    btn.disabled = false;
+                    btn.innerHTML = `INITIALIZE SURVEILLANCE RADAR`;
+                });
+        });
+
+        auth.onAuthStateChanged((user) => {
+            if (user && user.uid === MASTER_PAPA_UID) {
+                authGuard.classList.add('hidden');
+                initializeRadarSystem();
+            } else {
+                authGuard.classList.remove('hidden');
+            }
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            auth.signOut().then(() => location.reload());
+        });
+
+        // Set default date to today in playback
+        document.getElementById('trailDateInput').value = new Date().toISOString().split('T')[0];
+
+        /* ====================================================================
+           📡 CORE REAL-TIME RADAR LISTENER ENGINE
+           ==================================================================== */
+        function initializeRadarSystem() {
+            // 1. Listen to Blocked Users List
+            database.ref('blocked_users').on('value', (snap) => {
+                allBlockedUsers = snap.val() || {};
+                renderSubAdminList();
+            });
+
+            // 2. Listen to Device Bindings
+            database.ref('device_bindings').on('value', (snap) => {
+                allDeviceBindings = snap.val() || {};
+                renderSubAdminList();
+            });
+
+            // 3. Listen to Live Radar Pings (Real-Time Coordinates)
+            database.ref('admin_live_radar').on('value', (snap) => {
+                allLiveSubAdmins = snap.val() || {};
+                updateMapMarkers();
+                renderSubAdminList();
+                updateTrailDropdown();
+            });
+        }
+
+        // UPDATE MARKERS ON MAP
+        function updateMapMarkers() {
+            Object.keys(allLiveSubAdmins).forEach((sanitizedEmail) => {
+                const data = allLiveSubAdmins[sanitizedEmail];
+                if (!data.lat || !data.lon) return;
+
+                const isBlocked = allBlockedUsers[sanitizedEmail] && allBlockedUsers[sanitizedEmail].isBlocked === true;
+                const dotClass = isBlocked ? "blinking-dot banned" : "blinking-dot";
+
+                const customIcon = L.divIcon({
+                    className: 'custom-radar-pin',
+                    html: `<div class="${dotClass}"></div>`,
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                });
+
+                const popupHtml = `
+                    <div style="font-family:'Plus Jakarta Sans',sans-serif; min-width:210px; font-size:12px; color:#111;">
+                        <h4 style="font-weight:900; margin:0 0 4px 0; color:#ea580c;">${sanitizedEmail.replace(/_/g, '.')}</h4>
+                        <div style="margin-bottom:4px;"><b>Status:</b> ${isBlocked ? '<span style="color:red; font-weight:bold;">BLOCKED</span>' : '<span style="color:green; font-weight:bold;">ACTIVE</span>'}</div>
+                        <div><b>Speed:</b> ${data.speed_kmh || 0} km/h</div>
+                        <div><b>Battery:</b> ${data.battery || 'N/A'} ${data.charging ? '⚡' : ''}</div>
+                        <div><b>Device:</b> ${data.device_model || 'Unknown'}</div>
+                        <div><b>Accuracy:</b> ${data.accuracy || 'GPS'}</div>
+                        <div><b>Last Ping:</b> ${data.time_str || 'Now'}</div>
+                        <div style="margin-top:6px;">
+                            <a href="${data.maps_link || '#'}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline;">Open in Google Maps</a>
+                        </div>
+                    </div>
+                `;
+
+                if (liveMarkers[sanitizedEmail]) {
+                    liveMarkers[sanitizedEmail].setLatLng([data.lat, data.lon]);
+                    liveMarkers[sanitizedEmail].setIcon(customIcon);
+                    liveMarkers[sanitizedEmail].getPopup().setContent(popupHtml);
+                } else {
+                    const marker = L.marker([data.lat, data.lon], { icon: customIcon }).addTo(map);
+                    marker.bindPopup(popupHtml);
+                    liveMarkers[sanitizedEmail] = marker;
+                }
+            });
+        }
+
+        // RENDER ADMIN LIST & COMMAND BUTTONS
+        function renderSubAdminList() {
+            const listEl = document.getElementById('subAdminList');
+            const keys = Object.keys(allLiveSubAdmins);
+            document.getElementById('adminCount').innerText = keys.length;
+
+            if (keys.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-10 text-slate-500 text-xs font-mono">
+                        <i class="fa-solid fa-signal text-xl mb-2"></i><br>
+                        No active Sub-Admins broadcasting yet.<br>Launch Sketchware App to connect.
+                    </div>`;
+                return;
+            }
+
+            let html = '';
+            keys.forEach((emailKey) => {
+                const admin = allLiveSubAdmins[emailKey];
+                const isBlocked = allBlockedUsers[emailKey] && allBlockedUsers[emailKey].isBlocked === true;
+                const binding = allDeviceBindings[emailKey] || null;
+
+                html += `
+                    <div class="p-3.5 rounded-2xl bg-cyber-900 border ${isBlocked ? 'border-red-900/80 bg-red-950/20' : 'border-slate-800'} flex flex-col gap-2.5">
+                        <div class="flex items-center justify-between">
+                            <div class="overflow-hidden">
+                                <p class="text-xs font-extrabold text-white truncate">${emailKey.replace(/_/g, '.')}</p>
+                                <p class="text-[10px] font-mono text-slate-400">${admin.device_model || 'Android Device'}</p>
+                            </div>
+                            <span class="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold ${isBlocked ? 'bg-red-500/20 text-red-400 border border-red-500/40' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'}">
+                                ${isBlocked ? 'BANNED' : 'LIVE'}
+                            </span>
+                        </div>
+
+                        <!-- Telemetry Grid -->
+                        <div class="grid grid-cols-3 gap-1.5 py-1.5 px-2 rounded-xl bg-black/40 text-[10px] font-mono border border-slate-800/60">
+                            <div><span class="text-slate-500">Speed:</span> <b class="text-cyan-400">${admin.speed_kmh || 0} km/h</b></div>
+                            <div><span class="text-slate-500">Batt:</span> <b class="text-amber-400">${admin.battery || 'N/A'} ${admin.charging ? '⚡' : ''}</b></div>
+                            <div><span class="text-slate-500">Fix:</span> <b class="text-emerald-400">${admin.accuracy || 'GPS'}</b></div>
+                        </div>
+
+                        <!-- Action Control Buttons (Papa Powers) -->
+                        <div class="flex items-center gap-2 pt-1 border-t border-slate-800/80">
+                            <button onclick="flyToAdmin('${emailKey}')" class="flex-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold transition-all">
+                                <i class="fa-solid fa-crosshairs text-cyan-400 mr-1"></i> Locate
+                            </button>
+                            
+                            ${isBlocked ? `
+                                <button onclick="unbanAdmin('${emailKey}')" class="py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold transition-all">
+                                    <i class="fa-solid fa-shield-check"></i> Unban
+                                </button>
+                            ` : `
+                                <button onclick="nukeBanAdmin('${emailKey}', '${admin.android_id || ''}')" class="py-1.5 px-3 rounded-lg bg-red-600 hover:bg-red-500 text-white text-[10px] font-bold transition-all shadow-[0_0_10px_rgba(239,68,68,0.4)]">
+                                    <i class="fa-solid fa-ban"></i> NUKE
+                                </button>
+                            `}
+
+                            <button onclick="resetDeviceBinding('${emailKey}')" title="Reset Bound Phone" class="py-1.5 px-2.5 rounded-lg bg-amber-500/10 hover:bg-amber-500 hover:text-black border border-amber-500/30 text-amber-400 text-[10px] font-bold transition-all">
+                                <i class="fa-solid fa-mobile-screen-button"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            listEl.innerHTML = html;
+        }
+
+        function flyToAdmin(emailKey) {
+            const admin = allLiveSubAdmins[emailKey];
+            if (admin && admin.lat && admin.lon) {
+                map.flyTo([admin.lat, admin.lon], 17, { duration: 1.2 });
+                if (liveMarkers[emailKey]) liveMarkers[emailKey].openPopup();
+            }
+        }
+
+        // UPDATE DROPDOWN IN TRAIL SELECTOR
+        function updateTrailDropdown() {
+            const select = document.getElementById('trailAdminSelect');
+            const currentVal = select.value;
+            const keys = Object.keys(allLiveSubAdmins);
+
+            let options = '<option value="" disabled selected>Choose Sub-Admin</option>';
+            keys.forEach(k => {
+                options += `<option value="${k}">${k.replace(/_/g, '.')}</option>`;
+            });
+            select.innerHTML = options;
+            if (currentVal) select.value = currentVal;
+        }
+
+        /* ====================================================================
+           🗺️ 24-HOUR ROUTE TRAIL PLAYBACK ENGINE
+           ==================================================================== */
+        document.getElementById('loadTrailBtn').addEventListener('click', async () => {
+            const emailKey = document.getElementById('trailAdminSelect').value;
+            const dateStr = document.getElementById('trailDateInput').value;
+
+            if (!emailKey || !dateStr) {
+                alert("Please select both a Sub-Admin and Date.");
+                return;
+            }
+
+            const snap = await database.ref(`admin_movement_history/${emailKey}/${dateStr}`).once('value');
+            if (!snap.exists()) {
+                alert(`No route movement history found for ${emailKey.replace(/_/g, '.')} on ${dateStr}.`);
+                return;
+            }
+
+            const rawPoints = snap.val();
+            const pointsArray = Object.values(rawPoints).sort((a, b) => a.timestamp - b.timestamp);
+
+            if (pointsArray.length === 0) {
+                alert("No coordinate points in route history.");
+                return;
+            }
+
+            // Clear old trails
+            if (activeTrailPolyline) map.removeLayer(activeTrailPolyline);
+            trailWaypoints.forEach(w => map.removeLayer(w));
+            trailWaypoints = [];
+
+            const latLngs = pointsArray.map(p => [p.lat, p.lon]);
+
+            // Draw glowing cyan path line
+            activeTrailPolyline = L.polyline(latLngs, {
+                color: '#00f2fe',
+                weight: 5,
+                opacity: 0.9,
+                dashArray: '8, 8',
+                lineJoin: 'round'
+            }).addTo(map);
+
+            // Add Green Start Pin
+            const startPoint = pointsArray[0];
+            const startMarker = L.marker([startPoint.lat, startPoint.lon]).addTo(map)
+                .bindPopup(`<b>🚩 JOURNEY START</b><br>Time: ${startPoint.time_str}<br>Speed: ${startPoint.speed_kmh} km/h`);
+            trailWaypoints.push(startMarker);
+
+            // Add Red End Pin
+            const endPoint = pointsArray[pointsArray.length - 1];
+            const endMarker = L.marker([endPoint.lat, endPoint.lon]).addTo(map)
+                .bindPopup(`<b>🏁 JOURNEY END</b><br>Time: ${endPoint.time_str}<br>Speed: ${endPoint.speed_kmh} km/h`);
+            trailWaypoints.push(endMarker);
+
+            // Fit map to show the entire route
+            map.fitBounds(activeTrailPolyline.getBounds(), { padding: [50, 50] });
+
+            // Calculate Approximate Distance
+            let totalDistKm = 0;
+            for (let i = 0; i < pointsArray.length - 1; i++) {
+                totalDistKm += calculateDistance(pointsArray[i].lat, pointsArray[i].lon, pointsArray[i+1].lat, pointsArray[i+1].lon);
+            }
+
+            // Update HUD
+            document.getElementById('hudEmail').innerText = emailKey.replace(/_/g, '.');
+            document.getElementById('hudPoints').innerText = pointsArray.length;
+            document.getElementById('hudDistance').innerText = totalDistKm.toFixed(2) + " km";
+            document.getElementById('trailStatsHud').classList.remove('hidden');
+        });
+
+        document.getElementById('clearTrailBtn').addEventListener('click', () => {
+            if (activeTrailPolyline) map.removeLayer(activeTrailPolyline);
+            trailWaypoints.forEach(w => map.removeLayer(w));
+            trailWaypoints = [];
+            document.getElementById('trailStatsHud').classList.add('hidden');
+        });
+
+        // Haversine formula for km distance calculation
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        /* ====================================================================
+           👑 SUPREME MASTER COMMANDS: BAN, UNBAN, DEVICE RESET
+           ==================================================================== */
+        
+        // 🔴 1-CLICK INSTANT NUKE BAN
+        window.nukeBanAdmin = function(emailKey, androidId) {
+            if (!confirm(`🚨 ARE YOU SURE YOU WANT TO PERMANENTLY BAN ${emailKey.replace(/_/g, '.')}? Their app will freeze instantly.`)) return;
+
+            database.ref(`blocked_users/${emailKey}`).set({
+                isBlocked: true,
+                banned_by: MASTER_PAPA_UID,
+                banned_at: firebase.database.ServerValue.TIMESTAMP,
+                reason: "Banned by Supreme Papa Admin Command"
+            });
+
+            // Also blacklist hardware if known
+            if (androidId) {
+                database.ref(`blacklisted_hardware/${androidId}`).set({
+                    isBlocked: true,
+                    banned_at: firebase.database.ServerValue.TIMESTAMP
+                });
+            }
+
+            alert(`Admin ${emailKey.replace(/_/g, '.')} is now BANNED. App is frozen.`);
+        };
+
+        // 🟢 UNBAN
+        window.unbanAdmin = function(emailKey) {
+            database.ref(`blocked_users/${emailKey}`).remove();
+            alert(`Admin ${emailKey.replace(/_/g, '.')} is now UNBANNED.`);
+        };
+
+        // 🔄 RESET BOUND DEVICE (Allows login on a new phone)
+        window.resetDeviceBinding = function(emailKey) {
+            if (!confirm(`Reset bound device for ${emailKey.replace(/_/g, '.')}? This will allow them to log into a new phone.`)) return;
+
+            database.ref(`device_bindings/${emailKey}`).remove().then(() => {
+                alert(`Device binding cleared for ${emailKey.replace(/_/g, '.')}. They can now bind a new phone.`);
+            });
+        };
+    </script>
+</body>
+</html>
