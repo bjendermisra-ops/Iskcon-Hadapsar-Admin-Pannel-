@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex"><meta name="theme-color" content="#00695C"><title>Temple Admin</title>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://iskcon-hadapsar-default-rtdb.firebaseio.com" crossorigin>
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:system-ui,-apple-system,'Segoe UI','Noto Sans Devanagari',Roboto,sans-serif;background:#f4f8f7;color:#1f2937;padding:14px;padding-bottom:calc(30px + env(safe-area-inset-bottom,0px));max-width:660px;margin-inline:auto}
+h2{margin:6px 0 10px;color:#00695C}
+.c{background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 4px 14px rgba(0,0,0,.07)}
+input,select,textarea{width:100%;padding:11px;margin:4px 0 8px;border:1px solid #d1d5db;border-radius:10px;font:inherit;font-size:.9rem;background:#fff;color:inherit}
+label{font-size:.72rem;font-weight:700;color:#6b7280}
+button{border:0;border-radius:10px;padding:10px 13px;font:inherit;font-weight:700;background:#00897B;color:#fff;cursor:pointer;min-height:40px}
+button:active{transform:scale(.97)}
+button.r{background:#dc2626}button.g{background:#6b7280}.w{width:100%}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.tabs{display:flex;gap:8px;margin-bottom:12px}.tabs button{flex:1;background:#fff;color:#00695C;border:1px solid #00897B}.tabs button.on{background:#00897B;color:#fff}
+.st4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.sb{background:linear-gradient(135deg,#00897B,#26A69A);color:#fff;border-radius:14px;padding:12px 4px;text-align:center}
+.sb b{display:block;font-size:1.6rem;line-height:1.1}.sb small{font-size:.62rem;font-weight:700;text-transform:uppercase;opacity:.9}
+.sb.o{background:linear-gradient(135deg,#FF9933,#E65100)}
+.cnt{display:flex;flex-wrap:wrap;gap:6px;margin:-2px 0 12px;font-size:.7rem;font-weight:700}
+.cnt span{background:#fff;border:1px solid #d9e7e4;border-radius:20px;padding:4px 10px;color:#00695C}
+.bar{position:relative;display:flex;justify-content:space-between;gap:8px;padding:8px 10px;margin-top:6px;border-radius:10px;background:#eef6f5;overflow:hidden;font-size:.82rem}
+.bar span,.bar b{position:relative;z-index:1}.bar i{position:absolute;left:0;top:0;bottom:0;background:rgba(0,137,123,.22)}
+.rg{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid #eee}
+.no{flex:0 0 auto;min-width:42px;height:34px;border-radius:10px;background:#FF9933;color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:.85rem}
+.rb{flex:1;min-width:0;font-size:.85rem;overflow-wrap:anywhere}.rb small{display:block;color:#6b7280;margin-top:2px}
+.acts{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}.acts select{width:auto;margin:0;padding:7px}
+.acts a{padding:8px 4px}
+.it{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid #eee;font-size:.85rem}
+.it small{color:#6b7280;display:block}
+a{color:#00897B;font-weight:700;text-decoration:none}
+.al{background:#fee2e2;color:#991b1b;border-radius:12px;padding:10px;font-size:.8rem;margin-bottom:12px;line-height:1.5;overflow-wrap:anywhere}
+.al button{margin-top:6px;padding:7px 12px;min-height:34px}
+.al code{background:rgba(0,0,0,.07);padding:2px 6px;border-radius:6px;font-size:.78rem}
+.inf{font-size:.72rem;color:#6b7280;margin:8px 0 0;text-align:center}
+.chip{flex:0 0 auto;background:#fff;color:#00695C;border:1px solid #00897B;padding:7px 12px;min-height:36px;font-size:.72rem;max-width:48%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toast{position:fixed;left:50%;top:14px;transform:translate(-50%,-90px);background:#166534;color:#fff;padding:12px 18px;border-radius:14px;font-weight:700;font-size:.85rem;transition:.4s;z-index:9;max-width:92%}
+.toast.on{transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body>
+<div class="toast" id="ts"></div>
+<div id="app">
+<div class="row" style="margin-bottom:10px;align-items:center"><h2 style="margin:0">🪷 Admin</h2><button class="chip" id="adm" title="Admin ID copy karein">🔐 Connecting…</button></div>
+<div class="al" id="al" hidden></div>
+<div class="st4">
+<div class="sb"><b id="s1">0</b><small>Total</small></div>
+<div class="sb"><b id="s2">0</b><small>Today</small></div>
+<div class="sb"><b id="s3">0</b><small>7 Days</small></div>
+<div class="sb o"><b id="s4">0</b><small>New</small></div></div>
+<div class="cnt" id="cnt"></div>
+<div class="c"><b>📊 Course-wise registrations</b><div id="bk"></div></div>
+<div class="tabs"><button id="t1" class="on">Registrations</button><button id="t2">Courses</button></div>
+<div id="p1">
+<div class="c"><input id="q" placeholder="🔍 Search name / mobile / city">
+<div class="row"><select id="fc"><option value="">All courses</option></select>
+<select id="fs"><option value="">All status</option><option>new</option><option>contacted</option><option>confirmed</option><option>cancelled</option></select></div>
+<div id="rl"></div>
+<button class="g w" id="sm" style="margin-top:10px" hidden>Show more</button>
+<div class="row" style="margin-top:10px"><button class="g" id="lm">Load older (+300)</button><button class="g" id="la">Load all</button></div>
+<div class="inf" id="inf"></div>
+<div class="row" style="margin-top:10px"><button id="csv">Copy all as CSV</button><button id="dl" class="g">Download CSV</button></div></div></div>
+<div id="p2" hidden>
+<div class="c"><label>Title</label><input id="f_title">
+<div class="row"><div><label>Type</label><select id="f_type"><option value="course">Course</option><option value="counselling">Counselling</option><option value="seminar">Youth Seminar</option></select></div>
+<div><label>Status</label><select id="f_status"><option value="open">Open</option><option value="soon">Coming soon</option><option value="full">Full</option></select></div></div>
+<label>Description</label><textarea id="f_desc" rows="2"></textarea>
+<label>Subjects (comma or new line)</label><textarea id="f_subjects" rows="3"></textarea>
+<div class="row"><div><label>Days</label><input id="f_days" placeholder="Every Sunday"></div><div><label>Time</label><input id="f_time" placeholder="6 PM - 7 PM"></div></div>
+<div class="row"><div><label>Fee (blank = Free)</label><input id="f_fee" placeholder="500"></div><div><label>Order</label><input id="f_order" type="number" value="1"></div></div>
+<label>Special note (optional)</label><input id="f_note" placeholder="Only for 8 rounds chanters">
+<label><input type="checkbox" id="f_active" checked style="width:auto"> Show in app</label>
+<div class="row"><button id="sv">Save</button><button class="g" id="cx">Clear</button></div></div>
+<div class="c"><div id="cl"></div><button class="g w" id="sd" style="margin-top:10px">Load default courses</button></div>
+</div></div>
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+import{getDatabase,ref,onValue,set,remove,push,get,query,orderByChild,limitToLast,onChildAdded,onChildChanged,onChildRemoved}from"https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+import{getAuth,signInAnonymously,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+const app=initializeApp({apiKey:"AIzaSyBfbNzASqzPt4kMP-LlpJasIras7ifTch4",authDomain:"iskcon-hadapsar.firebaseapp.com",databaseURL:"https://iskcon-hadapsar-default-rtdb.firebaseio.com",projectId:"iskcon-hadapsar",appId:"1:231589086724:web:64d8a5d7a136b39db39751"});
+const db=getDatabase(app),au=getAuth(app),$=i=>document.getElementById(i);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const F=["title","type","desc","subjects","days","time","fee","note","status","order"];
+const DEF=[["Bhagavad Gita Course - Level 1","course"],["Bhagavad Gita Course - Level 2","course"],["Art of Mind Control","course"],["Discover Your Self","course"],["Stress Management","course"],["ISKCON Disciple Course","course"],["Bhakti Shastri","course"],["Counselling & Training","counselling"],["Yuva Seminar","seminar"]];
+const PAGE=300;
+let C={},R={},edit=null,un=[],unR=[],lim=PAGE,cap=60,t0=0,seen=new Set(),timer=null,UID="",fromCache=false,started=false,signing=false,authErr="";
+/* ---- instant paint: last known data is shown before the network answers ---- */
+try{C=JSON.parse(localStorage.getItem("ta_c")||"{}")||{};R=JSON.parse(localStorage.getItem("ta_r")||"{}")||{};Object.keys(R).forEach(k=>seen.add(k));fromCache=Object.keys(R).length>0}catch(e){C={};R={}}
+function toast(m){const t=$("ts");t.textContent=m;t.classList.add("on");try{navigator.vibrate&&navigator.vibrate([120,60,120])}catch(e){}setTimeout(()=>t.classList.remove("on"),4000)}
+function copy(t,ok){const done=()=>toast(ok);
+if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done,()=>old())}else old();
+function old(){try{const a=document.createElement("textarea");a.value=t;a.style.cssText="position:fixed;opacity:0";document.body.appendChild(a);a.select();document.execCommand("copy");a.remove();done()}catch(e){toast("Copy nahi hua")}}}
+function warn(code){const a=$("al");a.hidden=false;
+a.innerHTML="⚠️ <b>"+esc(code)+"</b><br>Is device ko admin access nahi mila. Firebase Realtime Database Rules me <code>admins/"+esc(UID||"ADMIN-ID")+"</code> ko <code>true</code> kar dein."+(UID?'<br><button id="cpu">Copy Admin ID</button>':"");
+const b=$("cpu");if(b)b.onclick=()=>copy(UID,"Admin ID copied ✅")}
+function fail(e){warn(e&&e.code||"ERROR")}
+$("adm").onclick=()=>{if(UID)copy(UID,"Admin ID copied ✅")};
+/* ---- admin identity: silent, device-bound (no login screen). AppCreator24 handles who can open this page ---- */
+onAuthStateChanged(au,u=>{
+if(u){UID=u.uid;$("adm").textContent="🔐 "+UID.slice(0,8)+"…";if(!started){started=true;start()}}
+else if(!signing){signing=true;signInAnonymously(au).catch(e=>{authErr=e.code;$("adm").textContent="🔓 No ID";
+const a=$("al");a.hidden=false;a.innerHTML="⚠️ <b>"+esc(e.code)+"</b><br>Firebase Console → Authentication → Sign-in method me <b>Anonymous</b> chalu karein.";
+if(!started){started=true;start()}})}});
+function start(){t0=Date.now();lim=PAGE;cap=60;
+un=[onValue(ref(db,"courses"),s=>{C=s.val()||{};try{localStorage.setItem("ta_c",JSON.stringify(C))}catch(e){}drawC();opts()},fail)];startR()}
+/* ---- render is debounced so a burst of registrations never freezes the panel ---- */
+function sched(){clearTimeout(timer);timer=setTimeout(()=>{stats();opts();drawR();drawC();saveCache()},150)}
+function saveCache(){try{const top=Object.entries(R).sort((a,b)=>(b[1].ts||0)-(a[1].ts||0)).slice(0,60);localStorage.setItem("ta_r",JSON.stringify(Object.fromEntries(top)))}catch(e){}}
+/* only the newest `lim` registrations are streamed (delta events), not the whole table */
+function startR(){unR.forEach(f=>f());unR=[];
+const q=query(ref(db,"registrations"),orderByChild("ts"),limitToLast(lim));
+const put=s=>{if(fromCache){R={};fromCache=false}R[s.key]=s.val();$("al").hidden=true;sched()};
+unR=[onChildAdded(q,s=>{put(s);const r=s.val();if(r&&r.ts>=t0&&!seen.has(s.key)){seen.add(s.key);toast("🔔 New: "+r.name+" → "+r.courseTitle)}},fail),
+onChildChanged(q,put,fail),
+onChildRemoved(q,s=>{delete R[s.key];sched()},fail)]}
+$("t1").onclick=()=>{$("p1").hidden=false;$("p2").hidden=true;$("t1").className="on";$("t2").className=""};
+$("t2").onclick=()=>{$("p1").hidden=true;$("p2").hidden=false;$("t2").className="on";$("t1").className=""};
+function stats(){const a=Object.values(R),d=new Date();d.setHours(0,0,0,0);
+const n=a.length;$("s1").textContent=n+(n>=lim?"+":"");$("s2").textContent=a.filter(r=>r.ts>=d.getTime()).length;
+$("s3").textContent=a.filter(r=>r.ts>=Date.now()-6048e5).length;
+const sc={new:0,contacted:0,confirmed:0,cancelled:0};a.forEach(r=>{const s=r.status||"new";sc[s]=(sc[s]||0)+1});
+$("s4").textContent=sc.new;
+$("cnt").innerHTML=Object.entries(sc).map(([k,v])=>"<span>"+k+" "+v+"</span>").join("");
+const m={};a.forEach(r=>m[r.courseTitle]=(m[r.courseTitle]||0)+1);
+const e=Object.entries(m).sort((x,y)=>y[1]-x[1]),mx=e.length?e[0][1]:1;
+$("bk").innerHTML=e.map(([t,n])=>'<div class="bar"><span>'+esc(t)+'</span><b>'+n+'</b><i style="width:'+n/mx*100+'%"></i></div>').join("")||"<small>No registrations yet</small>";
+$("inf").textContent=n>=lim?"Showing latest "+n+" registrations. Tap Load older / Load all for more.":"All "+n+" registrations loaded.";
+$("lm").hidden=$("la").hidden=n<lim}
+function opts(){const s=new Set([...Object.values(C).map(c=>c.title),...Object.values(R).map(r=>r.courseTitle)]),v=$("fc").value;
+$("fc").innerHTML='<option value="">All courses</option>'+[...s].filter(Boolean).map(t=>'<option'+(t===v?' selected':'')+' value="'+esc(t)+'">'+esc(t)+'</option>').join("")}
+function drawR(){const all=Object.entries(R).sort((x,y)=>(x[1].ts||0)-(y[1].ts||0)),ser={};all.forEach((e,i)=>ser[e[0]]=i+1);
+const q=$("q").value.toLowerCase(),fc=$("fc").value,fs=$("fs").value;
+const f=all.filter(([id,r])=>(!fc||r.courseTitle===fc)&&(!fs||(r.status||"new")===fs)&&(!q||(r.name+r.mobile+(r.city||"")).toLowerCase().includes(q))).reverse();
+const a=f.slice(0,cap);
+$("sm").hidden=f.length<=cap;$("sm").textContent="Show more ("+(f.length-cap)+" left)";
+$("rl").innerHTML=a.map(([id,r])=>'<div class="rg"><div class="no">#'+ser[id]+'</div><div class="rb"><b>'+esc(r.name)+'</b><small>📞 '+esc(r.mobile)+(r.city?' • 📍 '+esc(r.city):'')+'</small><small>📚 '+esc(r.courseTitle)+'</small><small>🕒 '+new Date(r.ts).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"numeric",minute:"2-digit"})+'</small>'
++'<div class="acts"><select data-s="'+id+'">'+["new","contacted","confirmed","cancelled"].map(s=>'<option'+((r.status||"new")===s?' selected':'')+'>'+s+'</option>').join("")+'</select><a href="tel:'+esc(r.mobile)+'">Call</a><a target="_blank" href="https://wa.me/91'+esc(r.mobile)+'?text='+encodeURIComponent("Hare Krishna "+r.name+" Prabhu! 🙏 Your registration for "+r.courseTitle+" is received.")+'">WhatsApp</a><button class="r" data-r="'+id+'">✕</button></div></div></div>').join("")||"<small>No registrations found.</small>"}
+let qt=null;
+["q","fc","fs"].forEach(i=>$(i).oninput=()=>{cap=60;clearTimeout(qt);qt=setTimeout(drawR,i==="q"?200:0)});
+$("sm").onclick=()=>{cap+=60;drawR()};
+$("lm").onclick=()=>{lim+=PAGE;startR()};
+$("la").onclick=()=>{if(!confirm("Load all registrations? This can use more data."))return;lim=100000;startR()};
+$("rl").onchange=e=>{const s=e.target.dataset.s;if(s)set(ref(db,"registrations/"+s+"/status"),e.target.value).then(stats).catch(fail)};
+$("rl").onclick=e=>{const b=e.target.closest("[data-r]");if(b&&confirm("Delete this registration?"))remove(ref(db,"registrations/"+b.dataset.r)).catch(fail)};
+/* CSV always exports EVERYTHING via one on-demand read, independent of the loaded window */
+const cell=x=>{x=String(x==null?"":x);if(/^[=+\-@\t\r]/.test(x))x="'"+x;return'"'+x.replace(/"/g,'""')+'"'};
+async function buildCsv(){let all;try{const s=await get(ref(db,"registrations"));all=s.val()||{}}catch(e){fail(e);return null}
+const rows=Object.values(all).sort((a,b)=>a.ts-b.ts);
+return{n:rows.length,t:"No,Course,Name,Mobile,City,Status,Date\n"+rows.map((r,i)=>[i+1,r.courseTitle,r.name,r.mobile,r.city||"",r.status||"new",new Date(r.ts).toLocaleString("en-IN")].map(cell).join(",")).join("\n")}}
+$("csv").onclick=async()=>{const c=await buildCsv();if(c)copy(c.t,"Copied "+c.n+" rows! Paste in Google Sheets")};
+$("dl").onclick=async()=>{const c=await buildCsv();if(!c)return;
+try{const u=URL.createObjectURL(new Blob(["\ufeff"+c.t],{type:"text/csv;charset=utf-8"})),a=document.createElement("a");a.href=u;a.download="registrations_"+Date.now()+".csv";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),3000);toast("CSV download: "+c.n+" rows")}catch(e){copy(c.t,"Download nahi hua, CSV copy ho gaya")}};
+function clr(){edit=null;F.forEach(k=>$("f_"+k).value="");$("f_type").value="course";$("f_status").value="open";$("f_order").value="1";$("f_active").checked=true}
+$("cx").onclick=clr;
+$("sv").onclick=()=>{const o={};F.forEach(k=>o[k]=$("f_"+k).value.trim());
+if(!o.title){alert("Title required");return}
+o.order=+o.order||99;o.active=$("f_active").checked;
+set(ref(db,"courses/"+(edit||push(ref(db,"courses")).key)),o).then(()=>{clr();toast("Saved ✅")}).catch(e=>alert("Error: "+e.code))};
+$("sd").onclick=()=>{if(!confirm("Add default courses?"))return;DEF.forEach((d,i)=>{const o={title:d[0],type:d[1],desc:"",subjects:"",days:"",time:"",fee:"",note:"",status:"soon",order:i+1,active:true};
+if(d[1]==="counselling"){o.note="Only for devotees chanting 8 rounds • Free";o.fee="Free";o.desc="Apply Krishna consciousness practically in daily life"}
+if(d[1]==="seminar")o.days="Every Saturday";set(push(ref(db,"courses")),o).catch(fail)})};
+function drawC(){const n={};Object.values(R).forEach(r=>n[r.courseTitle]=(n[r.courseTitle]||0)+1);
+$("cl").innerHTML=Object.entries(C).sort((a,b)=>(a[1].order||99)-(b[1].order||99)).map(([id,c])=>'<div class="it"><div><b>'+esc(c.title)+'</b><small>'+esc(c.type)+' • '+esc(c.status)+(c.active===false?' • HIDDEN':'')+' • 👥 '+(n[c.title]||0)+'</small></div><div><button data-e="'+id+'">Edit</button> <button class="r" data-d="'+id+'">Del</button></div></div>').join("")||"<small>No courses yet.</small>"}
+$("cl").onclick=e=>{const b=e.target.closest("button");if(!b)return;
+if(b.dataset.e){const c=C[b.dataset.e];edit=b.dataset.e;F.forEach(k=>$("f_"+k).value=c[k]==null?"":c[k]);$("f_active").checked=c.active!==false;scrollTo(0,0)}
+if(b.dataset.d&&confirm("Delete this course?"))remove(ref(db,"courses/"+b.dataset.d)).catch(fail)};
+/* first paint straight from cache */
+sched();
+</script></body></html>
