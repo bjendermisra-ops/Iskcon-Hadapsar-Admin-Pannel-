@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sri Sri Radha Krishna Chandra - Admin Vault</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* Premium Spiritual Theme */
+        :root {
+            --primary: #F26722; /* Saffron/Orange */
+            --secondary: #FFD700; /* Gold */
+            --bg-dark: #0a0200; /* Very Dark Warm Maroon/Black */
+            --card-glass: rgba(30, 10, 5, 0.85);
+            --glow: 0 0 25px rgba(242, 103, 34, 0.4);
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            font-family: 'Poppins', sans-serif;
+            color: white;
+            margin: 0;
+            min-height: 100vh;
+            background-image: radial-gradient(circle at top right, #3a1000 0%, transparent 60%), radial-gradient(circle at bottom left, #1a0500 0%, transparent 50%);
+        }
+
+        /* Admin Header */
+        .admin-header { background: rgba(10, 2, 0, 0.9); backdrop-filter: blur(20px); padding: 20px 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid rgba(242, 103, 34, 0.3); }
+        .admin-header h1 { font-family: 'Cinzel', serif; color: var(--secondary); margin: 0; font-size: 1.8rem; text-shadow: 0 2px 10px rgba(255,215,0,0.4); letter-spacing: 1px; font-weight: 800;}
+
+        /* Connection chip (replaces Exit button) */
+        .conn-chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 30px; font-size: 0.82rem; font-weight: 600; border: 1px solid rgba(255,215,0,0.4); background: rgba(255,215,0,0.08); color: var(--secondary); }
+        .conn-chip .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--secondary); animation: pulseDot 1.4s ease-in-out infinite; }
+        .conn-chip.ok { border-color: rgba(46,213,115,0.5); background: rgba(46,213,115,0.1); color: #2ed573; }
+        .conn-chip.ok .dot { background: #2ed573; animation: none; }
+        .conn-chip.warn { border-color: rgba(255,71,87,0.5); background: rgba(255,71,87,0.1); color: #ff4757; }
+        .conn-chip.warn .dot { background: #ff4757; animation: none; }
+        @keyframes pulseDot { 0%,100% { opacity: 0.35; } 50% { opacity: 1; } }
+
+        @media (max-width: 576px) {
+            .admin-header { padding: 14px 16px; }
+            .admin-header h1 { font-size: 1.05rem; }
+            .admin-container { padding: 22px 16px !important; margin: 20px auto !important; }
+            .conn-chip { padding: 6px 12px; font-size: 0.72rem; }
+        }
+
+        /* Main Container */
+        .admin-container { max-width: 900px; margin: 40px auto; background: var(--card-glass); padding: 40px; border-radius: 25px; border: 1px solid rgba(242, 103, 34, 0.2); box-shadow: 0 20px 50px rgba(0,0,0,0.9); }
+
+        .form-label { font-weight: 600; color: #ffffff; font-size: 0.95rem; margin-bottom: 8px; display: block; letter-spacing: 0.5px;}
+        .form-control, .form-select { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); color: #ffffff; font-weight: 500; border-radius: 12px; padding: 14px; width: 100%; transition: 0.3s; }
+        .form-control::placeholder { color: rgba(255, 255, 255, 0.6); font-weight: 400; }
+        .form-control:focus, .form-select:focus { background: rgba(255, 255, 255, 0.15); border-color: var(--primary); outline: none; box-shadow: 0 0 12px rgba(242,103,34,0.6); color: #ffffff; }
+        .form-select option { background: var(--bg-dark); color: white; }
+        ::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; opacity: 0.8;}
+
+        /* Image Upload Box */
+        .upload-box { position: relative; width: 100%; height: 250px; border: 2px dashed rgba(242,103,34,0.5); border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(242,103,34,0.05); cursor: pointer; transition: 0.3s; overflow: hidden; margin-bottom: 10px;}
+        .upload-box:hover { background: rgba(242,103,34,0.1); border-color: var(--primary); }
+        .upload-box i { font-size: 3.5rem; color: var(--primary); margin-bottom: 15px; text-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .upload-box p { color: #ccc; font-size: 1rem; margin:0; font-weight: 500;}
+        .upload-box input[type="file"] { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+        .upload-box img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; background: #000; display: none; z-index: 10; }
+
+        /* 🗜️ Compression info chips */
+        .compress-info { display: none; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; font-size: 0.82rem; font-weight: 600; }
+        .size-chip { padding: 5px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.06); color: #ddd; }
+        .size-chip.good { border-color: rgba(46,213,115,0.5); background: rgba(46,213,115,0.12); color: #2ed573; }
+        .size-chip.busy { border-color: rgba(255,215,0,0.5); background: rgba(255,215,0,0.1); color: var(--secondary); }
+
+        /* 📶 Upload progress */
+        .progress-wrap { display: none; width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 999px; overflow: hidden; margin-top: 14px; }
+        .progress-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #F26722, #FFD700); border-radius: 999px; transition: width 0.15s linear; }
+
+        /* 🔥 NEW DIRECT CAMERA BUTTON STYLE 🔥 */
+        .btn-camera { background: rgba(242, 103, 34, 0.1); color: var(--primary); border: 1px dashed var(--primary); width: 100%; padding: 14px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.3s; margin-bottom: 25px; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1.05rem; }
+        .btn-camera:hover { background: rgba(242, 103, 34, 0.2); color: white; border-color: white; box-shadow: 0 0 15px rgba(242,103,34,0.3); }
+
+        /* Buttons */
+        .btn-publish { background: linear-gradient(45deg, #F26722, #d35400); border: none; color: white; width: 100%; padding: 16px; border-radius: 15px; font-size: 1.2rem; font-family: 'Cinzel', serif; font-weight: 800; text-transform: uppercase; margin-top: 25px; transition: 0.3s; box-shadow: var(--glow); cursor: pointer;}
+        .btn-publish:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(242,103,34,0.6); }
+        .btn-publish:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .btn-cancel-modal { background: rgba(255, 71, 87, 0.1); color: #ff4757; border: 1px solid #ff4757; width: 100%; padding: 16px; border-radius: 15px; font-size: 1.2rem; font-family: 'Cinzel', serif; font-weight: 800; text-transform: uppercase; transition: 0.3s; cursor: pointer; }
+        .btn-cancel-modal:hover { background: #ff4757; color: white; box-shadow: 0 10px 25px rgba(255, 71, 87, 0.5); transform: translateY(-3px); }
+
+        .status-badge { display: none; text-align: center; padding: 15px; border-radius: 10px; margin-top: 20px; font-weight: 600; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+
+        /* Management List */
+        .manage-gallery { margin-top: 50px; border-top: 1px solid rgba(242, 103, 34, 0.2); padding-top: 30px; }
+        .gallery-item-admin { display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); transition: 0.3s; content-visibility: auto; contain-intrinsic-size: 110px;}
+        .gallery-item-admin:hover { background: rgba(255,255,255,0.08); border-color: rgba(242,103,34,0.3); }
+        .gallery-item-admin img { width: 80px; height: 80px; object-fit: cover; border-radius: 10px; margin-right: 15px; border: 1px solid rgba(242,103,34,0.5); background: #1a0a05; }
+        .item-info { flex-grow: 1; }
+        .item-title { font-size: 1.1rem; font-weight: 600; margin: 0; color: #fff;}
+        .item-date { font-size: 0.85rem; color: var(--secondary); background: rgba(255,215,0,0.1); padding: 4px 10px; border-radius: 20px; margin-top: 5px; display: inline-block;}
+
+        .action-btns { display: flex; gap: 10px; }
+        .btn-edit { background: rgba(52, 152, 219, 0.1); color: #3498db; border: 1px solid #3498db; padding: 8px 15px; border-radius: 10px; cursor: pointer; transition: 0.3s;}
+        .btn-edit:hover { background: #3498db; color: white; box-shadow: 0 0 10px rgba(52,152,219,0.5);}
+        .btn-delete { background: rgba(255,71,87,0.1); color: #ff4757; border: 1px solid #ff4757; padding: 8px 15px; border-radius: 10px; cursor: pointer; transition: 0.3s;}
+        .btn-delete:hover { background: #ff4757; color: white; box-shadow: 0 0 10px rgba(255,71,87,0.5);}
+
+        /* Edit Modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(8px); overflow-y: auto;}
+        .modal-box { background: var(--card-glass); border: 1px solid var(--primary); padding: 30px; border-radius: 20px; width: 90%; max-width: 600px; box-shadow: var(--glow); position: relative; margin: auto; margin-top: 50px; margin-bottom: 50px;}
+        .close-modal { position: absolute; top: 15px; right: 20px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; transition: 0.3s;}
+        .close-modal:hover { color: #ff4757; }
+        .edit-img-preview { width: 100%; height: 180px; background: #000; border-radius: 10px; border: 1px solid rgba(242,103,34,0.5); object-fit: contain; margin-bottom: 10px; }
+
+        /* Delete Modal */
+        .confirm-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 4000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+        .confirm-box { background: var(--card-glass); border: 1px solid #ff4757; padding: 35px 25px; border-radius: 20px; width: 90%; max-width: 400px; box-shadow: 0 0 30px rgba(255, 71, 87, 0.3); text-align: center; animation: fadeIn 0.3s; }
+        .confirm-box i { font-size: 4rem; color: #ff4757; margin-bottom: 15px; text-shadow: 0 0 15px rgba(255, 71, 87, 0.5);}
+        .confirm-box h3 { font-family: 'Cinzel', serif; color: white; font-weight: 800; font-size: 1.5rem; margin-bottom: 10px; }
+        .confirm-box p { color: #ccc; font-size: 0.95rem; margin-bottom: 25px; }
+        .confirm-actions { display: flex; gap: 15px; justify-content: center; }
+        .btn-confirm-cancel { background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.3); padding: 12px 20px; border-radius: 12px; cursor: pointer; transition: 0.3s; font-weight: 600; flex: 1; font-family: 'Poppins', sans-serif;}
+        .btn-confirm-cancel:hover { background: rgba(255, 255, 255, 0.2); }
+        .btn-confirm-delete { background: rgba(255, 71, 87, 0.1); color: #ff4757; border: 1px solid #ff4757; padding: 12px 20px; border-radius: 12px; cursor: pointer; transition: 0.3s; font-weight: 600; flex: 1; font-family: 'Poppins', sans-serif;}
+        .btn-confirm-delete:hover { background: #ff4757; color: white; box-shadow: 0 0 15px rgba(255,71,87,0.5); }
+
+        /* 🔥 NEW IN-APP CAMERA MODAL (Forces AppCreator24 to ask permission) 🔥 */
+        #live-camera-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: none; flex-direction: column; }
+        #camera-video { width: 100%; height: 80%; object-fit: cover; background: #111; }
+        .camera-controls { height: 20%; display: flex; align-items: center; justify-content: space-around; background: #000; padding: 20px; border-top: 2px solid var(--primary); }
+        .btn-cam-action { background: rgba(255,255,255,0.1); color: white; border: none; width: 60px; height: 60px; border-radius: 50%; font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+        .btn-cam-action:hover { background: rgba(255,255,255,0.2); }
+        .btn-snap { background: var(--primary); color: white; width: 80px; height: 80px; border-radius: 50%; border: 4px solid white; box-shadow: 0 0 20px rgba(242, 103, 34, 0.8); font-size: 2rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
+        .btn-snap:active { transform: scale(0.9); }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { animation: none !important; transition: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 🔥 IN-APP LIVE CAMERA UI 🔥 -->
+    <div id="live-camera-modal">
+        <video id="camera-video" autoplay playsinline></video>
+        <canvas id="camera-canvas" style="display:none;"></canvas>
+        <div class="camera-controls">
+            <button class="btn-cam-action" onclick="closeLiveCamera()" style="color: #ff4757;"><i class="fas fa-times"></i></button>
+            <button class="btn-snap" onclick="takeSnapshot()"><i class="fas fa-camera"></i></button>
+            <button class="btn-cam-action" onclick="switchCamera()"><i class="fas fa-sync-alt"></i></button>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard (सीधे खुलता है, कोई लॉगिन नहीं) -->
+    <div id="admin-dashboard">
+        <div class="admin-header">
+            <div>
+                <h1>SRI SRI RADHA KRISHNA CHANDRA</h1>
+                <p class="mb-0 text-white-50" style="font-size: 0.85rem; letter-spacing: 1px;">Official Darshan Management</p>
+            </div>
+            <span class="conn-chip" id="connChip"><span class="dot"></span><span id="connText">Connecting...</span></span>
+        </div>
+
+        <div class="container">
+            <div class="admin-container">
+                <h3 style="font-family: 'Cinzel'; color: var(--secondary); margin-bottom: 25px; border-bottom: 1px solid rgba(242,103,34,0.3); padding-bottom: 10px;">
+                    <i class="fas fa-cloud-upload-alt"></i> Publish New Darshan
+                </h3>
+
+                <form id="uploadForm">
+                    <!-- Advanced Image Uploader (Gallery) -->
+                    <div class="upload-box" id="dropZone">
+                        <i class="fas fa-images"></i>
+                        <p>Click or Drop Darshan Image Here</p>
+                        <input type="file" id="imageFile" accept="image/*" required>
+                        <img id="previewImg" src="" alt="Preview">
+                    </div>
+
+                    <!-- 🗜️ Auto-compression result -->
+                    <div class="compress-info" id="compressInfo">
+                        <span class="size-chip" id="chipOriginal">Original: --</span>
+                        <i class="fas fa-arrow-right" style="color: var(--primary);"></i>
+                        <span class="size-chip good" id="chipCompressed">Compressed: --</span>
+                        <span class="size-chip" id="chipSaved"></span>
+                    </div>
+
+                    <!-- 🔥 FORCES IN-APP CAMERA (Bypasses AppCreator24 File Intent limits) 🔥 -->
+                    <button type="button" class="btn-camera" onclick="openLiveCamera('main')">
+                        <i class="fas fa-camera fa-lg"></i> Open Live Camera
+                    </button>
+                    <!-- Fallback hidden input just in case device doesn't support WebRTC -->
+                    <input type="file" id="fallbackCameraFile" accept="image/*" capture="environment" style="display:none;">
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label"><i class="far fa-calendar-check"></i> Darshan Date</label>
+                            <input type="date" id="darshanDate" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label"><i class="fas fa-layer-group"></i> Category</label>
+                            <select id="category" class="form-select" required>
+                                <option value="daily">Daily Darshan</option>
+                                <option value="festival">Festivals</option>
+                                <option value="event">Special Events</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12 mb-3">
+                            <label class="form-label"><i class="fas fa-gauge-high"></i> Image Quality (Fast Load)</label>
+                            <select id="imageQuality" class="form-select">
+                                <option value="fast">Fast - 1200px (smallest, quickest load)</option>
+                                <option value="balanced" selected>Balanced - 1600px (recommended)</option>
+                                <option value="hd">HD - 2200px (sharpest)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mt-2">
+                        <div class="col-md-4 mb-3"><label class="form-label">Title (English)</label><input type="text" id="title_en" class="form-control" placeholder="E.g. Main Altar" required></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">शीर्षक (Hindi)</label><input type="text" id="title_hi" class="form-control" placeholder="मुख्य वेदी" required></div>
+                        <div class="col-md-4 mb-3"><label class="form-label">शीर्षक (Marathi)</label><input type="text" id="title_mr" class="form-control" placeholder="मुख्य वेदी" required></div>
+                    </div>
+
+                    <button type="submit" class="btn-publish" id="submitBtn">
+                        <i class="fas fa-paper-plane"></i> Upload & Publish to App
+                    </button>
+                    <div class="progress-wrap" id="uploadProgressWrap"><div class="progress-bar-fill" id="uploadProgressFill"></div></div>
+                    <div class="status-badge" id="statusText"></div>
+                </form>
+
+                <!-- Manage Section -->
+                <div class="manage-gallery">
+                    <h3 style="font-family: 'Cinzel'; color: white; margin-bottom: 20px;"><i class="fas fa-tasks text-warning"></i> Recent Darshans</h3>
+                    <div id="adminGalleryList"><p style="color: #888;">Loading Database...</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-box">
+            <button class="close-modal" onclick="closeEditModal()"><i class="fas fa-times"></i></button>
+            <h3 style="font-family: 'Cinzel'; color: var(--secondary); border-bottom: 1px solid rgba(242,103,34,0.3); padding-bottom: 10px; margin-bottom: 20px;">
+                <i class="fas fa-edit"></i> Edit Darshan Details
+            </h3>
+            <form id="editForm">
+                <input type="hidden" id="editId">
+
+                <div class="mb-3 text-center">
+                    <label class="form-label text-start">Current Image (Upload new to replace)</label>
+                    <img id="editCurrentImg" src="" class="edit-img-preview" alt="Current Darshan">
+
+                    <input type="file" id="editImageFile" class="form-control" accept="image/*">
+
+                    <!-- 🔥 FORCES IN-APP CAMERA FOR EDIT MODAL 🔥 -->
+                    <button type="button" class="btn-camera mt-3 mb-0" style="padding: 10px;" onclick="openLiveCamera('edit')">
+                        <i class="fas fa-camera"></i> Take New Photo Live
+                    </button>
+                    <input type="file" id="editFallbackCameraFile" accept="image/*" capture="environment" style="display:none;">
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Darshan Date</label>
+                        <input type="date" id="editDarshanDate" class="form-control" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Category</label>
+                        <select id="editCategory" class="form-select" required>
+                            <option value="daily">Daily Darshan</option>
+                            <option value="festival">Festivals</option>
+                            <option value="event">Special Events</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3"><label class="form-label">Title (English)</label><input type="text" id="editTitleEn" class="form-control" required></div>
+                <div class="mb-3"><label class="form-label">शीर्षक (Hindi)</label><input type="text" id="editTitleHi" class="form-control" required></div>
+                <div class="mb-3"><label class="form-label">शीर्षक (Marathi)</label><input type="text" id="editTitleMr" class="form-control" required></div>
+
+                <div style="display: flex; gap: 15px; margin-top: 25px;">
+                    <button type="button" class="btn-cancel-modal" onclick="closeEditModal()" style="margin-top: 0;">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn-publish" id="btnUpdate" style="margin-top: 0;">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="confirm-overlay" id="customConfirmModal">
+        <div class="confirm-box">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>Delete Darshan?</h3>
+            <p>Are you sure you want to delete this Darshan permanently? This action cannot be undone.</p>
+            <div class="confirm-actions">
+                <button class="btn-confirm-cancel" onclick="closeConfirmModal()">Cancel</button>
+                <button class="btn-confirm-delete" id="btnConfirmDelete">Yes, Delete!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FIREBASE & LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAEbzUad0edV07OMF2slPJyJeWd10-Clc8",
+            authDomain: "image-hit-7ce47.firebaseapp.com",
+            databaseURL: "https://image-hit-7ce47-default-rtdb.firebaseio.com",
+            projectId: "image-hit-7ce47"
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const IMGBB_API_KEY = "0ccc2c1efc566b4794dc362ab4602952";
+
+        document.getElementById('darshanDate').value = new Date().toISOString().split('T')[0];
+
+        // ==========================================
+        // 🛠️ HELPERS: escape, size format
+        // ==========================================
+        function escapeHtml(str) {
+            return String(str === undefined || str === null ? '' : str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes && bytes !== 0) return '--';
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        // ==========================================
+        // 🗜️ IMAGE COMPRESSION ENGINE (Fast Load)
+        // बड़ी फोटो को भेजने से पहले छोटा करता है:
+        // resize (लंबा साइड max) + JPEG quality + EXIF सीधा
+        // ==========================================
+        const QUALITY_PRESETS = {
+            fast:     { maxSide: 1200, quality: 0.78 },
+            balanced: { maxSide: 1600, quality: 0.82 },
+            hd:       { maxSide: 2200, quality: 0.88 }
+        };
+
+        function getPreset() {
+            const sel = document.getElementById('imageQuality');
+            return QUALITY_PRESETS[sel.value] || QUALITY_PRESETS.balanced;
+        }
+
+        // सेव की हुई क्वालिटी वापस लोड करें
+        (function restoreQuality() {
+            try {
+                const saved = localStorage.getItem('darshan_quality');
+                if (saved && QUALITY_PRESETS[saved]) document.getElementById('imageQuality').value = saved;
+            } catch (e) {}
+        })();
+
+        function loadImageElement(file) {
+            return new Promise((resolve, reject) => {
+                const url = URL.createObjectURL(file);
+                const img = new Image();
+                img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+                img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image read failed')); };
+                img.src = url;
+            });
+        }
+
+        async function compressImage(file, preset) {
+            // GIF / non-image को जैसा है वैसा भेजें
+            if (!file || !file.type || file.type.indexOf('image/') !== 0 || file.type === 'image/gif') return file;
+
+            let source, srcW, srcH, isBitmap = false;
+            try {
+                source = await createImageBitmap(file, { imageOrientation: 'from-image' });
+                srcW = source.width; srcH = source.height; isBitmap = true;
+            } catch (e) {
+                try {
+                    source = await loadImageElement(file);
+                    srcW = source.naturalWidth; srcH = source.naturalHeight;
+                } catch (e2) {
+                    return file; // पढ़ नहीं पाए तो असली फाइल भेजें
+                }
+            }
+
+            const longest = Math.max(srcW, srcH);
+            const scale = longest > preset.maxSide ? preset.maxSide / longest : 1;
+            const outW = Math.max(1, Math.round(srcW * scale));
+            const outH = Math.max(1, Math.round(srcH * scale));
+
+            const canvas = document.createElement('canvas');
+            canvas.width = outW;
+            canvas.height = outH;
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.fillStyle = '#ffffff'; // PNG की पारदर्शिता काली न हो
+            ctx.fillRect(0, 0, outW, outH);
+            ctx.drawImage(source, 0, 0, outW, outH);
+            if (isBitmap && source.close) source.close();
+
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', preset.quality));
+            canvas.width = 0; canvas.height = 0;
+            if (!blob) return file;
+
+            // अगर कंप्रेस होकर बड़ी हो गई और resize भी नहीं हुआ, तो असली रखें
+            if (blob.size >= file.size && scale === 1) return file;
+
+            const baseName = (file.name || 'darshan').replace(/\.[^.]+$/, '');
+            return new File([blob], baseName + '.jpg', { type: 'image/jpeg', lastModified: Date.now() });
+        }
+
+        // ==========================================
+        // 📤 IMGBB UPLOAD (प्रोग्रेस बार + एक रीट्राई)
+        // ==========================================
+        function imgbbUploadOnce(file, onProgress) {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`);
+                xhr.timeout = 90000;
+                xhr.upload.onprogress = (ev) => {
+                    if (ev.lengthComputable && onProgress) onProgress(Math.round((ev.loaded / ev.total) * 100));
+                };
+                xhr.onload = () => {
+                    try { resolve(JSON.parse(xhr.responseText)); }
+                    catch (e) { reject(new Error('Server Upload Failed')); }
+                };
+                xhr.onerror = () => reject(new Error('Network error while uploading'));
+                xhr.ontimeout = () => reject(new Error('Upload timed out. Try Fast quality or better network.'));
+                const fd = new FormData();
+                fd.append('image', file);
+                xhr.send(fd);
+            });
+        }
+
+        async function uploadToImgBB(file, onProgress) {
+            try {
+                return await imgbbUploadOnce(file, onProgress);
+            } catch (firstErr) {
+                // एक बार दोबारा कोशिश (कमज़ोर नेटवर्क के लिए)
+                if (onProgress) onProgress(0);
+                return await imgbbUploadOnce(file, onProgress);
+            }
+        }
+
+        function setProgress(pct, show) {
+            const wrap = document.getElementById('uploadProgressWrap');
+            const fill = document.getElementById('uploadProgressFill');
+            wrap.style.display = show ? 'block' : 'none';
+            fill.style.width = pct + '%';
+        }
+
+        // ==========================================
+        // 🔓 NO-LOGIN MODE
+        // पेज सीधे खुलता है। Firebase से चुपचाप anonymous कनेक्शन बनता है
+        // ताकि "request.auth != null" वाले Firestore rules भी काम करें।
+        // ==========================================
+        let unsubscribeList = null;
+        let anonAttempted = false;
+
+        function setConn(state, text) {
+            const chip = document.getElementById('connChip');
+            chip.classList.remove('ok', 'warn');
+            if (state === 'ok') chip.classList.add('ok');
+            if (state === 'warn') chip.classList.add('warn');
+            document.getElementById('connText').textContent = text;
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                setConn('ok', 'Connected');
+                loadRecentUploads();
+            } else if (!anonAttempted) {
+                anonAttempted = true;
+                signInAnonymously(auth).catch((err) => {
+                    // Anonymous बंद हो तो भी लिस्ट लोड करने की कोशिश करें (अगर rules खुले हों)
+                    console.error('Anonymous sign-in failed:', err);
+                    setConn('warn', 'Limited access');
+                    loadRecentUploads();
+                });
+            }
+        });
+
+        // ==========================================
+        // 🔥 NATIVE HTML5 LIVE CAMERA (WEBRTC) 🔥
+        // This forces AppCreator24 to request permissions
+        // ==========================================
+        let liveStream = null;
+        let currentFacingMode = "environment"; // Back camera by default
+        let cameraTarget = 'main'; // 'main' or 'edit'
+
+        window.openLiveCamera = async (target) => {
+            cameraTarget = target;
+            try {
+                // Request camera explicitly
+                liveStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: currentFacingMode }
+                });
+                const videoElement = document.getElementById('camera-video');
+                videoElement.srcObject = liveStream;
+                document.getElementById('live-camera-modal').style.display = 'flex';
+            } catch (err) {
+                // FALLBACK: If AppCreator24 blocks WebRTC completely, trigger native file intent
+                console.error("WebRTC Error: ", err);
+                alert("AppCreator24 Camera blocked. Trying fallback method...");
+                if(target === 'main') document.getElementById('fallbackCameraFile').click();
+                if(target === 'edit') document.getElementById('editFallbackCameraFile').click();
+            }
+        };
+
+        window.closeLiveCamera = () => {
+            if (liveStream) {
+                liveStream.getTracks().forEach(track => track.stop());
+                liveStream = null;
+            }
+            document.getElementById('live-camera-modal').style.display = 'none';
+        };
+
+        window.switchCamera = async () => {
+            currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
+            closeLiveCamera();
+            openLiveCamera(cameraTarget); // Reopen with new mode
+        };
+
+        window.takeSnapshot = () => {
+            const video = document.getElementById('camera-video');
+            const canvas = document.getElementById('camera-canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Convert Canvas to Blob -> File -> Input
+            canvas.toBlob((blob) => {
+                const file = new File([blob], "live_darshan_capture.jpg", { type: "image/jpeg" });
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+
+                if (cameraTarget === 'main') {
+                    const mainInput = document.getElementById('imageFile');
+                    mainInput.files = dataTransfer.files;
+                    mainInput.dispatchEvent(new Event('change')); // trigger preview
+                } else if (cameraTarget === 'edit') {
+                    const editInput = document.getElementById('editImageFile');
+                    editInput.files = dataTransfer.files;
+                    editInput.dispatchEvent(new Event('change')); // trigger preview
+                }
+
+                closeLiveCamera();
+            }, 'image/jpeg', 0.95);
+        };
+
+        // Fallback Native Input listeners (just in case WebRTC fails entirely)
+        document.getElementById('fallbackCameraFile').addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const dt = new DataTransfer(); dt.items.add(this.files[0]);
+                document.getElementById('imageFile').files = dt.files;
+                document.getElementById('imageFile').dispatchEvent(new Event('change'));
+            }
+        });
+        document.getElementById('editFallbackCameraFile').addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const dt = new DataTransfer(); dt.items.add(this.files[0]);
+                document.getElementById('editImageFile').files = dt.files;
+                document.getElementById('editImageFile').dispatchEvent(new Event('change'));
+            }
+        });
+        // ==========================================
+
+        // Main Image Preview Logic + Auto Compression
+        const imageFile = document.getElementById('imageFile');
+        const previewImg = document.getElementById('previewImg');
+        const compressInfo = document.getElementById('compressInfo');
+        const chipOriginal = document.getElementById('chipOriginal');
+        const chipCompressed = document.getElementById('chipCompressed');
+        const chipSaved = document.getElementById('chipSaved');
+
+        let preparedMainFile = null;      // कंप्रेस की हुई फाइल (अपलोड के लिए तैयार)
+        let preparedMainSource = null;    // जिस असली फाइल से बनी
+        let preparedMainKey = '';         // क्वालिटी + फाइल पहचान
+        let preparePromise = null;
+
+        function fileKey(file) {
+            return file ? [file.name, file.size, file.lastModified, document.getElementById('imageQuality').value].join('|') : '';
+        }
+
+        async function prepareMainImage() {
+            const file = imageFile.files[0];
+            if (!file) {
+                preparedMainFile = null; preparedMainSource = null; preparedMainKey = '';
+                compressInfo.style.display = 'none';
+                return null;
+            }
+            const key = fileKey(file);
+            if (preparedMainFile && preparedMainKey === key) return preparedMainFile;
+
+            compressInfo.style.display = 'flex';
+            chipOriginal.textContent = 'Original: ' + formatBytes(file.size);
+            chipCompressed.className = 'size-chip busy';
+            chipCompressed.textContent = 'Compressing...';
+            chipSaved.textContent = '';
+
+            const myPromise = (async () => {
+                const out = await compressImage(file, getPreset());
+                // अगर इस बीच दूसरी फोटो चुन ली गई तो पुराना नतीजा न रखें
+                if (imageFile.files[0] !== file) return out;
+                preparedMainFile = out;
+                preparedMainSource = file;
+                preparedMainKey = key;
+                chipCompressed.className = 'size-chip good';
+                chipCompressed.textContent = 'Compressed: ' + formatBytes(out.size);
+                if (out.size < file.size) {
+                    const pct = Math.round((1 - out.size / file.size) * 100);
+                    chipSaved.className = 'size-chip good';
+                    chipSaved.textContent = '⚡ ' + pct + '% smaller';
+                } else {
+                    chipSaved.className = 'size-chip';
+                    chipSaved.textContent = 'Already optimized';
+                }
+                return out;
+            })();
+            preparePromise = myPromise;
+            return myPromise;
+        }
+
+        imageFile.addEventListener('change', function() {
+            preparedMainFile = null; preparedMainKey = '';
+            if (this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => { previewImg.src = e.target.result; previewImg.style.display = 'block'; }
+                reader.readAsDataURL(this.files[0]);
+                prepareMainImage();
+            } else {
+                compressInfo.style.display = 'none';
+            }
+        });
+
+        document.getElementById('imageQuality').addEventListener('change', function() {
+            try { localStorage.setItem('darshan_quality', this.value); } catch (e) {}
+            preparedMainFile = null; preparedMainKey = '';
+            if (imageFile.files[0]) prepareMainImage();
+        });
+
+        // Edit Modal Live Image Preview Update
+        const editImageFile = document.getElementById('editImageFile');
+        const editCurrentImg = document.getElementById('editCurrentImg');
+
+        editImageFile.addEventListener('change', function() {
+            if (this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => { editCurrentImg.src = e.target.result; }
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+
+        // Submit & Upload New Darshan
+        const form = document.getElementById('uploadForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const statusText = document.getElementById('statusText');
+        let statusHideTimer = null;
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const rawFile = imageFile.files[0];
+            if(!rawFile) return alert("Select an image first!");
+
+            if (statusHideTimer) { clearTimeout(statusHideTimer); statusHideTimer = null; }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading to Cloud...';
+            statusText.style.display = "block";
+            statusText.style.background = "rgba(242, 103, 34, 0.2)";
+            statusText.style.color = "var(--secondary)";
+
+            try {
+                // 0. Compress (अगर पहले से तैयार नहीं है)
+                statusText.innerHTML = "Step 1: Optimizing image for fast loading...";
+                const file = await prepareMainImage() || rawFile;
+
+                // 1. Upload to ImgBB
+                statusText.innerHTML = "Step 2: Uploading (" + formatBytes(file.size) + ") to Secure Darshan Server...";
+                setProgress(0, true);
+                const data = await uploadToImgBB(file, (pct) => {
+                    setProgress(pct, true);
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading ' + pct + '%';
+                });
+                if (!data.success) throw new Error("Server Upload Failed");
+
+                // 2. Save Text to Firebase
+                statusText.innerHTML = "Step 3: Encrypting & Syncing with Main Database...";
+                setProgress(100, true);
+                const imgInfo = data.data;
+                await addDoc(collection(db, "iskcon_images"), {
+                    imageUrl: imgInfo.url, width: imgInfo.width, height: imgInfo.height,
+                    thumbUrl: (imgInfo.thumb && imgInfo.thumb.url) ? imgInfo.thumb.url : imgInfo.url,
+                    mediumUrl: (imgInfo.medium && imgInfo.medium.url) ? imgInfo.medium.url : imgInfo.url,
+                    fileSize: file.size,
+                    darshan_date: document.getElementById('darshanDate').value,
+                    category: document.getElementById('category').value,
+                    title_en: document.getElementById('title_en').value,
+                    title_hi: document.getElementById('title_hi').value,
+                    title_mr: document.getElementById('title_mr').value,
+                    timestamp: serverTimestamp()
+                });
+
+                statusText.style.background = "rgba(46, 213, 115, 0.2)";
+                statusText.style.color = "#2ed573";
+                statusText.innerHTML = "✅ Live on App Successfully!";
+                form.reset(); previewImg.style.display = 'none';
+                compressInfo.style.display = 'none';
+                preparedMainFile = null; preparedMainKey = '';
+                document.getElementById('darshanDate').value = new Date().toISOString().split('T')[0];
+                try {
+                    const saved = localStorage.getItem('darshan_quality');
+                    if (saved && QUALITY_PRESETS[saved]) document.getElementById('imageQuality').value = saved;
+                } catch (qe) {}
+
+                document.getElementById('fallbackCameraFile').value = '';
+
+            } catch (err) {
+                statusText.style.background = "rgba(255, 71, 87, 0.2)";
+                statusText.style.color = "#ff4757";
+                statusText.innerHTML = "❌ Error: " + err.message;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Upload & Publish to App';
+                setTimeout(() => setProgress(0, false), 800);
+                statusHideTimer = setTimeout(() => { statusText.style.display = "none"; }, 5000);
+            }
+        });
+
+        // Global Data Storage
+        let globalDarshanData = {};
+
+        // Load Management List
+        function loadRecentUploads() {
+            if (unsubscribeList) { unsubscribeList(); unsubscribeList = null; }
+
+            const q = query(collection(db, "iskcon_images"), orderBy("timestamp", "desc"));
+            unsubscribeList = onSnapshot(q, (snapshot) => {
+                const list = document.getElementById('adminGalleryList');
+                globalDarshanData = {};
+
+                if(snapshot.empty) {
+                    list.innerHTML = '<p style="color: #888; text-align:center;">No Darshan Uploaded Yet.</p>';
+                    return;
+                }
+
+                let html = '';
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    globalDarshanData[docSnap.id] = data;
+
+                    const thumb = data.thumbUrl || data.imageUrl;
+                    html += `
+                        <div class="gallery-item-admin">
+                            <div style="display:flex; align-items:center;">
+                                <img src="${escapeHtml(thumb)}" data-full="${escapeHtml(data.imageUrl)}" loading="lazy" decoding="async" alt="img" onerror="if(this.dataset.full && this.src!==this.dataset.full){this.src=this.dataset.full;}">
+                                <div class="item-info">
+                                    <p class="item-title">${escapeHtml(data.title_en)}</p>
+                                    <span class="item-date"><i class="far fa-calendar"></i> ${escapeHtml(data.darshan_date)}</span>
+                                </div>
+                            </div>
+                            <div class="action-btns">
+                                <button class="btn-edit" onclick="openEditModal('${docSnap.id}')" title="Edit Details"><i class="fas fa-edit"></i></button>
+                                <button class="btn-delete" onclick="openConfirmModal('${docSnap.id}')" title="Delete Darshan"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>
+                    `;
+                });
+                list.innerHTML = html;
+            }, (error) => {
+                setConn('warn', 'Access blocked');
+                document.getElementById('adminGalleryList').innerHTML = '<p style="color: #ff4757; text-align:center;">Could not load list: ' + escapeHtml(error.message) + '<br><small>Firebase Console में Authentication → Anonymous चालू करें, या Firestore Rules जाँचें।</small></p>';
+            });
+        }
+
+        let deleteTargetId = null;
+
+        window.openConfirmModal = (id) => {
+            deleteTargetId = id;
+            document.getElementById('customConfirmModal').style.display = 'flex';
+        };
+
+        window.closeConfirmModal = () => {
+            deleteTargetId = null;
+            document.getElementById('customConfirmModal').style.display = 'none';
+        };
+
+        document.getElementById('btnConfirmDelete').addEventListener('click', async () => {
+            if(deleteTargetId) {
+                const btn = document.getElementById('btnConfirmDelete');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+                btn.disabled = true;
+
+                try {
+                    await deleteDoc(doc(db, "iskcon_images", deleteTargetId));
+                    closeConfirmModal();
+                } catch(error) {
+                    alert("Error deleting: " + error.message);
+                } finally {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            }
+        });
+
+        window.openEditModal = (id) => {
+            const data = globalDarshanData[id];
+            if(!data) return;
+
+            document.getElementById('editId').value = id;
+            document.getElementById('editDarshanDate').value = data.darshan_date;
+            document.getElementById('editCategory').value = data.category;
+            document.getElementById('editTitleEn').value = data.title_en;
+            document.getElementById('editTitleHi').value = data.title_hi;
+            document.getElementById('editTitleMr').value = data.title_mr;
+
+            document.getElementById('editCurrentImg').src = data.mediumUrl || data.imageUrl;
+            document.getElementById('editImageFile').value = "";
+            document.getElementById('editFallbackCameraFile').value = "";
+
+            document.getElementById('editModal').style.display = 'flex';
+        };
+
+        window.closeEditModal = () => {
+            document.getElementById('editModal').style.display = 'none';
+        };
+
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('editId').value;
+            const btnUpdate = document.getElementById('btnUpdate');
+            const newImageFile = document.getElementById('editImageFile').files[0];
+
+            btnUpdate.disabled = true;
+            btnUpdate.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+            try {
+                let updatePayload = {
+                    darshan_date: document.getElementById('editDarshanDate').value,
+                    category: document.getElementById('editCategory').value,
+                    title_en: document.getElementById('editTitleEn').value,
+                    title_hi: document.getElementById('editTitleHi').value,
+                    title_mr: document.getElementById('editTitleMr').value
+                };
+
+                if (newImageFile) {
+                    btnUpdate.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Optimizing image...';
+                    const optimized = await compressImage(newImageFile, getPreset());
+
+                    btnUpdate.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing with Secure Server...';
+                    const imgData = await uploadToImgBB(optimized, (pct) => {
+                        btnUpdate.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading ' + pct + '%';
+                    });
+
+                    if (!imgData.success) throw new Error("Secure Server Upload Failed");
+
+                    updatePayload.imageUrl = imgData.data.url;
+                    updatePayload.width = imgData.data.width;
+                    updatePayload.height = imgData.data.height;
+                    updatePayload.thumbUrl = (imgData.data.thumb && imgData.data.thumb.url) ? imgData.data.thumb.url : imgData.data.url;
+                    updatePayload.mediumUrl = (imgData.data.medium && imgData.data.medium.url) ? imgData.data.medium.url : imgData.data.url;
+                    updatePayload.fileSize = optimized.size;
+                }
+
+                btnUpdate.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating Database...';
+                await updateDoc(doc(db, "iskcon_images", id), updatePayload);
+
+                closeEditModal();
+
+            } catch (error) {
+                alert("Failed to update: " + error.message);
+            } finally {
+                btnUpdate.disabled = false;
+                btnUpdate.innerHTML = '<i class="fas fa-save"></i> Save';
+            }
+        });
+
+    </script>
+</body>
+</html>
