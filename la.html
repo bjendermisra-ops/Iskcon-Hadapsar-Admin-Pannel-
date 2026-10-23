@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ISKCON Hadapsar - Supreme God-Eye Radar Console</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome 6.5 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet Maps Engine -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace']
+                    },
+                    colors: { 
+                        cyber: { 950: '#020611', 900: '#070d1e', 800: '#0e1730', 700: '#1b284f' },
+                        neon: { orange: '#ff5500', cyan: '#00f2fe', green: '#10b981', red: '#ef4444' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * { -webkit-tap-highlight-color: transparent; }
+        body { background-color: #020611; color: #f3f4f6; overflow-x: hidden; }
+        
+        .radar-grid {
+            background-image: linear-gradient(rgba(0, 242, 254, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 242, 254, 0.03) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+
+        .glass-dark {
+            background: rgba(7, 13, 30, 0.90);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        #map { width: 100%; height: 100%; min-height: 520px; border-radius: 1.5rem; z-index: 10; }
+        .leaflet-container { background: #070d1e !important; font-family: 'Plus Jakarta Sans', sans-serif !important; }
+
+        .blinking-dot {
+            width: 22px; height: 22px; background: #10b981; border-radius: 50%;
+            border: 3px solid #ffffff; box-shadow: 0 0 25px #10b981; animation: pulse-ring 1.8s infinite;
+        }
+        .blinking-dot.banned { background: #ef4444; box-shadow: 0 0 25px #ef4444; }
+        .blinking-dot.idle { background: #f59e0b; box-shadow: 0 0 25px #f59e0b; }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1.2); box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .pulse-car {
+            display: flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px; background: #00f2fe; color: #000;
+            border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 20px #00f2fe;
+            font-size: 14px;
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 10px; }
+    </style>
+</head>
+<body class="radar-grid min-h-screen flex flex-col font-sans antialiased text-slate-100">
+
+    <!-- 🔒 SUPREME PAPA AUTHENTICATION GATE -->
+    <div id="auth-guard" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-2xl p-4">
+        <div class="glass-dark w-full max-w-md rounded-3xl p-7 md:p-8 border border-cyan-500/30 shadow-[0_0_60px_rgba(0,242,254,0.2)] relative text-center">
+            <div class="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-cyan-600 to-emerald-500 flex items-center justify-center text-white text-3xl shadow-[0_0_35px_rgba(0,242,254,0.5)] mb-4">
+                <i class="fa-solid fa-eye animate-pulse"></i>
+            </div>
+            <h1 class="text-2xl font-black tracking-tight text-white uppercase">Supreme God-Eye Radar</h1>
+            <p class="text-xs font-mono text-cyan-400 mt-1 uppercase tracking-widest">Master Authority Surveillance Terminal</p>
+
+            <div id="loginError" class="hidden my-4 p-3.5 rounded-xl bg-red-950/90 border border-red-800 text-red-200 text-xs font-mono text-left leading-relaxed"></div>
+
+            <button id="googleLoginBtn" class="w-full mt-6 py-3.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-extrabold text-sm transition-all shadow-lg flex items-center justify-center gap-3 active:scale-95">
+                <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+                <span>Sign in with Google</span>
+            </button>
+
+            <div class="my-5 flex items-center justify-between gap-3 text-slate-500 text-xs font-mono">
+                <div class="h-px bg-slate-800 flex-1"></div>
+                <span>OR MASTER EMAIL</span>
+                <div class="h-px bg-slate-800 flex-1"></div>
+            </div>
+
+            <form id="papaLoginForm" class="space-y-3.5 text-left">
+                <div>
+                    <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider pl-1">Supreme Master Email</label>
+                    <input type="email" id="papaEmail" required class="w-full mt-1 px-4 py-3 bg-cyber-900 border border-slate-700 rounded-xl text-sm text-white focus:border-cyan-400 outline-none font-mono" placeholder="devsantosh.tech@gmail.com">
+                </div>
+                <div>
+                    <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider pl-1">Master Password</label>
+                    <input type="password" id="papaPass" required class="w-full mt-1 px-4 py-3 bg-cyber-900 border border-slate-700 rounded-xl text-sm text-white focus:border-cyan-400 outline-none font-mono" placeholder="••••••••••••">
+                </div>
+                <button type="submit" id="emailLoginBtn" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 text-black font-black text-sm tracking-wide transition-all shadow-[0_0_25px_rgba(0,242,254,0.4)] active:scale-95">
+                    AUTHENTICATE VIA PASSWORD
+                </button>
+            </form>
+            <p class="text-[10px] font-mono text-slate-500 mt-4">Supreme Authority UID: rJ4xdMH3a2Yobut7Wsm5IpWvg7f2</p>
+        </div>
+    </div>
+
+    <!-- 🌐 MAIN COMMAND CENTER -->
+    <div id="command-center" class="flex-1 flex flex-col h-screen overflow-hidden">
+        <header class="glass-dark border-b border-slate-800 px-5 py-3.5 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-3.5">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-emerald-500 flex items-center justify-center text-black font-black text-xl shadow-[0_0_15px_rgba(0,242,254,0.4)]">
+                    <i class="fa-solid fa-satellite"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-base font-black tracking-wide text-white uppercase">ISKCON Hadapsar</h1>
+                        <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-mono font-bold flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> RADAR ARMED
+                        </span>
+                    </div>
+                    <p class="text-[10px] font-mono text-slate-400">Singapore RTDB Server (asia-southeast1)</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <div class="text-right hidden sm:block">
+                    <p class="text-xs font-black text-cyan-400 font-mono" id="loggedAdminName">SUPREME COMMANDER</p>
+                    <p class="text-[10px] font-mono text-slate-400">UID: rJ4xdMH3a...vg7f2</p>
+                </div>
+                <button id="logoutBtn" title="Lock Console" class="w-9 h-9 rounded-xl bg-red-950/40 border border-red-800 text-red-400 hover:bg-red-600 hover:text-white transition-all flex items-center justify-center">
+                    <i class="fa-solid fa-power-off text-xs"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="flex-1 flex flex-col lg:flex-row overflow-hidden p-4 gap-4">
+            
+            <!-- LEFT PANEL -->
+            <div class="w-full lg:w-[420px] flex flex-col gap-4 shrink-0 overflow-hidden">
+                <div class="glass-dark rounded-2xl p-4 border border-slate-800 shrink-0">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-xs font-black uppercase text-cyan-400 tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-route"></i> 24-Hour Route Intelligence
+                        </h3>
+                        <span class="text-[10px] font-mono text-slate-500">Live Waypoints</span>
+                    </div>
+
+                    <div class="space-y-2.5">
+                        <div>
+                            <label class="text-[10px] font-mono text-slate-400 uppercase">Select Sub-Admin</label>
+                            <select id="trailAdminSelect" class="w-full mt-1 bg-cyber-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-cyan-400 font-mono">
+                                <option value="" disabled selected>Choose Sub-Admin</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-mono text-slate-400 uppercase">Select Target Date</label>
+                            <input type="date" id="trailDateInput" class="w-full mt-1 bg-cyber-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400 font-mono">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2 pt-1">
+                            <button id="loadTrailBtn" class="py-2.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500 hover:text-black border border-cyan-500/40 text-cyan-400 font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-lg">
+                                <i class="fa-solid fa-play"></i> Draw Journey
+                            </button>
+                            <button id="playReplayBtn" class="py-2.5 rounded-xl bg-purple-500/20 hover:bg-purple-500 hover:text-white border border-purple-500/40 text-purple-300 font-bold text-xs transition-all flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-car-side"></i> Auto Replay
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <button id="exportReportBtn" class="py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500 hover:text-black border border-emerald-500/30 text-emerald-400 font-bold text-xs transition-all flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-file-arrow-down"></i> Save JSON
+                            </button>
+                            <button id="policeDossierBtn" class="py-2 rounded-xl bg-red-600/20 hover:bg-red-600 hover:text-white border border-red-500/40 text-red-400 font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+                                <i class="fa-solid fa-shield-halved"></i> Police Dossier
+                            </button>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button id="toggleTimelineListBtn" class="flex-1 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[11px] transition-all flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-clock-rotate-left text-cyan-400"></i> View Time Log (<span id="totalLoggedCount">0</span>)
+                            </button>
+                            <button id="clearTrailBtn" class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-400 font-mono text-[11px] hover:text-white transition-all">
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUB-ADMINS CARD LIST -->
+                <div class="glass-dark rounded-2xl p-4 border border-slate-800 flex-1 flex flex-col overflow-hidden">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+                        <h3 class="text-xs font-black uppercase text-slate-300 tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-users-viewfinder text-emerald-400"></i> Active Field Units (<span id="adminCount">0</span>)
+                        </h3>
+                        <span class="text-[10px] font-mono text-emerald-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Auto-Sync</span>
+                    </div>
+
+                    <div id="subAdminList" class="flex-1 overflow-y-auto space-y-3 pt-3 pr-1">
+                        <div class="text-center py-10 text-slate-500 text-xs font-mono">
+                            <i class="fa-solid fa-radar fa-spin text-2xl mb-2 text-slate-600"></i><br>
+                            Connecting to Live Radar Feed...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL: GOOGLE MAPS POWER ENGINE -->
+            <div class="flex-1 glass-dark rounded-3xl p-3 border border-slate-800 flex flex-col relative overflow-hidden">
+                <div class="absolute top-6 right-6 z-20 flex flex-wrap items-center gap-2">
+                    <button id="satelliteToggleBtn" onclick="toggleSatelliteView()" class="px-3.5 py-2 rounded-xl bg-cyber-900/90 border border-slate-700 text-slate-300 hover:text-cyan-400 text-xs font-mono font-bold backdrop-blur-md shadow-xl transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-emerald-400"></i> <span id="layerNameText">Google Satellite</span>
+                    </button>
+                    <button onclick="centerMapOnHadapsar()" class="px-3.5 py-2 rounded-xl bg-cyber-900/90 border border-slate-700 text-slate-300 hover:text-cyan-400 text-xs font-mono font-bold backdrop-blur-md shadow-xl transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-gopuram text-orange-400"></i> Hadapsar Temple
+                    </button>
+                </div>
+
+                <!-- LIVE MAP -->
+                <div id="map"></div>
+
+                <!-- BOTTOM STATS HUD -->
+                <div id="trailStatsHud" class="hidden absolute bottom-6 left-6 right-6 z-20 glass-dark rounded-2xl p-4 border border-cyan-500/40 flex flex-wrap items-center justify-between gap-4 font-mono text-xs shadow-2xl backdrop-blur-2xl">
+                    <div class="flex items-center gap-3">
+                        <span class="w-3.5 h-3.5 rounded-full bg-cyan-400 animate-ping"></span>
+                        <div><span class="text-slate-400">Target Officer:</span> <strong id="hudEmail" class="text-white">Admin</strong></div>
+                    </div>
+                    <div><span class="text-slate-400">Checkpoints:</span> <strong id="hudPoints" class="text-cyan-400">0</strong></div>
+                    <div><span class="text-slate-400">Total Distance:</span> <strong id="hudDistance" class="text-emerald-400">0.0 km</strong></div>
+                    <div><span class="text-slate-400">Halt Stops:</span> <strong id="hudHalts" class="text-amber-400">0</strong></div>
+                    <div id="playbackHudStatus" class="hidden text-purple-300 font-bold animate-pulse">
+                        <i class="fa-solid fa-play"></i> REPLAY: <span id="playbackTime">00:00</span>
+                    </div>
+                </div>
+
+                <!-- TIMELINE DRAWER SLIDER (किस समय कहाँ था) -->
+                <div id="timelineDrawer" class="hidden absolute top-6 left-6 bottom-24 w-80 z-30 glass-dark rounded-2xl p-4 border border-cyan-500/40 flex flex-col shadow-2xl backdrop-blur-3xl overflow-hidden">
+                    <div class="flex items-center justify-between pb-2 border-b border-slate-700 shrink-0">
+                        <h4 class="text-xs font-bold text-cyan-400 font-mono uppercase flex items-center gap-2">
+                            <i class="fa-solid fa-timeline"></i> Second-by-Second Log
+                        </h4>
+                        <button onclick="toggleTimelineDrawer()" class="text-slate-400 hover:text-white text-xs">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                    <div id="timelineItemsContainer" class="flex-1 overflow-y-auto space-y-2 pt-2 pr-1 font-mono text-[11px]"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT MASTER RADAR SCRIPT -->
+    <script>
+        // MASTER SUPREME UID GUARD
+        const MASTER_PAPA_UID = "rJ4xdMH3a2Yobut7Wsm5IpWvg7f2";
+
+        // 🔥 REAL FIREBASE CONFIGURATION 🔥
+        const firebaseConfig = {
+            apiKey: "AIzaSyDf3lUv3k6kWCE0rxGfMfkwy2uARiXVFaY",
+            authDomain: "iskcon-master-hub.firebaseapp.com",
+            databaseURL: "https://iskcon-master-hub-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "iskcon-master-hub",
+            storageBucket: "iskcon-master-hub.firebasestorage.app",
+            messagingSenderId: "678769736356",
+            appId: "1:678769736356:web:17e68b347e36f131b68431"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        const HADAPSAR_COORDS = [18.5089, 73.9259];
+        const map = L.map('map', { zoomControl: false }).setView(HADAPSAR_COORDS, 13);
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        // 🌟 GOOGLE MAPS HD ENGINES (NO CARTO API KEY WATERMARK!)
+        const googleRoadLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 21, attribution: '© Google Maps' });
+        const googleSatelliteLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 21, attribution: '© Google Satellite' });
+
+        googleRoadLayer.addTo(map);
+        let isSatellite = false;
+
+        function toggleSatelliteView() {
+            if (isSatellite) {
+                map.removeLayer(googleSatelliteLayer);
+                googleRoadLayer.addTo(map);
+                document.getElementById('layerNameText').innerText = "Google Satellite";
+                isSatellite = false;
+            } else {
+                map.removeLayer(googleRoadLayer);
+                googleSatelliteLayer.addTo(map);
+                document.getElementById('layerNameText').innerText = "Google Street HD";
+                isSatellite = true;
+            }
+        }
+
+        function centerMapOnHadapsar() { map.flyTo(HADAPSAR_COORDS, 15, { duration: 1.5 }); }
+
+        let liveMarkers = {};
+        let activeTrailPolyline = null;
+        let trailWaypoints = [];
+        let allLiveSubAdmins = {};
+        let allBlockedUsers = {};
+        let allDeviceBindings = {};
+        let lastLoadedRouteData = null;
+        let replayInterval = null;
+        let replayCarMarker = null;
+
+        const authGuard = document.getElementById('auth-guard');
+        const loginError = document.getElementById('loginError');
+
+        function showError(msg) {
+            loginError.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1.5 text-red-400"></i> ${msg}`;
+            loginError.classList.remove('hidden');
+        }
+
+        function verifyAndUnlock(user) {
+            if (user.uid === MASTER_PAPA_UID) {
+                authGuard.classList.add('hidden');
+                document.getElementById('loggedAdminName').innerText = user.displayName || user.email.split('@')[0];
+                
+                database.ref('papa_admins/' + MASTER_PAPA_UID).set(true);
+                initializeRadarEngine();
+            } else {
+                auth.signOut();
+                showError(`ACCESS DENIED!<br>Your UID: <span class="text-white">${user.uid}</span> is not authorized as Supreme Commander.`);
+            }
+        }
+
+        document.getElementById('googleLoginBtn').addEventListener('click', () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider)
+                .then((res) => verifyAndUnlock(res.user))
+                .catch((err) => showError(err.message));
+        });
+
+        document.getElementById('papaLoginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('papaEmail').value.trim();
+            const pass = document.getElementById('papaPass').value;
+            const btn = document.getElementById('emailLoginBtn');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Authenticating Master...`;
+
+            auth.signInWithEmailAndPassword(email, pass)
+                .then((res) => verifyAndUnlock(res.user))
+                .catch((err) => {
+                    btn.disabled = false;
+                    btn.innerHTML = `AUTHENTICATE VIA PASSWORD`;
+                    showError(err.message);
+                });
+        });
+
+        auth.onAuthStateChanged((user) => {
+            if (user && user.uid === MASTER_PAPA_UID) {
+                verifyAndUnlock(user);
+            } else {
+                authGuard.classList.remove('hidden');
+            }
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            auth.signOut().then(() => location.reload());
+        });
+
+        // Set default date to today
+        document.getElementById('trailDateInput').value = new Date().toISOString().split('T')[0];
+
+        function initializeRadarEngine() {
+            database.ref('blocked_users').on('value', (snap) => {
+                allBlockedUsers = snap.val() || {};
+                renderSubAdminList();
+            });
+
+            database.ref('device_bindings').on('value', (snap) => {
+                allDeviceBindings = snap.val() || {};
+                renderSubAdminList();
+            });
+
+            database.ref('admin_live_radar').on('value', (snap) => {
+                allLiveSubAdmins = snap.val() || {};
+                updateMapPins();
+                renderSubAdminList();
+                updateDropdownOptions();
+            });
+        }
+
+        function updateMapPins() {
+            Object.keys(allLiveSubAdmins).forEach((sanitizedEmail) => {
+                const data = allLiveSubAdmins[sanitizedEmail];
+                if (!data.lat || !data.lon) return;
+
+                const isBlocked = allBlockedUsers[sanitizedEmail] && allBlockedUsers[sanitizedEmail].isBlocked === true;
+                const isIdle = (data.speed_kmh || 0) <= 0.5;
+                
+                let dotClass = "blinking-dot";
+                if (isBlocked) dotClass = "blinking-dot banned";
+                else if (isIdle) dotClass = "blinking-dot idle";
+
+                const customIcon = L.divIcon({
+                    className: 'custom-radar-pin',
+                    html: `<div class="${dotClass}"></div>`,
+                    iconSize: [22, 22],
+                    iconAnchor: [11, 11]
+                });
+
+                const popupHtml = `
+                    <div style="font-family:'Plus Jakarta Sans',sans-serif; min-width:230px; font-size:12px; color:#111;">
+                        <h4 style="font-weight:900; margin:0 0 5px 0; color:#ea580c;">${sanitizedEmail.replace(/_/g, '.')}</h4>
+                        <div style="margin-bottom:4px;"><b>Duty Status:</b> ${isBlocked ? '<span style="color:red; font-weight:bold;">BANNED</span>' : '<span style="color:green; font-weight:bold;">LIVE & ACTIVE</span>'}</div>
+                        <div><b>Live Speed:</b> ${data.speed_kmh || 0} km/h</div>
+                        <div><b>Battery:</b> ${data.battery || 'N/A'} ${data.charging ? '⚡ Charging' : ''}</div>
+                        <div><b>Hardware:</b> ${data.device_model || 'Android Phone'}</div>
+                        <div><b>Accuracy:</b> ${data.accuracy || 'GPS'}</div>
+                        <div><b>Last Ping:</b> ${data.time_str || data.formatted_time || 'Just now'}</div>
+                        <div style="margin-top:8px; display:flex; gap:8px;">
+                            <a href="${data.maps_link || 'https://maps.google.com/?q='+data.lat+','+data.lon}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:underline;">🗺️ Open Maps</a>
+                            <button onclick="emergencyDispatchPolice('${sanitizedEmail}')" style="background:#dc2626; color:#fff; border:none; padding:2px 8px; border-radius:6px; font-weight:bold; cursor:pointer;">🚨 SOS Share</button>
+                        </div>
+                    </div>
+                `;
+
+                if (liveMarkers[sanitizedEmail]) {
+                    liveMarkers[sanitizedEmail].setLatLng([data.lat, data.lon]);
+                    liveMarkers[sanitizedEmail].setIcon(customIcon);
+                    liveMarkers[sanitizedEmail].getPopup().setContent(popupHtml);
+                } else {
+                    const marker = L.marker([data.lat, data.lon], { icon: customIcon }).addTo(map);
+                    marker.bindPopup(popupHtml);
+                    liveMarkers[sanitizedEmail] = marker;
+                }
+            });
+        }
+
+        function renderSubAdminList() {
+            const listEl = document.getElementById('subAdminList');
+            const keys = Object.keys(allLiveSubAdmins);
+            document.getElementById('adminCount').innerText = keys.length;
+
+            if (keys.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-10 text-slate-500 text-xs font-mono">
+                        <i class="fa-solid fa-satellite-dish text-xl mb-2 text-slate-600 animate-pulse"></i><br>
+                        No active Sub-Admins broadcasting yet.<br>Launch Sketchware App to register.
+                    </div>`;
+                return;
+            }
+
+            let html = '';
+            keys.forEach((emailKey) => {
+                const admin = allLiveSubAdmins[emailKey];
+                const isBlocked = allBlockedUsers[emailKey] && allBlockedUsers[emailKey].isBlocked === true;
+
+                html += `
+                    <div class="p-3.5 rounded-2xl bg-cyber-900 border ${isBlocked ? 'border-red-900/80 bg-red-950/20' : 'border-slate-800'} flex flex-col gap-2.5 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div class="overflow-hidden">
+                                <p class="text-xs font-black text-white truncate">${emailKey.replace(/_/g, '.')}</p>
+                                <p class="text-[10px] font-mono text-slate-400">${admin.device_model || 'Android Duty Device'}</p>
+                            </div>
+                            <span class="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold ${isBlocked ? 'bg-red-500/20 text-red-400 border border-red-500/40' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'}">
+                                ${isBlocked ? 'BANNED' : 'ONLINE'}
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-1.5 py-1.5 px-2 rounded-xl bg-black/40 text-[10px] font-mono border border-slate-800/60">
+                            <div><span class="text-slate-500">Speed:</span> <b class="text-cyan-400">${admin.speed_kmh || 0} km/h</b></div>
+                            <div><span class="text-slate-500">Batt:</span> <b class="text-amber-400">${admin.battery || 'N/A'} ${admin.charging ? '⚡' : ''}</b></div>
+                            <div><span class="text-slate-500">Fix:</span> <b class="text-emerald-400">${admin.accuracy || 'GPS'}</b></div>
+                        </div>
+
+                        <div class="text-[9px] font-mono text-slate-500 flex items-center justify-between">
+                            <span>Phone ID:</span>
+                            <span class="text-slate-400 truncate max-w-[170px]">${admin.android_id || 'REGISTERED_HARDWARE'}</span>
+                        </div>
+
+                        <div class="flex items-center gap-2 pt-1 border-t border-slate-800/80">
+                            <button onclick="flyToAdmin('${emailKey}')" class="flex-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] font-bold transition-all">
+                                <i class="fa-solid fa-crosshairs text-cyan-400 mr-1"></i> Locate
+                            </button>
+                            
+                            <button onclick="emergencyDispatchPolice('${emailKey}')" title="Dispatch to Police/WhatsApp" class="py-1.5 px-2.5 rounded-lg bg-red-600/30 hover:bg-red-600 text-red-300 hover:text-white border border-red-500/40 text-[10px] font-bold transition-all">
+                                <i class="fa-solid fa-truck-medical"></i> Police
+                            </button>
+
+                            ${isBlocked ? `
+                                <button onclick="unbanAdmin('${emailKey}')" class="py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold transition-all">
+                                    <i class="fa-solid fa-shield-check"></i> Unban
+                                </button>
+                            ` : `
+                                <button onclick="nukeBanAdmin('${emailKey}', '${admin.android_id || ''}')" class="py-1.5 px-3 rounded-lg bg-red-600 hover:bg-red-500 text-white text-[10px] font-bold transition-all shadow-[0_0_10px_rgba(239,68,68,0.4)]">
+                                    <i class="fa-solid fa-ban"></i> NUKE
+                                </button>
+                            `}
+
+                            <button onclick="resetDeviceBinding('${emailKey}')" title="Reset Bound Phone" class="py-1.5 px-2.5 rounded-lg bg-amber-500/10 hover:bg-amber-500 hover:text-black border border-amber-500/30 text-amber-400 text-[10px] font-bold transition-all">
+                                <i class="fa-solid fa-mobile-screen-button"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            listEl.innerHTML = html;
+        }
+
+        function flyToAdmin(emailKey) {
+            const admin = allLiveSubAdmins[emailKey];
+            if (admin && admin.lat && admin.lon) {
+                map.flyTo([admin.lat, admin.lon], 18, { duration: 1.2 });
+                if (liveMarkers[emailKey]) liveMarkers[emailKey].openPopup();
+            }
+        }
+
+        function updateDropdownOptions() {
+            const select = document.getElementById('trailAdminSelect');
+            const currentVal = select.value;
+            const keys = Object.keys(allLiveSubAdmins);
+
+            let options = '<option value="" disabled selected>Choose Sub-Admin</option>';
+            keys.forEach(k => {
+                options += `<option value="${k}">${k.replace(/_/g, '.')}</option>`;
+            });
+            select.innerHTML = options;
+            if (currentVal) select.value = currentVal;
+        }
+
+        // =====================================================================
+        // 🗺️ 24-HOUR SUPER HIGH-PRECISION ROUTE PLAYBACK ENGINE
+        // =====================================================================
+        document.getElementById('loadTrailBtn').addEventListener('click', async () => {
+            const rawEmailKey = document.getElementById('trailAdminSelect').value;
+            const dateStr = document.getElementById('trailDateInput').value;
+
+            if (!rawEmailKey || !dateStr) {
+                alert("Please select both a Sub-Admin and a Target Date.");
+                return;
+            }
+
+            // ऑटो-फिक्स: डॉट्स और अंडरस्कोर दोनों पाथ में चेक करो ताकि कोई एरर न आये
+            const safeKey = rawEmailKey.replace(/\./g, '_').replace(/@/g, '_');
+            
+            let snap = await database.ref(`admin_movement_history/${safeKey}/${dateStr}`).once('value');
+            if (!snap.exists()) {
+                snap = await database.ref(`admin_movement_history/${rawEmailKey}/${dateStr}`).once('value');
+            }
+
+            if (!snap.exists()) {
+                alert(`⚠️ No route records found for ${rawEmailKey.replace(/_/g, '.')} on date: ${dateStr}.\nCheck if tracking was turned on for this date.`);
+                return;
+            }
+
+            const rawPoints = snap.val();
+            const pointsArray = Object.values(rawPoints).sort((a, b) => a.timestamp - b.timestamp);
+
+            if (pointsArray.length === 0) {
+                alert("Empty journey history.");
+                return;
+            }
+
+            lastLoadedRouteData = { email: rawEmailKey, date: dateStr, points: pointsArray };
+            renderLoadedTrail(pointsArray, rawEmailKey);
+        });
+
+        function renderLoadedTrail(pointsArray, emailKey) {
+            clearMapOverlays();
+
+            const latLngs = pointsArray.map(p => [p.lat, p.lon]);
+
+            // खूबसूरत निऑन ट्रैक लाइन
+            activeTrailPolyline = L.polyline(latLngs, {
+                color: '#00f2fe',
+                weight: 5,
+                opacity: 0.9,
+                lineJoin: 'round',
+                smoothFactor: 1.0
+            }).addTo(map);
+
+            // 1. JOURNEY START PIN
+            const startPoint = pointsArray[0];
+            const startMarker = L.marker([startPoint.lat, startPoint.lon]).addTo(map)
+                .bindPopup(`<div style="font-family:sans-serif; color:#000;">
+                    <b>🚩 JOURNEY START</b><br>
+                    ⏰ <b>Time:</b> ${startPoint.time_str || startPoint.formatted_time || 'N/A'}<br>
+                    🚗 <b>Speed:</b> ${startPoint.speed_kmh || 0} km/h<br>
+                    🔋 <b>Battery:</b> ${startPoint.battery || 'N/A'}
+                </div>`);
+            trailWaypoints.push(startMarker);
+
+            // 2. JOURNEY END PIN
+            const endPoint = pointsArray[pointsArray.length - 1];
+            const endMarker = L.marker([endPoint.lat, endPoint.lon]).addTo(map)
+                .bindPopup(`<div style="font-family:sans-serif; color:#000;">
+                    <b>🏁 LAST LOGGED SPOT</b><br>
+                    ⏰ <b>Time:</b> ${endPoint.time_str || endPoint.formatted_time || 'N/A'}<br>
+                    🚗 <b>Speed:</b> ${endPoint.speed_kmh || 0} km/h<br>
+                    🔋 <b>Battery:</b> ${endPoint.battery || 'N/A'}
+                </div>`);
+            trailWaypoints.push(endMarker);
+
+            let totalDistKm = 0;
+            let haltCount = 0;
+
+            // हर एक पॉइंट पर इंटरएक्टिव डॉट बनाएं ताकि किसी भी जगह का टाइम देखा जा सके
+            pointsArray.forEach((p, index) => {
+                if (index > 0) {
+                    totalDistKm += calculateDistance(pointsArray[index-1].lat, pointsArray[index-1].lon, p.lat, p.lon);
+                }
+
+                const isHalt = (p.speed_kmh || 0) <= 0.5;
+                if (isHalt && index % 4 === 0) {
+                    haltCount++;
+                }
+
+                // टाइमलाइन वेपॉइंट सर्कल
+                const dotMarker = L.circleMarker([p.lat, p.lon], {
+                    radius: isHalt ? 6 : 4,
+                    color: isHalt ? '#f59e0b' : '#00f2fe',
+                    fillColor: isHalt ? '#fbbf24' : '#10b981',
+                    fillOpacity: 0.85,
+                    weight: 2
+                }).addTo(map).bindPopup(`
+                    <div style="font-family:sans-serif; font-size:12px; color:#111; min-width:180px;">
+                        <h4 style="margin:0 0 4px; font-weight:900; color:${isHalt ? '#d97706':'#059669'};">
+                            ${isHalt ? '⏸️ HALT / STOPPED' : '🚗 MOVING AT ' + p.speed_kmh + ' km/h'}
+                        </h4>
+                        <div>⏰ <b>Exact Time:</b> ${p.time_str || 'N/A'}</div>
+                        <div>🔋 <b>Battery:</b> ${p.battery || 'N/A'}</div>
+                        <div>🎯 <b>Accuracy:</b> ${p.accuracy || 'GPS'}</div>
+                        <div style="margin-top:6px;">
+                            <a href="${p.maps_link || 'https://maps.google.com/?q='+p.lat+','+p.lon}" target="_blank" style="color:#2563eb; font-weight:bold;">📍 Open Exact Spot</a>
+                        </div>
+                    </div>
+                `);
+                trailWaypoints.push(dotMarker);
+            });
+
+            map.fitBounds(activeTrailPolyline.getBounds(), { padding: [50, 50] });
+
+            // HUD अपडेट करें
+            document.getElementById('hudEmail').innerText = emailKey.replace(/_/g, '.');
+            document.getElementById('hudPoints').innerText = pointsArray.length;
+            document.getElementById('hudDistance').innerText = totalDistKm.toFixed(2) + " km";
+            document.getElementById('hudHalts').innerText = haltCount;
+            document.getElementById('totalLoggedCount').innerText = pointsArray.length;
+            document.getElementById('trailStatsHud').classList.remove('hidden');
+
+            buildTimelineDrawerList(pointsArray);
+        }
+
+        // ⏱️ सेकंड-बाय-सेकंड टाइमलाइन लिस्ट बनाना (किस समय कहाँ था)
+        function buildTimelineDrawerList(pointsArray) {
+            const container = document.getElementById('timelineItemsContainer');
+            let html = '';
+            pointsArray.forEach((p, idx) => {
+                const isHalt = (p.speed_kmh || 0) <= 0.5;
+                html += `
+                    <div onclick="focusWaypoint(${p.lat}, ${p.lon})" class="p-2 rounded-xl bg-cyber-900 border border-slate-800 hover:border-cyan-400 cursor-pointer transition-all flex items-center justify-between">
+                        <div>
+                            <span class="text-white font-bold">${p.time_str || 'Time'}</span>
+                            <div class="text-[10px] text-slate-400">${isHalt ? '⏸️ Halted' : '🚗 ' + p.speed_kmh + ' km/h'} | Batt: ${p.battery || 'N/A'}</div>
+                        </div>
+                        <span class="text-[10px] text-cyan-400 underline font-mono">Spot #${idx+1}</span>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        window.focusWaypoint = function(lat, lon) {
+            map.flyTo([lat, lon], 19, { duration: 0.8 });
+        };
+
+        function toggleTimelineDrawer() {
+            document.getElementById('timelineDrawer').classList.toggle('hidden');
+        }
+
+        document.getElementById('toggleTimelineListBtn').addEventListener('click', () => {
+            if (!lastLoadedRouteData) {
+                alert("Please draw journey first to inspect time logs.");
+                return;
+            }
+            toggleTimelineDrawer();
+        });
+
+        // 🚗 AUTO-REPLAY ANIMATION (गाड़ी को नक्शे पर चलता हुआ देखें)
+        document.getElementById('playReplayBtn').addEventListener('click', () => {
+            if (!lastLoadedRouteData || !lastLoadedRouteData.points) {
+                alert("Click 'Draw Journey' first before playing replay.");
+                return;
+            }
+
+            const points = lastLoadedRouteData.points;
+            if (replayInterval) clearInterval(replayInterval);
+            if (replayCarMarker) map.removeLayer(replayCarMarker);
+
+            const carIcon = L.divIcon({
+                className: 'replay-car-icon',
+                html: `<div class="pulse-car"><i class="fa-solid fa-car"></i></div>`,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            });
+
+            replayCarMarker = L.marker([points[0].lat, points[0].lon], { icon: carIcon }).addTo(map);
+            document.getElementById('playbackHudStatus').classList.remove('hidden');
+
+            let index = 0;
+            replayInterval = setInterval(() => {
+                if (index >= points.length) {
+                    clearInterval(replayInterval);
+                    document.getElementById('playbackHudStatus').classList.add('hidden');
+                    alert("🏁 Journey Playback Finished!");
+                    return;
+                }
+
+                const pt = points[index];
+                replayCarMarker.setLatLng([pt.lat, pt.lon]);
+                map.panTo([pt.lat, pt.lon]);
+                document.getElementById('playbackTime').innerText = pt.time_str + ` (${pt.speed_kmh} km/h)`;
+                index++;
+            }, 600); // 600ms per step
+        });
+
+        function clearMapOverlays() {
+            if (activeTrailPolyline) map.removeLayer(activeTrailPolyline);
+            trailWaypoints.forEach(w => map.removeLayer(w));
+            trailWaypoints = [];
+            if (replayCarMarker) map.removeLayer(replayCarMarker);
+            if (replayInterval) clearInterval(replayInterval);
+            document.getElementById('playbackHudStatus').classList.add('hidden');
+        }
+
+        document.getElementById('clearTrailBtn').addEventListener('click', () => {
+            clearMapOverlays();
+            document.getElementById('trailStatsHud').classList.add('hidden');
+            document.getElementById('timelineDrawer').classList.add('hidden');
+            lastLoadedRouteData = null;
+        });
+
+        // 🚨 1-CLICK POLICE DISPATCH & SOS REPORT GENERATOR
+        window.emergencyDispatchPolice = function(emailKey) {
+            const admin = allLiveSubAdmins[emailKey];
+            if (!admin) {
+                alert("Officer data not available.");
+                return;
+            }
+
+            const dispatchText = 
+`🚨 *URGENT POLICE & SECURITY LOCATION DISPATCH* 🚨
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+👤 *Target Officer:* ${emailKey.replace(/_/g, '.')}
+📱 *Hardware Phone:* ${admin.device_model || 'Unknown'} (ID: ${admin.android_id || 'N/A'})
+🔋 *Live Battery:* ${admin.battery || 'N/A'} ${admin.charging ? '(Charging)' : ''}
+⚡ *Current Speed:* ${admin.speed_kmh || 0} km/h
+🎯 *GPS Accuracy:* ${admin.accuracy || 'High'}
+🕒 *Last Broadcast Time:* ${admin.formatted_time || admin.time_str || new Date().toLocaleTimeString()}
+
+📍 *CURRENT LIVE GPS POSITION:*
+https://maps.google.com/?q=${admin.lat},${admin.lon}
+(Coordinates: ${admin.lat}, ${admin.lon})
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+*Authorized Authority:* ISKCON Hadapsar Supreme Command Console`;
+
+            // WhatsApp Share
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(dispatchText)}`, '_blank');
+        };
+
+        // 📄 OFFICIAL POLICE DOSSIER GENERATOR (A4 PRINTABLE)
+        document.getElementById('policeDossierBtn').addEventListener('click', () => {
+            if (!lastLoadedRouteData || !lastLoadedRouteData.points) {
+                alert("Load a journey first to generate official Police Dossier.");
+                return;
+            }
+
+            const data = lastLoadedRouteData;
+            const pts = data.points;
+            const startPt = pts[0];
+            const endPt = pts[pts.length - 1];
+
+            let printWindow = window.open('', '', 'width=900,height=700');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>POLICE SURVEILLANCE DOSSIER - ${data.email}</title>
+                    <style>
+                        body { font-family: monospace; padding: 25px; line-height: 1.5; color: #000; }
+                        h2 { border-bottom: 2px solid #000; padding-bottom: 5px; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+                        th, td { border: 1px solid #333; padding: 6px; font-size: 11px; text-align: left; }
+                        th { background: #eee; }
+                    </style>
+                </head>
+                <body>
+                    <h2>🚨 OFFICIAL POLICE MOVEMENT DOSSIER (CONFIDENTIAL)</h2>
+                    <p><b>Target Officer:</b> ${data.email.replace(/_/g, '.')}<br>
+                    <b>Date of Surveillance:</b> ${data.date}<br>
+                    <b>Total Checkpoints Recorded:</b> ${pts.length}<br>
+                    <b>First Recorded Point:</b> ${startPt.time_str} (Lat: ${startPt.lat}, Lon: ${startPt.lon})<br>
+                    <b>Last Recorded Point:</b> ${endPt.time_str} (Lat: ${endPt.lat}, Lon: ${endPt.lon})<br>
+                    <b>Live Location Link:</b> https://maps.google.com/?q=${endPt.lat},${endPt.lon}</p>
+
+                    <h3>CHRONOLOGICAL TIME LOGS:</h3>
+                    <table>
+                        <tr><th>#</th><th>Time</th><th>Speed</th><th>Battery</th><th>Coordinates</th><th>Maps Link</th></tr>
+                        ${pts.map((p, i) => `<tr>
+                            <td>${i+1}</td>
+                            <td>${p.time_str || 'N/A'}</td>
+                            <td>${p.speed_kmh} km/h</td>
+                            <td>${p.battery || 'N/A'}</td>
+                            <td>${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}</td>
+                            <td><a href="https://maps.google.com/?q=${p.lat},${p.lon}" target="_blank">Open Map</a></td>
+                        </tr>`).join('')}
+                    </table>
+                    <br><button onclick="window.print()">🖨️ PRINT OFFICIAL REPORT</button>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        });
+
+        // JSON Export
+        document.getElementById('exportReportBtn').addEventListener('click', () => {
+            if (!lastLoadedRouteData || !lastLoadedRouteData.points) {
+                alert("Please click 'Draw Journey' first.");
+                return;
+            }
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(lastLoadedRouteData, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `SURVEILLANCE_REPORT_${lastLoadedRouteData.email}_${lastLoadedRouteData.date}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+        });
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
+        // NUKE BAN & HARDWARE CONTROLS
+        window.nukeBanAdmin = function(emailKey, androidId) {
+            if (!confirm(`🚨 NUKE CONFIRMATION:\nAre you sure you want to PERMANENTLY BAN ${emailKey.replace(/_/g, '.')}?`)) return;
+
+            database.ref(`blocked_users/${emailKey}`).set({
+                isBlocked: true,
+                banned_by: MASTER_PAPA_UID,
+                banned_at: firebase.database.ServerValue.TIMESTAMP
+            });
+
+            if (androidId) {
+                database.ref(`blacklisted_hardware/${androidId}`).set({
+                    isBlocked: true,
+                    banned_at: firebase.database.ServerValue.TIMESTAMP
+                });
+            }
+            alert(`Admin ${emailKey.replace(/_/g, '.')} has been permanently NUKED.`);
+        };
+
+        window.unbanAdmin = function(emailKey) {
+            database.ref(`blocked_users/${emailKey}`).remove();
+            alert(`Admin ${emailKey.replace(/_/g, '.')} is UNBANNED.`);
+        };
+
+        window.resetDeviceBinding = function(emailKey) {
+            if (!confirm(`Clear phone binding for ${emailKey.replace(/_/g, '.')}?`)) return;
+            database.ref(`device_bindings/${emailKey}`).remove().then(() => {
+                alert(`Binding reset successfully.`);
+            });
+        };
+    </script>
+</body>
+</html>
