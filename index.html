@@ -857,45 +857,14 @@
             document.getElementById('noModuleResult').classList.toggle('hidden', visible !== 0);
         });
 
-        // AUTH STATE ENGINE & REALTIME KILLSWITCH
-        auth.onAuthStateChanged((user) => {
-            // A restored session alone cannot unlock this admin screen.
-            if (user && !verifiedDeviceSession) { auth.signOut(); return; }
-            if (user) {
-                const sEmail = sanitizeEmail(user.email);
-
-                // Real-Time Remote Ban Listener
-                if (liveKillswitchListener && liveKillswitchRef) liveKillswitchRef.off('value', liveKillswitchListener);
-
-                liveKillswitchRef = database.ref('blocked_users/' + sEmail);
-                liveKillswitchListener = liveKillswitchRef.on('value', (snap) => {
-                    if (snap.exists() && snap.val().isBlocked === true) {
-                        killOverlay.classList.remove('hidden');
-                        auth.signOut();
-                    } else {
-                        killOverlay.classList.add('hidden');
-                    }
-                });
-
-
-                // ड्यूटी टाइमर की शुरुआत
-                if (!localStorage.getItem('dutyStart')) localStorage.setItem('dutyStart', String(Date.now()));
-
-                splashScreen.style.opacity = '0';
-                loginSection.style.display = 'none';
-                setTimeout(() => {
-                    splashScreen.style.display = 'none';
-                    mainDashboard.style.display = 'flex';
-                    mainDashboard.classList.add('animate-fade-in-up');
-
-                    const savedName = localStorage.getItem('adminName') || user.email.split('@')[0];
-                    document.getElementById('adminUserDisplay').textContent = savedName;
-                    document.getElementById('adminAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(savedName)}&background=ea580c&color=fff&bold=true`;
-                    applyLanguage(localStorage.getItem('adminLang') || 'en');
-                    tickClock();
-                }, 400);
-
-            } else {
+        // AUTH STATE ENGINE: RESTORE FIREBASE SESSION ONLY ON ITS REGISTERED DEVICE.
+        // Firebase Authentication persists the session; a fresh password is not needed.
+        // This is an additional UI gate, NOT a substitute for Firebase server-side rules.
+        let sessionCheckSerial = 0;
+        async function handleAdminAuthState(user) {
+            const checkId = ++sessionCheckSerial;
+            if (!user) {
+                verifiedDeviceSession = false;
                 if (liveKillswitchListener && liveKillswitchRef) liveKillswitchRef.off('value', liveKillswitchListener);
                 liveKillswitchListener = null;
                 liveKillswitchRef = null;
@@ -903,7 +872,96 @@
                 mainDashboard.style.display = 'none';
                 splashScreen.style.display = 'none';
                 loginSection.style.display = 'flex';
+                return;
             }
+
+            // Hide privileged UI while the saved session is re-verified.
+            mainDashboard.style.display = 'none';
+            loginSection.style.display = 'none';
+            splashScreen.style.opacity = '1';
+            splashScreen.style.display = 'flex';
+
+            const guard = window.HardwareGuard;
+            const deviceHash = guard && typeof guard.getDeviceHash === 'function'
+                ? String(guard.getDeviceHash() || '') : '';
+            if (!deviceHash || !user.email) {
+                verifiedDeviceSession = false;
+                await auth.signOut();
+                return;
+            }
+
+            const sEmail = sanitizeEmail(user.email);
+            try {
+                const checks = await Promise.all([
+                    database.ref('blacklisted_hardware/' + deviceHash).once('value'),
+                    database.ref('blocked_users/' + sEmail).once('value'),
+                    database.ref('device_registry/' + deviceHash).once('value'),
+                    database.ref('device_bindings/' + sEmail).once('value')
+                ]);
+                if (checkId !== sessionCheckSerial || !auth.currentUser ||
+                        auth.currentUser.uid !== user.uid) return;
+
+                const hwBlocked = checks[0].val() && checks[0].val().isBlocked === true;
+                const userBlocked = checks[1].val() && checks[1].val().isBlocked === true;
+                const registeredEmail = checks[2].val() && checks[2].val().registered_email;
+                const boundHash = checks[3].val() && checks[3].val().bound_device_hash;
+                if (hwBlocked || userBlocked || registeredEmail !== sEmail || boundHash !== deviceHash) {
+                    verifiedDeviceSession = false;
+                    if (hwBlocked || userBlocked) killOverlay.classList.remove('hidden');
+                    await auth.signOut();
+                    return;
+                }
+
+                verifiedDeviceSession = true;
+                if (liveKillswitchListener && liveKillswitchRef)
+                    liveKillswitchRef.off('value', liveKillswitchListener);
+                liveKillswitchRef = database.ref('blocked_users/' + sEmail);
+                liveKillswitchListener = liveKillswitchRef.on('value', snap => {
+                    if (snap.exists() && snap.val().isBlocked === true) {
+                        killOverlay.classList.remove('hidden');
+                        verifiedDeviceSession = false;
+                        auth.signOut();
+                    } else {
+                        killOverlay.classList.add('hidden');
+                    }
+                });
+
+                if (!localStorage.getItem('dutyStart'))
+                    localStorage.setItem('dutyStart', String(Date.now()));
+                splashScreen.style.opacity = '0';
+                setTimeout(() => {
+                    if (checkId !== sessionCheckSerial || !auth.currentUser ||
+                            auth.currentUser.uid !== user.uid || !verifiedDeviceSession) return;
+                    splashScreen.style.display = 'none';
+                    loginSection.style.display = 'none';
+                    mainDashboard.style.display = 'flex';
+                    mainDashboard.classList.add('animate-fade-in-up');
+                    const savedName = localStorage.getItem('adminName') || user.email.split('@')[0];
+                    document.getElementById('adminUserDisplay').textContent = savedName;
+                    document.getElementById('adminAvatar').src =
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(savedName)}&background=ea580c&color=fff&bold=true`;
+                    applyLanguage(localStorage.getItem('adminLang') || 'en');
+                    tickClock();
+                }, 300);
+            } catch (checkError) {
+                // Network failure is NOT logout: keep Firebase session for auto-resume.
+                // Keep the dashboard hidden until the verification can complete.
+                if (checkId !== sessionCheckSerial) return;
+                verifiedDeviceSession = false;
+                splashScreen.style.opacity = '1';
+                splashScreen.style.display = 'flex';
+                mainDashboard.style.display = 'none';
+            }
+        }
+
+        auth.onAuthStateChanged(handleAdminAuthState);
+        window.addEventListener('online', () => {
+            if (auth.currentUser && !verifiedDeviceSession)
+                handleAdminAuthState(auth.currentUser);
+        });
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && auth.currentUser && !verifiedDeviceSession && navigator.onLine)
+                handleAdminAuthState(auth.currentUser);
         });
 
         // 🛡️ LOGIN HANDLER WITH HARDWARE LOCK VERIFICATION
@@ -1006,7 +1064,6 @@
             }
 
             // 6. Authenticate only after this page's device check.
-            verifiedDeviceSession = true;
             auth.signInWithEmailAndPassword(email, password)
                 .then(() => {
                     loginError.classList.add('hidden');
