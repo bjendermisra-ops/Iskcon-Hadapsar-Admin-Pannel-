@@ -281,10 +281,10 @@
             </form>
 
             <div role="note" class="mt-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300/70 dark:border-amber-800 text-[11px] leading-relaxed text-slate-800 dark:text-amber-100">
-                <strong class="block mb-1 text-amber-900 dark:text-amber-200">Duty location &amp; privacy</strong>
-                After sign-in, this app may collect your precise location, device information and duty status for authorized temple operations. Duty tracking may continue in the background or when the app is closed. Read our
+                <strong class="block mb-1 text-amber-900 dark:text-amber-200">Account security &amp; privacy</strong>
+                This admin portal uses account and registered-device information to protect authorized access. This page does not request background location tracking. Read our
                 <a href="privacy-policy.html" class="font-extrabold underline text-amber-800 dark:text-amber-200" target="_self">Privacy Policy</a>
-                for details and tracking controls.
+                for information about account security and data handling.
             </div>
 
             <div class="mt-5 pt-4 border-t border-slate-200 dark:border-slate-800 text-center">
@@ -409,7 +409,7 @@
                         </div>
                         <div>
                             <h3 data-i18n="warnTitle" class="text-base md:text-lg font-black text-slate-900 dark:text-white">Restricted Access — Authorized Administrators Only</h3>
-                            <p data-i18n="warnDesc" class="text-xs md:text-sm text-slate-600 dark:text-slate-300 font-medium">Authorized temple administration only. Use your assigned account on your registered device. Do not share credentials. The app includes background duty-location tracking, and module access is recorded.</p>
+                            <p data-i18n="warnDesc" class="text-xs md:text-sm text-slate-600 dark:text-slate-300 font-medium">Authorized temple administration only. Use your assigned account on your registered device. Do not share credentials. Access to administrative modules is recorded.</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/5 dark:bg-white/5 border border-slate-200 dark:border-slate-800 text-[11px] font-mono text-slate-500 dark:text-slate-400 shrink-0">
@@ -618,7 +618,7 @@
                 welcomeTitle: "Temple Operations Center 🙏",
                 welcomeDesc: "Access the temple management modules below to carry out your assigned responsibilities.",
                 warnTitle: "Restricted Access — Authorized Administrators Only",
-                warnDesc: "Authorized temple administration only. Use your assigned account on your registered device. Do not share credentials. The app includes background duty-location tracking, and module access is recorded.",
+                warnDesc: "Authorized temple administration only. Use your assigned account on your registered device. Do not share credentials. Access to administrative modules is recorded.",
                 modKidsTitle: "Kids Sanskar Class",
                 modKidsDesc: "Manage moral values, Gita shlokas, batches & child enrollments.",
                 modCourseTitle: "Courses & Training",
@@ -794,6 +794,8 @@
 
         let liveKillswitchListener = null;
         let liveKillswitchRef = null;
+        // UI-only session gate. Firebase rules must independently enforce access.
+        let verifiedDeviceSession = false;
 
         // ================= नया UI इंजन: घड़ी, अभिवादन, ड्यूटी टाइमर, नेटवर्क, सर्च =================
         function pad2(n) { return String(n).padStart(2, '0'); }
@@ -857,6 +859,8 @@
 
         // AUTH STATE ENGINE & REALTIME KILLSWITCH
         auth.onAuthStateChanged((user) => {
+            // A restored session alone cannot unlock this admin screen.
+            if (user && !verifiedDeviceSession) { auth.signOut(); return; }
             if (user) {
                 const sEmail = sanitizeEmail(user.email);
 
@@ -873,10 +877,6 @@
                     }
                 });
 
-                // Start Sketchware Background Duty Tracking Service
-                if (window.AndroidBridge && window.AndroidBridge.startNativeDutyTracking) {
-                    window.AndroidBridge.startNativeDutyTracking(user.email);
-                }
 
                 // ड्यूटी टाइमर की शुरुआत
                 if (!localStorage.getItem('dutyStart')) localStorage.setItem('dutyStart', String(Date.now()));
@@ -1005,17 +1005,14 @@
                 return;
             }
 
-            // 6. Authenticate with Firebase
+            // 6. Authenticate only after this page's device check.
+            verifiedDeviceSession = true;
             auth.signInWithEmailAndPassword(email, password)
                 .then(() => {
                     loginError.classList.add('hidden');
                     localStorage.setItem('adminName', adminName);
                     localStorage.setItem('adminLang', adminLang);
 
-                    // Trigger Sketchware GPS Foreground Service
-                    if (window.AndroidBridge && window.AndroidBridge.startNativeDutyTracking) {
-                        window.AndroidBridge.startNativeDutyTracking(email);
-                    }
 
                     // Audit Log
                     database.ref('admin_activity_logs').push({
@@ -1027,6 +1024,7 @@
                     });
                 })
                 .catch((err) => {
+                    verifiedDeviceSession = false;
                     resetLoginBtn();
                     loginErrorText.textContent = "SIGN-IN UNSUCCESSFUL. Check your connection and login details, then try again. If access remains unavailable, contact your administrator.";
                     loginError.classList.remove('hidden');
