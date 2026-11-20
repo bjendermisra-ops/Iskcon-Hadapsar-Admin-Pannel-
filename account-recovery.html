@@ -1,7 +1,7 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Temple account recovery</title>
 <style>*{box-sizing:border-box}body{margin:1rem auto;padding:0 1rem;max-width:45rem;background:#101827;color:#fff;font:16px system-ui}section{padding:1rem;margin:.7rem 0;border:1px solid #526075;border-radius:10px;overflow-wrap:anywhere}button,input{padding:.65rem;margin:.3rem .25rem .3rem 0;font:inherit;max-width:100%}a{color:#91dfee}small{display:block}dialog{max-width:94vw}</style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script></head><body>
-<a href="adok.html">Papa Admin</a><h1>Account recovery</h1><p role="status" id="status"></p><button id="refresh">Refresh</button><h2>Firebase accounts</h2><div id="users"></div><h2>Device links</h2><div id="links"></div>
+<a href="adok.html">Papa Admin</a><h1>Account recovery</h1><p role="status" id="status"></p><p id="existing" hidden>To release a phone now, open <a href="adok.html">Papa Admin</a>, expand Device &amp; account recovery and paste the first 8 characters of its reference. Select Release link on the matching row.</p><button id="refresh">Refresh</button><h2>Find a phone</h2><label>Device reference from the login screen<br><input id="filter" type="search" placeholder="Enter the first 8 characters"></label><div id="links"></div><p id="noMatch" hidden>No matching device reference.</p><h2>Firebase accounts</h2><div id="users"></div>
 <dialog id="change"><form method="dialog"><label>New app password <input id="secret" type="password" minlength="6" autocomplete="new-password"></label><button value="save">Save password</button><button value="cancel" formnovalidate>Cancel</button></form></dialog>
 <script>
 const firebaseConfig = {
@@ -22,6 +22,7 @@ async function request(data){
     const token=await auth.currentUser.getIdToken();
     const res=await fetch('/api/temple-accounts',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(data)});
     const output=await res.json().catch(()=>({}));
+    el("existing").hidden=res.ok;
     if(!res.ok) throw Error(output.error || 'Papa Admin access required. HTTP '+res.status);
     return output;
 }
@@ -65,14 +66,23 @@ async function reload(){
     for(const {key,hash} of links){
         const matched=users.filter(u=>u.email.replace(/[.#$[\]]/g,'_')===key);
         const row=card('links',matched.length===1?matched[0].email:'Stored account key: '+key);
+        row.dataset.hash=hash.toLowerCase();
         const id=document.createElement('small');id.textContent='Device reference: '+hash;row.append(id);
         button(row,'Release this phone',async()=>{
             if(!confirm('Release device '+hash+' from '+key+'?'))return;
             await request({action:'release',key,hash});await reload();status('Phone released. Sign in inside the app with the assigned account.');
         });
     }
+    filterLinks();
     status(users.length+' accounts • '+links.length+' device links');
 }
+function filterLinks(){
+    const prefix=el('filter').value.trim().toLowerCase();
+    const rows=Array.from(el('links').children);
+    for(const row of rows)row.hidden=!row.dataset.hash.startsWith(prefix);
+    el('noMatch').hidden=!prefix || rows.some(row=>!row.hidden);
+}
+el('filter').oninput=filterLinks;
 el('refresh').onclick=()=>reload().catch(e=>status(e.message));
 auth.onAuthStateChanged(()=>reload().catch(e=>status(e.message)));
 </script></body></html>
