@@ -217,6 +217,12 @@
                         <span class="text-[10px] font-mono text-emerald-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Auto-Sync</span>
                     </div>
 
+                    <details class="p-2 rounded-xl border border-slate-700 text-xs">
+                        <summary class="cursor-pointer font-bold text-amber-400">Device &amp; account recovery</summary>
+                        <input id="deviceLookup" placeholder="Device reference or account email" aria-label="Find a device or account" class="mt-2 w-full p-2 bg-slate-900">
+                        <div id="deviceMatches" class="max-h-48 overflow-auto space-y-2"></div>
+                        <button type="button" id="passwordRecovery" class="mt-2 text-cyan-400">Send app password reset email</button>
+                    </details>
                     <div id="subAdminList" class="flex-1 overflow-y-auto space-y-3 pt-3 pr-1">
                         <div class="text-center py-10 text-slate-500 text-xs font-mono">
                             <i class="fa-solid fa-radar fa-spin text-2xl mb-2 text-slate-600"></i><br>
@@ -321,6 +327,8 @@
         let allLiveSubAdmins = {};
         let allBlockedUsers = {};
         let allDeviceBindings = {};
+        let allRegisteredDevices = {};
+        let recoveryReady = false;
         let lastLoadedRouteData = null;
         let replayInterval = null;
         let replayCarMarker = null;
@@ -392,7 +400,17 @@
 
             database.ref('device_bindings').on('value', (snap) => {
                 allDeviceBindings = snap.val() || {};
+                renderDeviceRecovery();
                 renderSubAdminList();
+            });
+
+            database.ref('device_registry').on('value', snap => {
+                allRegisteredDevices = snap.val() || {};
+                recoveryReady = true;
+                renderDeviceRecovery();
+            }, () => {
+                recoveryReady = false;
+                renderDeviceRecovery();
             });
 
             database.ref('admin_live_radar').on('value', (snap) => {
@@ -901,11 +919,69 @@ https://maps.google.com/?q=${admin.lat},${admin.lon}
             alert(`Admin ${emailKey.replace(/_/g, '.')} is UNBANNED.`);
         };
 
-        window.resetDeviceBinding = function(emailKey) {
-            if (!confirm(`Clear phone binding for ${emailKey.replace(/_/g, '.')}?`)) return;
-            database.ref(`device_bindings/${emailKey}`).remove().then(() => {
-                alert(`Binding reset successfully.`);
-            });
+        const lookup = document.getElementById('deviceLookup');
+        function renderDeviceRecovery() {
+            const list = document.getElementById('deviceMatches');
+            list.replaceChildren();
+            if (!recoveryReady) { list.textContent = 'Device registry unavailable.'; return; }
+            const query = lookup.value.trim().toLowerCase();
+            const pairs = new Map();
+            function add(hash, key) {
+                if (!hash || !key) return;
+                pairs.set(JSON.stringify([hash, key]), [hash, key]);
+            }
+            Object.entries(allRegisteredDevices).forEach(([hash, row]) => add(hash, row.registered_email));
+            Object.entries(allDeviceBindings).forEach(([key, row]) => add(row.bound_device_hash, key));
+            for (const [hash, key] of pairs.values()) {
+                const email = allDeviceBindings[key]?.account_email;
+                const label = [email || ('Account key: ' + key), hash].join(' • ');
+                if (!label.toLowerCase().includes(query) && !key.toLowerCase().includes(query.replace(/[.#$[\]]/g, '_'))) continue;
+                const row = document.createElement('div');
+                row.className = 'break-all py-1';
+                row.textContent = label + ' ';
+                const button = document.createElement('button');
+                button.textContent = 'Release link';
+                button.className = 'text-amber-400 underline';
+                button.onclick = () => releaseLink(key, hash);
+                row.append(button);
+                list.append(row);
+            }
+            if (!list.childElementCount) list.textContent = 'No matching device link.';
+        }
+        lookup.addEventListener('input', renderDeviceRecovery);
+
+        async function releaseLink(key, hash) {
+            if (auth.currentUser?.uid !== MASTER_PAPA_UID || !confirm('Release device ' + hash + ' for account key ' + key + '?')) return;
+            try {
+                const binding = database.ref('device_bindings/' + key);
+                const registry = database.ref('device_registry/' + hash);
+                // Compare ownership on the server so a retry cannot clear a different owner.
+                await binding.once('value');
+                await binding.transaction(row => row && row.bound_device_hash === hash ? null : undefined);
+                await registry.once('value');
+                await registry.transaction(row => row && row.registered_email === key ? null : undefined);
+                alert('Recovery complete. Sign in on the intended phone with the assigned account.');
+            } catch (err) {
+                alert('Release incomplete. Check the connection and administrator permissions, then retry.');
+            }
+        }
+        window.resetDeviceBinding = function(key) {
+            const hash = allDeviceBindings[key]?.bound_device_hash;
+            if (hash) return releaseLink(key, hash);
+            lookup.value = key;
+            lookup.closest('details').open = true;
+            renderDeviceRecovery();
+        };
+        document.getElementById('passwordRecovery').onclick = async () => {
+            if (auth.currentUser?.uid !== MASTER_PAPA_UID) return;
+            const email = prompt('Enter the exact Firebase app account email to receive a password reset link.');
+            if (!email?.trim()) return;
+            try {
+                await auth.sendPasswordResetEmail(email.trim());
+                alert('Reset requested. Ask the account owner to check their inbox and spam folder.');
+            } catch (err) {
+                alert('Reset request failed. Check the address and Firebase email settings.');
+            }
         };
     </script>
 </body>
