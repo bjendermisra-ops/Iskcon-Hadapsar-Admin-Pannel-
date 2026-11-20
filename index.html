@@ -861,7 +861,9 @@
         // Firebase Authentication persists the session; a fresh password is not needed.
         // This is an additional UI gate, NOT a substitute for Firebase server-side rules.
         let sessionCheckSerial = 0;
+        let bindingInProgress = false;
         async function handleAdminAuthState(user) {
+            if (bindingInProgress) return;
             const checkId = ++sessionCheckSerial;
             if (!user) {
                 verifiedDeviceSession = false;
@@ -989,103 +991,87 @@
                 return;
             }
 
-            const deviceHash = window.HardwareGuard.getDeviceHash();
-            const deviceModel = window.HardwareGuard.getDeviceModel() || "Android Device";
-            const sEmail = sanitizeEmail(email);
-
+            if (bindingInProgress) return;
+            bindingInProgress = true;
+            let authenticated = false;
+            let message = 'Sign-in failed. Check your email, password and connection.';
             try {
-                // 2. Hardware Blacklist Check
-                const hwSnap = await database.ref('blacklisted_hardware/' + deviceHash).once('value');
-                if (hwSnap.exists() && hwSnap.val().isBlocked === true) {
-                    document.getElementById('banDevHash').innerText = deviceHash.substring(0, 10) + "...";
-                    document.getElementById('banDevModel').innerText = deviceModel;
-                    killOverlay.classList.remove('hidden');
-                    resetLoginBtn();
-                    return;
+                const deviceHash = String(window.HardwareGuard.getDeviceHash() || '');
+                const deviceModel = window.HardwareGuard.getDeviceModel() || 'Android Device';
+                if (!deviceHash) {
+                    message = 'Device reference unavailable. Reopen the official app.';
+                    throw new Error();
                 }
-
-                // 3. User Blacklist Check
-                const banSnap = await database.ref('blocked_users/' + sEmail).once('value');
-                if (banSnap.exists() && banSnap.val().isBlocked === true) {
-                    loginErrorText.textContent = "ACCOUNT ACCESS SUSPENDED. This account is currently restricted. Contact the System Administrator for an access review.";
-                    loginError.classList.remove('hidden');
-                    resetLoginBtn();
-                    return;
-                }
-
-                // 4. One Device = One Account Policy (Check if device belongs to someone else)
-                const devRegSnap = await database.ref('device_registry/' + deviceHash).once('value');
-                if (devRegSnap.exists()) {
-                    const registeredEmail = devRegSnap.val().registered_email;
-                    if (registeredEmail !== sEmail) {
-                        loginErrorText.innerHTML = `ACCESS DENIED — DEVICE ALREADY REGISTERED. This device is linked to another account. Sign in with the linked account or contact the System Administrator to request a device reassignment.`;
-                        loginError.classList.remove('hidden');
-                        resetLoginBtn();
-                        return;
+                const {user} = await auth.signInWithEmailAndPassword(email, password);
+                authenticated = true;
+                message = 'Device verification failed. Check your connection or contact your administrator.';
+                const key = sanitizeEmail(user.email);
+                const binding = database.ref('device_bindings/' + key);
+                const registry = database.ref('device_registry/' + deviceHash);
+                const [hw, blocked, account, phone] = await Promise.all([
+                    database.ref('blacklisted_hardware/' + deviceHash).once('value'),
+                    database.ref('blocked_users/' + key).once('value'),
+                    binding.once('value'), registry.once('value')
+                ]);
+                if (hw.child('isBlocked').val() === true || blocked.child('isBlocked').val() === true) {
+                    message = 'Access suspended. Contact your administrator.';
+                    if (hw.child('isBlocked').val() === true) {
+                        document.getElementById('banDevHash').textContent = deviceHash;
+                        document.getElementById('banDevModel').textContent = deviceModel;
+                        killOverlay.classList.remove('hidden');
                     }
+                    throw new Error();
                 }
-
-                // 5. Anti-Credential Sharing (Check if this email is bound to another phone)
-                const bindSnap = await database.ref('device_bindings/' + sEmail).once('value');
-                if (bindSnap.exists()) {
-                    const boundHash = bindSnap.val().bound_device_hash;
-                    if (boundHash !== deviceHash) {
-                        database.ref('security_blackbox_logs').push({
-                            event: "CREDENTIAL_SHARING_BREACH",
-                            email: email,
-                            attempted_hash: deviceHash,
-                            attempted_model: deviceModel,
-                            bound_hash: boundHash,
-                            timestamp: firebase.database.ServerValue.TIMESTAMP
-                        });
-                        loginErrorText.innerHTML = "ACCESS DENIED — REGISTERED DEVICE REQUIRED. This account is linked to another device. Use your registered device or contact the System Administrator to request a device change.";
-                        loginError.classList.remove('hidden');
-                        resetLoginBtn();
-                        return;
-                    }
-                } else {
-                    // First-time Login: Permanently Bind this Phone to this Admin Email
-                    await database.ref('device_bindings/' + sEmail).set({
-                        bound_device_hash: deviceHash,
-                        device_model: deviceModel,
-                        bound_date: firebase.database.ServerValue.TIMESTAMP
-                    });
-                    await database.ref('device_registry/' + deviceHash).set({
-                        registered_email: sEmail,
-                        device_model: deviceModel,
-                        registered_date: firebase.database.ServerValue.TIMESTAMP
-                    });
+                const phoneConflict = 'Phone linked to another account. Give your administrator this device reference: ' + deviceHash;
+                const accountConflict = 'Account linked to another phone. Give your administrator this device reference: ' + deviceHash;
+                if (phone.exists() && phone.child('registered_email').val() !== key) {
+                    message = phoneConflict;
+                    throw new Error();
                 }
-            } catch (checkErr) {
-                loginErrorText.textContent = "DEVICE VERIFICATION UNAVAILABLE. Check your connection and try again. If the issue continues, contact your administrator.";
-                loginError.classList.remove('hidden');
-                resetLoginBtn();
-                return;
-            }
-
-            // 6. Authenticate only after this page's device check.
-            auth.signInWithEmailAndPassword(email, password)
-                .then(() => {
-                    loginError.classList.add('hidden');
-                    localStorage.setItem('adminName', adminName);
-                    localStorage.setItem('adminLang', adminLang);
-
-
-                    // Audit Log
-                    database.ref('admin_activity_logs').push({
-                        email: email,
-                        name: adminName,
-                        action: "Duty Started & Hardware Locked",
-                        device: deviceModel,
+                if (account.exists() && account.child('bound_device_hash').val() !== deviceHash) {
+                    message = accountConflict;
+                    database.ref('security_blackbox_logs').push({
+                        event: 'CREDENTIAL_SHARING_BREACH', email: user.email, attempted_hash: deviceHash,
+                        attempted_model: deviceModel, bound_hash: account.child('bound_device_hash').val(),
                         timestamp: firebase.database.ServerValue.TIMESTAMP
+                    }).catch(() => {});
+                    throw new Error();
+                }
+                const stamp = firebase.database.ServerValue.TIMESTAMP;
+                if (!phone.exists()) {
+                    const claim = await registry.transaction(current => {
+                        if (current && current.registered_email !== key) return;
+                        return current || {registered_email: key, device_model: deviceModel, registered_date: stamp};
                     });
-                })
-                .catch((err) => {
-                    verifiedDeviceSession = false;
-                    resetLoginBtn();
-                    loginErrorText.textContent = "SIGN-IN UNSUCCESSFUL. Check your connection and login details, then try again. If access remains unavailable, contact your administrator.";
-                    loginError.classList.remove('hidden');
-                });
+                    if (!claim.committed) { message = phoneConflict; throw new Error(); }
+                }
+                if (!account.exists()) {
+                    const claim = await binding.transaction(current => {
+                        if (current && current.bound_device_hash !== deviceHash) return;
+                        return current || {account_email: user.email, bound_device_hash: deviceHash, device_model: deviceModel, bound_date: stamp};
+                    });
+                    if (!claim.committed) {
+                        await registry.transaction(current => current && current.registered_email === key ? null : undefined);
+                        message = accountConflict;
+                        throw new Error();
+                    }
+                }
+                localStorage.setItem('adminName', adminName);
+                localStorage.setItem('adminLang', adminLang);
+                loginError.classList.add('hidden');
+                database.ref('admin_activity_logs').push({
+                    email: user.email, name: adminName, action: 'Duty Started & Hardware Locked',
+                    device: deviceModel, timestamp: stamp
+                }).catch(() => {});
+            } catch (err) {
+                if (authenticated) await auth.signOut();
+                loginErrorText.textContent = message;
+                loginError.classList.remove('hidden');
+            } finally {
+                bindingInProgress = false;
+                resetLoginBtn();
+                await handleAdminAuthState(auth.currentUser);
+            }
         });
 
         window.navigateWithLog = function(moduleName, targetUrl) {
