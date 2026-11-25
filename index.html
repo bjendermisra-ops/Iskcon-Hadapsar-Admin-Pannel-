@@ -576,6 +576,16 @@
                 </div>
 
 
+                <!-- CREATIVE STUDIO: local-only prompt and image tools -->
+                <button type="button" id="creativeStudioModule" data-search="ai creative studio poster image design chatgpt festival wallpaper quote फोटो पोस्टर चित्र डिझाइन" class="module-card group super-card glass-panel rounded-3xl p-5 md:p-6 border border-slate-200 dark:border-slate-800 flex flex-col justify-between overflow-hidden text-left w-full font-sans">
+                    <div class="flex items-center justify-between mb-4 gap-2">
+                        <div class="card-icon-box w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-700 to-teal-500 text-white flex items-center justify-center text-2xl shadow-lg shadow-teal-500/20 shrink-0"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i></div>
+                        <span data-i18n="creativeBadge" class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-teal-500/15 text-teal-700 dark:text-teal-300 border border-teal-500/30">Creative Tools</span>
+                    </div>
+                    <div><h3 data-i18n="creativeTitle" class="text-lg md:text-xl font-extrabold text-slate-900 dark:text-white mb-1.5">AI Creative Studio</h3><p data-i18n="creativeDesc" class="text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-6">Optimize prompts, generate in ChatGPT, finish posters and share HD images.</p></div>
+                    <div class="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs font-bold text-teal-700 dark:text-teal-300 w-full"><span data-i18n="creativeOpen">Open Studio</span><i class="fa-solid fa-arrow-right-long group-hover:translate-x-1.5 transition-transform" aria-hidden="true"></i></div>
+                </button>
+
                 <!-- NOTIFICATION MANAGEMENT MODULE: point this URL to your notification admin page. -->
                 <button type="button" data-search="push notification notifications alert announcement send message user सूचनाएं सूचना नोटिफिकेशन संदेश घोषणा सूचना पाठवा" onclick="navigateWithLog('Push Notification Center', 'notifications.html')" class="module-card group super-card glass-panel rounded-3xl p-5 md:p-6 border border-slate-200 dark:border-slate-800 flex flex-col justify-between overflow-hidden text-left w-full font-sans">
                     <div class="flex items-center justify-between mb-4 gap-2">
@@ -707,6 +717,10 @@
 
         const dashboardLabels = {"en": {"adminOperations": "Administration & Operations", "adminPortal": "ADMIN PORTAL", "signedIn": "SIGNED IN", "accessPolicy": "ADMIN ACCESS POLICY", "admissionOpen": "Admission Open", "newBatches": "New Batches", "dailyDeity": "Daily Deity", "liveAarti": "Live Aarti", "quizzes": "Quizzes", "audioVideo": "Audio & Video", "appBanners": "App Banners", "themeLabel": "Change theme", "logoutLabel": "Sign out", "modNotificationTitle": "Push Notification Center", "modNotificationDesc": "Send temple announcements, festival reminders and important updates to app users.", "notificationBadge": "App Notifications", "notificationOpen": "Open Notification Center"}, "hi": {"adminOperations": "प्रशासन एवं संचालन", "adminPortal": "एडमिन पोर्टल", "signedIn": "लॉगिन सक्रिय", "accessPolicy": "एडमिन प्रवेश नीति", "admissionOpen": "प्रवेश शुरू", "newBatches": "नए बैच", "dailyDeity": "दैनिक दर्शन", "liveAarti": "लाइव आरती", "quizzes": "प्रश्नोत्तरी", "audioVideo": "ऑडियो और वीडियो", "appBanners": "ऐप बैनर", "themeLabel": "थीम बदलें", "logoutLabel": "लॉग आउट", "modNotificationTitle": "पुश नोटिफिकेशन केंद्र", "modNotificationDesc": "ऐप उपयोगकर्ताओं को मंदिर की घोषणाएं, उत्सव के रिमाइंडर और जरूरी अपडेट भेजें।", "notificationBadge": "ऐप सूचनाएं", "notificationOpen": "नोटिफिकेशन केंद्र खोलें"}, "mr": {"adminOperations": "प्रशासन आणि संचालन", "adminPortal": "ॲडमिन पोर्टल", "signedIn": "लॉगिन सक्रिय", "accessPolicy": "ॲडमिन प्रवेश धोरण", "admissionOpen": "प्रवेश सुरू", "newBatches": "नवीन बॅचेस", "dailyDeity": "दैनिक दर्शन", "liveAarti": "लाइव्ह आरती", "quizzes": "प्रश्नमंजुषा", "audioVideo": "ऑडिओ आणि व्हिडिओ", "appBanners": "ॲप बॅनर्स", "themeLabel": "थीम बदला", "logoutLabel": "लॉग आउट", "modNotificationTitle": "पुश नोटिफिकेशन केंद्र", "modNotificationDesc": "ॲप वापरकर्त्यांना मंदिराच्या घोषणा, उत्सवांची आठवण आणि महत्त्वाचे अपडेट पाठवा.", "notificationBadge": "ॲप सूचना", "notificationOpen": "नोटिफिकेशन केंद्र उघडा"}};
         Object.keys(dashboardLabels).forEach(lang => Object.assign(translations[lang], dashboardLabels[lang]));
+
+        Object.assign(translations.en, {creativeBadge:'Creative Tools',creativeTitle:'AI Creative Studio',creativeDesc:'Optimize prompts, generate in ChatGPT, finish posters and share HD images.',creativeOpen:'Open Studio'});
+        Object.assign(translations.hi, {creativeBadge:'क्रिएटिव टूल्स',creativeTitle:'AI क्रिएटिव स्टूडियो',creativeDesc:'प्रॉम्प्ट सुधारें, ChatGPT में चित्र बनाएं और HD पोस्टर साझा करें।',creativeOpen:'स्टूडियो खोलें'});
+        Object.assign(translations.mr, {creativeBadge:'क्रिएटिव्ह टूल्स',creativeTitle:'AI क्रिएटिव्ह स्टुडिओ',creativeDesc:'प्रॉम्प्ट सुधारा, ChatGPT मध्ये चित्र तयार करा आणि HD पोस्टर शेअर करा.',creativeOpen:'स्टुडिओ उघडा'});
 
         let currentLang = 'en';
 
@@ -1095,6 +1109,36 @@
 
         document.getElementById('logoutBtn').addEventListener('click', () => {
             auth.signOut();
+        });
+
+        // Lazy-load the local Creative Studio only after verified device login.
+        const studioButton = document.getElementById('creativeStudioModule');
+        let studioLoader;
+        function canOpenCreativeStudio() {
+            return Boolean(auth.currentUser && verifiedDeviceSession && mainDashboard.style.display !== 'none' && killOverlay.classList.contains('hidden'));
+        }
+        studioButton.addEventListener('click', async () => {
+            if (!canOpenCreativeStudio() || studioButton.disabled) return;
+            studioButton.disabled = true;
+            studioButton.setAttribute('aria-busy', 'true');
+            try {
+                if (!window.openCreativeStudio) {
+                    if (!studioLoader) studioLoader = new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = './creative-studio.js';
+                        script.onload = resolve;
+                        script.onerror = () => { script.remove(); studioLoader = null; reject(new Error('Studio could not load.')); };
+                        document.head.appendChild(script);
+                    });
+                    await studioLoader;
+                }
+                if (canOpenCreativeStudio()) window.openCreativeStudio({isAuthorized:canOpenCreativeStudio,dashboard:mainDashboard,language:currentLang});
+            } catch (error) {
+                if (canOpenCreativeStudio()) alert('Creative Studio could not open. Please try again.');
+            } finally {
+                studioButton.disabled = false;
+                studioButton.removeAttribute('aria-busy');
+            }
         });
 
         // शुरुआती नेटवर्क और अभिवादन
